@@ -1,0 +1,146 @@
+.wrap {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 1045px;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  column-gap: 20px;
+  row-gap: 12px;
+}
+
+.filtersLeft {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.filtersTags {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.filtersDropdownFilters {
+  display: inline-block;
+}
+
+.filtersDropdownSort {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.filtersRoundButton {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .wrap {
+    margin-right: -20px;
+    width: calc(100% + 20px);
+    column-gap: 20px;
+  }
+
+  .filtersDropdownFilters {
+    display: none;
+  }
+
+  .filtersDropdownSort {
+    display: none;
+  }
+
+  .filtersRoundButton {
+    display: inline-flex;
+  }
+
+  .filtersTags {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-right: 20px;
+  }
+
+  .filtersTags::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filtersTags>* {
+    flex-shrink: 0;
+  }
+}
+
+/* Оверлей и панель мобильного окна фильтров (анимация по аналогии с header) */
+.filterOverlay {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.filterOverlay.isOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.filterPanel {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  background: var(--grayscale-white);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.filterPanel.isOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.filterPanelContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  transform-origin: center center;
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.filterPanelContent.isOpen {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Меню внутри панели — не fixed, чтобы участвовало в анимации scale */
+.filterMenuInPanel {
+  position: relative !important;
+  inset: auto !important;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}

@@ -1,0 +1,359 @@
+"use client";
+
+import { useState, useMemo, useEffect, memo } from "react";
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
+import { Header } from "../../globals/header/Header";
+import { Footer } from "../../globals/footer/Footer";
+import Search from "./search/search";
+import Filters from "./filters/filters";
+import UnfilteredPlans, { FilteredPlans } from "./plans/check-plans/check-plans";
+import planStyles from "./plans/check-plans/check-plans.module.css";
+import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
+import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
+import NotFound from "./plans/notFound/notFound";
+import { parseAppliedFilters } from "./utils/parseFilterTags";
+import { getApiUrl } from "@/app/lib/api";
+import { getAuth } from "@/app/lib/auth-storage";
+import Button from "@/app/components/atomic/atoms/buttons/buttons";
+
+/** Попап «Войдите, чтобы поставить Лайк» + кнопка «Войти» */
+const LoginToLikePopup = memo(function LoginToLikePopup({ isClosing, onClose, onLogin }) {
+	return (
+		<div
+			className={`${planStyles.loginToLikeOverlay} ${isClosing ? planStyles.loginToLikeOverlayClosing : ""}`}
+			onClick={onClose}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="check-plans-login-to-like-title"
+		>
+			<div
+				className={`${planStyles.loginToLikePopup} ${isClosing ? planStyles.loginToLikePopupClosing : ""}`}
+				onClick={(e) => e.stopPropagation()}
+			>
+				<h2 id="check-plans-login-to-like-title" className="title_2" style={{ color: "var(--grayscale-dark-gray)" }}>
+					Войдите, чтобы поставить Лайк
+				</h2>
+				<div className={planStyles.loginToLikeButtons}>
+					<Button Text="Войти" color="blue" type="button" onClick={onLogin} />
+				</div>
+			</div>
+		</div>
+	);
+});
+
+const SORT_ITEMS = ["По популярности", "По новизне"];
+
+/** Нормализует строку для поиска: нижний регистр, лишние пробелы убраны. */
+function normalizeForSearch(s) {
+    if (s == null || typeof s !== "string") return "";
+    return s.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+/** Собирает из карточки одну строку для поиска: заголовок, описание, теги (filterTag, regionTag, location, travelerTags, seasonTags). */
+function getSearchableText(card) {
+    const parts = [
+        card.title,
+        card.description,
+        card.filterTag,
+        card.regionTag,
+        card.location,
+        ...(Array.isArray(card.travelerTags) ? card.travelerTags : []),
+        ...(Array.isArray(card.seasonTags) ? card.seasonTags : []),
+    ].filter(Boolean);
+    return normalizeForSearch(parts.join(" "));
+}
+
+/**
+ * Фильтрует карточки по поисковому запросу: хотя бы одно слово запроса
+ * встречается в заголовке, описании или тегах (без учёта регистра).
+ */
+function filterCardsBySearch(cards, query) {
+    const q = normalizeForSearch(query);
+    if (!q) return cards;
+    const words = q.split(" ").filter(Boolean);
+    if (words.length === 0) return cards;
+    return cards.filter((card) => {
+        const text = getSearchableText(card);
+        return words.some((word) => text.includes(word));
+    });
+}
+
+/** Подставляет базовый URL API для картинок из /storage. */
+function resolveImageSrc(imageSrc) {
+    if (!imageSrc || typeof imageSrc !== "string") return imageSrc;
+    const base = getApiUrl();
+    if (imageSrc.startsWith("/storage") && base) return base + imageSrc;
+    return imageSrc;
+}
+
+export function CheckPlansPage() {
+    const router = useRouter();
+    const isAuthenticated = typeof getAuth()?.user?.id !== "undefined";
+    const [showLoginToLikePopup, setShowLoginToLikePopup] = useState(false);
+    const [loginToLikeClosing, setLoginToLikeClosing] = useState(false);
+    const [appliedFilterTags, setAppliedFilterTags] = useState([]);
+    const [sortIndex, setSortIndex] = useState(1); // 1 = "По новизне" по умолчанию
+    const [searchQuery, setSearchQuery] = useState("");
+    const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
+    const [blocks, setBlocks] = useState([]);
+    const [flatCards, setFlatCards] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const { getLikeCount, setInitialLikeCounts } = useLikedChecklists();
+
+    const closeLoginToLikePopup = () => {
+        setLoginToLikeClosing(true);
+        setTimeout(() => {
+            setShowLoginToLikePopup(false);
+            setLoginToLikeClosing(false);
+        }, 280);
+    };
+
+    const handleLoginFromPopup = () => {
+        setLoginToLikeClosing(true);
+        setTimeout(() => {
+            setShowLoginToLikePopup(false);
+            setLoginToLikeClosing(false);
+            router.push("/login");
+        }, 280);
+    };
+
+    useEffect(() => {
+        let cancelled = false;
+        async function fetchCheckPlans() {
+            const base = getApiUrl();
+            const url = base ? `${base}/api/check-plans` : "/api/check-plans";
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (cancelled) return;
+                const cards = (data.flatCards || []).map((c) => ({
+                    ...c,
+                    imageSrc: resolveImageSrc(c.imageSrc),
+                    avatarSrc: resolveImageSrc(c.avatarSrc) || c.avatarSrc,
+                }));
+                setFlatCards(cards);
+                setInitialLikeCounts(Object.fromEntries((data.flatCards || []).map((c) => [c.id, c.initialLikes ?? 0])));
+                setBlocks(
+                    (data.blocks || []).map((block) => ({
+                        ...block,
+                        cards: (block.cards || []).map((c) => ({
+                            ...c,
+                            imageSrc: resolveImageSrc(c.imageSrc),
+                            avatarSrc: resolveImageSrc(c.avatarSrc) || c.avatarSrc,
+                        })),
+                    }))
+                );
+            } catch (e) {
+                if (!cancelled) setError(e.message || "Ошибка загрузки");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        }
+        fetchCheckPlans();
+        return () => { cancelled = true; };
+    }, []);
+
+    const allCardsWithTags = flatCards;
+
+    const sortedAllCards = useMemo(() => {
+        const list = [...allCardsWithTags];
+        if (sortIndex < 0) return list;
+        if (SORT_ITEMS[sortIndex] === "По популярности") {
+            return list.sort((a, b) => (getLikeCount(b.id) ?? b.initialLikes ?? b.likes ?? 0) - (getLikeCount(a.id) ?? a.initialLikes ?? a.likes ?? 0));
+        }
+        if (SORT_ITEMS[sortIndex] === "По новизне") {
+            return list.sort((a, b) => {
+                const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
+                const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
+                return timeB - timeA; // новее — раньше
+            });
+        }
+        return list;
+    }, [allCardsWithTags, sortIndex, getLikeCount]);
+
+    const sortedBlocks = useMemo(
+        () =>
+            blocks.map((block) => ({
+                ...block,
+                cards: sortedAllCards.filter((c) => c.filterTag === block.filterTag),
+            })),
+        [blocks, sortedAllCards]
+    );
+
+    const filteredPlans = useMemo(() => {
+        if (appliedFilterTags.length === 0) return [];
+        const { categories, regions, travelers, seasons, duration } = parseAppliedFilters(appliedFilterTags);
+
+        return allCardsWithTags.filter((card) => {
+            if (categories.length > 0 && !categories.includes(card.filterTag)) return false;
+            if (regions.length > 0 && (!card.regionTag || !regions.includes(card.regionTag))) return false;
+            if (travelers.length > 0) {
+                const cardTravelers = card.travelerTags ?? [];
+                if (!cardTravelers.some((t) => travelers.includes(t))) return false;
+            }
+            if (seasons.length > 0) {
+                const cardSeasons = card.seasonTags ?? [];
+                if (!cardSeasons.some((s) => seasons.includes(s))) return false;
+            }
+            if (duration) {
+                const cardDays = card.daysNum ?? 0;
+                const { minDays, maxDays } = duration;
+                if (minDays === 30 && maxDays === 30) {
+                    if (cardDays < 30) return false;
+                } else if (cardDays < minDays || cardDays > maxDays) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [appliedFilterTags, allCardsWithTags]);
+
+    const hasActiveFilters = appliedFilterTags.length > 0;
+    const baseForSearch = hasActiveFilters ? filteredPlans : sortedAllCards;
+    const searchFilteredPlans = useMemo(
+        () => filterCardsBySearch(baseForSearch, appliedSearchQuery),
+        [baseForSearch, appliedSearchQuery]
+    );
+
+    const sortedFilteredPlans = useMemo(() => {
+        const list = [...filteredPlans];
+        if (sortIndex < 0) return list;
+        if (SORT_ITEMS[sortIndex] === "По популярности") {
+            return list.sort((a, b) => (getLikeCount(b.id) ?? b.initialLikes ?? b.likes ?? 0) - (getLikeCount(a.id) ?? a.initialLikes ?? a.likes ?? 0));
+        }
+        if (SORT_ITEMS[sortIndex] === "По новизне") {
+            return list.sort((a, b) => {
+                const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
+                const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
+                return timeB - timeA; // новее — раньше
+            });
+        }
+        return list;
+    }, [filteredPlans, sortIndex, getLikeCount]);
+
+    const sortedSearchFilteredPlans = useMemo(() => {
+        const list = [...searchFilteredPlans];
+        if (sortIndex < 0) return list;
+        if (SORT_ITEMS[sortIndex] === "По популярности") {
+            return list.sort((a, b) => (getLikeCount(b.id) ?? b.initialLikes ?? b.likes ?? 0) - (getLikeCount(a.id) ?? a.initialLikes ?? a.likes ?? 0));
+        }
+        if (SORT_ITEMS[sortIndex] === "По новизне") {
+            return list.sort((a, b) => {
+                const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
+                const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
+                return timeB - timeA; // новее — раньше
+            });
+        }
+        return list;
+    }, [searchFilteredPlans, sortIndex, getLikeCount]);
+
+    const hasNoMatchingCards = sortedFilteredPlans.length === 0;
+    const showNotFound = hasActiveFilters && hasNoMatchingCards;
+    const hasSearchQuery = appliedSearchQuery.length > 0;
+    const showSearchNotFound = hasSearchQuery && sortedSearchFilteredPlans.length === 0;
+
+    if (loading) {
+        return (
+            <>
+                <Header />
+                <main>
+                    <Search
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onSearchSubmit={() => setAppliedSearchQuery(searchQuery.trim())}
+                    />
+                    <Filters
+                        appliedFilterTags={appliedFilterTags}
+                        onApplyFilters={setAppliedFilterTags}
+                        onRemoveAppliedTag={(index) =>
+                            setAppliedFilterTags((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        sortIndex={sortIndex}
+                        onSortSelect={setSortIndex}
+                    />
+                    <div className={planStyles.filteredContainer} aria-busy="true" aria-label="Загрузка чек-планов">
+                        <div className={planStyles.cards}>
+                            {[1, 2, 3, 4, 5, 6].map((i) => (
+                                <PlanCardSkeleton key={i} />
+                            ))}
+                        </div>
+                    </div>
+                </main>
+                <Footer />
+            </>
+        );
+    }
+    if (error) {
+        return (
+            <>
+                <Header />
+                <main style={{ padding: "2rem", textAlign: "center" }}>Не удалось загрузить каталог: {error}</main>
+                <Footer />
+            </>
+        );
+    }
+
+    return (
+        <>
+            <Header />
+            <main>
+                <Search
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onSearchSubmit={() => setAppliedSearchQuery(searchQuery.trim())}
+                />
+                <Filters
+                    appliedFilterTags={appliedFilterTags}
+                    onApplyFilters={setAppliedFilterTags}
+                    onRemoveAppliedTag={(index) =>
+                        setAppliedFilterTags((prev) => prev.filter((_, i) => i !== index))
+                    }
+                    sortIndex={sortIndex}
+                    onSortSelect={setSortIndex}
+                />
+                {!hasActiveFilters && !hasSearchQuery && (
+                    <UnfilteredPlans
+                        blocks={sortedBlocks}
+                        onAddFilterTag={(tag) =>
+                            setAppliedFilterTags((prev) =>
+                                prev.includes(tag) ? prev : [...prev, tag]
+                            )
+                        }
+                        isAuthenticated={isAuthenticated}
+                        onRequestLogin={() => setShowLoginToLikePopup(true)}
+                    />
+                )}
+                {hasSearchQuery && !showSearchNotFound && (
+                    <FilteredPlans
+                        plans={sortedSearchFilteredPlans}
+                        isAuthenticated={isAuthenticated}
+                        onRequestLogin={() => setShowLoginToLikePopup(true)}
+                    />
+                )}
+                {hasSearchQuery && showSearchNotFound && <NotFound />}
+                {!hasSearchQuery && hasActiveFilters && !showNotFound && (
+                    <FilteredPlans
+                        plans={sortedFilteredPlans}
+                        isAuthenticated={isAuthenticated}
+                        onRequestLogin={() => setShowLoginToLikePopup(true)}
+                    />
+                )}
+                {!hasSearchQuery && showNotFound && <NotFound />}
+            </main>
+            <Footer />
+            {typeof document !== "undefined" &&
+                showLoginToLikePopup &&
+                createPortal(
+                    <LoginToLikePopup
+                        isClosing={loginToLikeClosing}
+                        onClose={closeLoginToLikePopup}
+                        onLogin={handleLoginFromPopup}
+                    />,
+                    document.body
+                )}
+        </>
+    );
+}
