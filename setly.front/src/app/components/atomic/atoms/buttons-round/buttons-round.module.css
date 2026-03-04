@@ -1,0 +1,105 @@
+.roundButton {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: color 0.2s ease, box-shadow 0.2s ease;
+    z-index: 1;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.roundButton:active {
+    transform: scale(0.98);
+}
+
+/* Псевдоэлемент для градиента при hover */
+.roundButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        rgba(136, 178, 232, 0.9),
+        rgba(36, 93, 245, 0.9)
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+/* 1 — белая кнопка */
+.roundButton--white {
+    background-color: var(--grayscale-white);
+    color: var(--grayscale-dark-gray);
+}
+
+.roundButton--white:hover::before {
+    opacity: 1;
+}
+
+/* 2 — обычная с эффектом hover (голубой градиент) */
+.roundButton--hover {
+    background-color: var(--accent-blue);
+    color: var(--grayscale-white);
+}
+
+.roundButton--hover:hover::before {
+    opacity: 1;
+}
+
+/* 3 — заблокированная */
+.roundButton--disabled {
+    background-color: var(--grayscale-light-gray);
+    color: var(--grayscale-white);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 4 — профиль (синий градиент по умолчанию) */
+.roundButton--profile {
+    background: var(--blue-gradient);
+    color: var(--grayscale-white);
+    transition: transform 0.2s ease;
+}
+
+.roundButton--profile:hover {
+    transform: scale(1.05);
+}
+
+.roundButton--disabled .roundButton__icon {
+    color: var(--grayscale-white);
+}
+
+/* Иконка поверх псевдоэлементов */
+.roundButton__icon {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, filter 0.2s ease;
+}
+
+.roundButton:hover .roundButton__icon {
+    color: var(--grayscale-white);
+}
+
+/* Иконки через <img> или Next/Image не наследуют color — делаем белыми через filter */
+.roundButton:hover .roundButton__icon img {
+    filter: brightness(0) invert(1);
+}
+
+.roundButton__icon svg {
+    width: 20px;
+    height: 20px;
+}

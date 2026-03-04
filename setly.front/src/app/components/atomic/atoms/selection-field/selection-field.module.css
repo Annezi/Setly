@@ -1,0 +1,131 @@
+.selectionField {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    /* padding: 0 12px 0 16px; */
+    border-radius: 100px;
+    background-color: transparent;
+    color: var(--grayscale-dark-gray);
+    gap: 0;
+}
+
+.left {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.iconWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.gapIconTitle {
+    width: 6px;
+    flex-shrink: 0;
+}
+
+.gapTitleDropdown {
+    width: 20px;
+    flex-shrink: 0;
+}
+
+.dropdownWrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.trigger {
+    min-width: 98px;
+    height: 36px;
+    padding: 0 16px;
+    border: none;
+    border-radius: 100px;
+    background-color: var(--grayscale-white);
+    color: var(--grayscale-dark-gray);
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.trigger:hover {
+    background-color: var(--grayscale-light-gray);
+}
+
+.trigger:active {
+    transform: scale(0.98);
+}
+
+.trigger:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.trigger--open {
+    background-color: var(--grayscale-light-gray);
+}
+
+.chevron {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    color: var(--grayscale-dark-gray);
+}
+
+.chevron svg {
+    width: 16px;
+    height: 16px;
+}
+
+.chevron--open {
+    transform: rotate(180deg);
+}
+
+.panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 212px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.panel--left {
+    left: 0;
+    right: auto;
+}
+
+.panel--open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.demo {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+}

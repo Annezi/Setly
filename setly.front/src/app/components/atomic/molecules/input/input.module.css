@@ -1,0 +1,172 @@
+.wrap {
+    width: 100%;
+}
+
+.root {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-height: 44px;
+    padding: 15px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--grayscale-primary-gray);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+}
+
+.root--focused {
+    border-color: var(--accent-lavander);
+}
+
+.root--error {
+    border-color: var(--system-red);
+}
+
+.root--link,
+.root--text,
+.root--email {
+    background-color: var(--halftone-80-white);
+}
+
+.root--password {
+    background-color: var(--halftone-80-white);
+}
+
+.root--search {
+    background-color: transparent;
+    border-color: var(--grayscale-primary-gray);
+    padding: 4px;
+    padding-left: 16px;
+}
+
+.root--search.root--focused {
+    border-color: var(--accent-lavander);
+}
+
+.root--search.root--error {
+    border-color: var(--system-red);
+}
+
+.input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--grayscale-dark-gray);
+    font-size: 14px;
+    font-weight: 400;
+    caret-color: var(--accent-blue);
+}
+
+.input::placeholder {
+    color: var(--grayscale-gray);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.input--filled {
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.input--error {
+    color: var(--system-red);
+}
+
+.input--error::placeholder {
+    color: var(--system-red);
+}
+
+/* Скрыть встроенную иконку показа пароля в браузере (оставляем только нашу) */
+.input[type="password"]::-ms-reveal,
+.input[type="password"]::-ms-clear {
+    display: none;
+}
+
+.iconRight {
+    flex-shrink: 0;
+    margin-left: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconButton {
+    flex-shrink: 0;
+    margin-left: 8px;
+    padding: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconButton:hover {
+    opacity: 0.8;
+}
+
+.searchButton {
+    flex-shrink: 0;
+    height: calc(44px - 8px);
+    min-height: 36px;
+    padding: 0 20px;
+    margin-left: 8px;
+    border: none;
+    border-radius: 100px;
+    background-color: var(--accent-blue);
+    color: var(--grayscale-white);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.searchButton:hover {
+    filter: brightness(1.05);
+}
+
+.searchButton:active {
+    filter: brightness(0.98);
+}
+
+/* На узких экранах — круглая кнопка только с иконкой (как buttons-round blue) */
+@media (max-width: 800px) {
+    .searchButton {
+        width: 36px;
+        min-height: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 50%;
+        margin-left: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .searchButton span {
+        display: none;
+    }
+
+    .searchButton img {
+        margin: 0;
+    }
+}
+
+.errorMessage {
+    display: block;
+    margin-top: 4px;
+    color: var(--system-red);
+}
+
+.demo {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 400px;
+}

@@ -1,0 +1,67 @@
+.item {
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--grayscale-dark-gray);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 0;
+    user-select: none;
+}
+
+.item:active {
+    transform: scale(0.98);
+}
+
+.item:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Варианты */
+.item--filled {
+    min-width: 212px;
+    padding: 0 24px;
+    background-color: var(--grayscale-white);
+    border-radius: 100px;
+}
+
+.item--text {
+    min-width: 212px; /* чтобы совпадало по ширине в демо/галерее */
+    padding: 13px 24px;
+}
+
+/* Выравнивание содержимого */
+.item--noIcon {
+    justify-content: center;
+}
+
+.item--withIcon {
+    justify-content: flex-start;
+}
+
+.item__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.item__defaultIcon {
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 500;
+    transform: translateY(1px);
+}
+
+.item__label {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+

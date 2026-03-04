@@ -1,0 +1,235 @@
+.menuWrap {
+    display: block;
+}
+
+/* Мобильный хедер «Фильтры» + кнопка закрытия — скрыт на десктопе */
+.mobileHeader {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.mobileHeaderTitle {
+    color: var(--grayscale-dark-gray);
+    margin: 0;
+}
+
+.menu {
+    background: var(--halftone-50-white);
+    border-radius: 20px;
+    padding: 20px;
+    width: 600px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sectionSpacer {
+    height: 40px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.sectionSpacer::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 20px;
+    height: 1px;
+    background: var(--grayscale-gray);
+    opacity: 0.25;
+}
+
+.sectionTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--grayscale-dark-gray);
+    margin: 0;
+}
+
+.tagsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Длительность в днях */
+.durationRow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.durationInputs {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.durationValueBox {
+    padding: 10px 20px;
+    background: var(--halftone-80-white);
+    border: 1px solid var(--grayscale-primary-gray);
+    border-radius: 20px;
+    color: var(--grayscale-dark-gray);
+}
+
+.durationInput {
+    width: 56px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--grayscale-light-gray);
+    border-radius: 8px;
+    background: var(--grayscale-white);
+    color: var(--grayscale-dark-gray);
+    font-size: 14px;
+    font-weight: 400;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.durationInput:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.durationTrackWrap {
+    position: relative;
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.durationTrack {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    background: var(--grayscale-light-gray);
+    border-radius: 3px;
+}
+
+.durationTrackFill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.durationThumb {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    top: 50%;
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    z-index: 1;
+    touch-action: none;
+}
+
+.durationThumb:active {
+    cursor: grabbing;
+}
+
+.durationInputRange {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Секция с toggler — только при ширине < 800px, на всю ширину как кнопки снизу */
+.togglerSection {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.togglerFullWidth {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.togglerFullWidth > * {
+    width: 100%;
+}
+
+.spacerAfterToggler {
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+@media (max-width: 799px) {
+    .menuWrap {
+        position: fixed;
+        inset: 0;
+        background: var(--grayscale-white);
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
+    }
+
+    .mobileHeader {
+        display: flex;
+        padding: 16px 20px 20px;
+        gap: 16px;
+    }
+
+    .menu {
+        flex: 1;
+        width: 100%;
+        max-width: none;
+        border-radius: 0;
+        background: var(--grayscale-white);
+        padding: 0 20px 24px;
+    }
+
+    .togglerSection {
+        display: flex;
+    }
+
+    .togglerFullWidth > * {
+        width: 100% !important;
+        min-width: 0;
+    }
+
+    .spacerAfterToggler {
+        height: 40px;
+        overflow: visible;
+        opacity: 1;
+    }
+}
+
+.actionsRow {
+    margin-top: 40px;
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    width: 100%;
+}
+
+.actionsRow > * {
+    flex: 1;
+    min-width: 0;
+}

@@ -1,0 +1,61 @@
+.buttonsMini {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font: inherit;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.buttonsMini:active {
+    transform: scale(0.98);
+}
+
+.buttonsMini:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* notcompleted: прозрачный фон, серая рамка, серый текст */
+.buttonsMini--notcompleted {
+    background-color: transparent;
+    border: 1px solid var(--grayscale-light-gray);
+    color: var(--grayscale-gray);
+}
+
+/* current: синий градиент, без рамки, белый текст */
+.buttonsMini--current {
+    background: var(--blue-gradient);
+    border: 0;
+    color: var(--grayscale-white);
+}
+
+/* completed: акцентный синий, без рамки, иконка галочки */
+.buttonsMini--completed {
+    background-color: var(--accent-blue);
+    border: 0;
+    color: var(--grayscale-white);
+}
+
+.buttonsMini .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.buttonsMini .icon img {
+    display: block;
+}
+
+.demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}

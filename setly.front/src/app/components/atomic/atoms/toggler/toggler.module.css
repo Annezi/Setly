@@ -1,0 +1,77 @@
+.toggler {
+    width: 295px;
+    height: 48px;
+    padding: 4px;
+    border-radius: 100px;
+    background-color: var(--grayscale-white);
+    border: 1px solid var(--grayscale-white);
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.togglerTrack {
+    position: absolute;
+    inset: 4px;
+    border-radius: 100px;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.togglerThumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-radius: 100px;
+    background-color: var(--accent-blue);
+    /* Резкий старт, замедление к концу, закрепление в конечной позиции */
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.togglerThumb--hidden {
+    opacity: 0;
+}
+
+.segment {
+    flex: 1;
+    border: none;
+    border-radius: 100px;
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    color: var(--grayscale-gray);
+    background-color: transparent;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.segment:hover:not(.segment--active) {
+    color: var(--grayscale-dark-gray);
+}
+
+.segment--active {
+    color: var(--grayscale-white);
+}
+
+.segment:active {
+    transform: scale(0.98);
+}
+
+.segment:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.segmentLabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
