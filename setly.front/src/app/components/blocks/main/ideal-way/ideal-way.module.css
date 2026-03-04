@@ -1,0 +1,170 @@
+/* Блок 1400×690px, фон --grayscale-primary-gray, скругление 20px */
+.block {
+    width: 100%;
+    max-width: 1400px;
+    height: 690px;
+    background-color: var(--grayscale-primary-gray);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 59px 118px;
+    box-sizing: border-box;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+/* Левая часть — картинка чемодана 572×572px */
+.leftPart {
+    width: 572px;
+    min-width: 572px;
+    height: 572px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.suitcaseImage {
+    border-radius: 16px;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Правая часть — градиентный фон 572×572px */
+.rightPart {
+    width: 572px;
+    min-width: 572px;
+    height: 572px;
+    flex-shrink: 0;
+    background-image: url('/img/main/gradient-1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    align-items: start;
+    justify-content: space-between;
+}
+
+.rightPartHeader {
+    flex-shrink: 0;
+    max-width: 448px;
+}
+
+.rightPartContent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Аватары внахлёст 20px */
+.avatars {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-sizing: border-box;
+}
+
+.avatar:not(:first-child) {
+    margin-left: -20px;
+}
+
+.avatar:nth-child(1) {
+    z-index: 1;
+}
+
+.avatar:nth-child(2) {
+    z-index: 2;
+}
+
+.avatar:nth-child(3) {
+    z-index: 3;
+}
+
+.descriptionWrap .description:first-child {
+    margin-bottom: 1em;
+}
+
+.description {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--grayscale-white);
+    line-height: 1.5;
+    margin: 0;
+    max-width: 100%;
+}
+
+.buttonWrap {
+    margin-top: 20px;
+}
+
+/* Все медиазапросы в одном месте: экран < 800px */
+@media (max-width: 1200px) {
+    .block {
+        flex-direction: column;
+        height: auto;
+        min-height: auto;
+        align-items: center;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .leftPart {
+        width: 100%;
+        min-width: unset;
+        max-width: 572px;
+        height: auto;
+        min-height: 280px;
+        aspect-ratio: 1;
+    }
+
+    .rightPart {
+        width: 100%;
+        min-width: unset;
+        max-width: 572px;
+        height: auto;
+        min-height: 572px;
+        padding: 24px;
+    }
+
+    .title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+
+    .avatars {
+        margin-bottom: 16px;
+    }
+
+    .description {
+        font-size: 16px;
+    }
+}

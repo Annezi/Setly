@@ -1,0 +1,439 @@
+/* Обёртка на всю ширину экрана — фон не обрезается по высоте */
+.outerWrapper {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    overflow-x: hidden;
+    overflow-y: visible;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 523px;
+    padding: 80px 0;
+    box-sizing: border-box;
+}
+
+.outerWrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: url("/img/main/our-community-bg.png");
+    background-size: auto;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Компонент 1164×523px, выровнен по центру страницы */
+.wrapper {
+    width: 1164px;
+    height: 523px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    box-sizing: border-box;
+    overflow: visible;
+    align-items: center;
+}
+
+/* Левая часть: заголовок сверху, описание и кнопка снизу, space-between */
+.left {
+    flex: 0 0 470px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 0 48px 0 0;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+.leftTop {
+    width: 100%;
+}
+
+.leftBottom {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.buttonWrapper {
+    display: inline-block;
+}
+
+.title {
+    composes: title_1 from global;
+    color: var(--grayscale-dark-gray);
+}
+
+.description {
+    composes: paragraph from global;
+    color: var(--grayscale-dark-gray);
+    max-width: 100%;
+}
+
+/* Правая часть — две карточки одинакового размера 335*2 + 24 gap = 694px */
+.right {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    align-items: stretch;
+    flex: 0 0 694px;
+    min-width: 0;
+    overflow: visible;
+}
+
+.right .card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+}
+
+/* Мобильная карусель скрыта на десктопе */
+.rightMobile {
+    display: none;
+}
+
+.card {
+    height: 517px;
+    flex-shrink: 0;
+    background: var(--grayscale-white);
+    border-radius: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    border: 1px solid var(--grayscale-primary-gray);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+    min-width: 280px;
+    max-width: 335px;
+    width: 100%;
+    transition: transform 0.2s ease;
+    transform-origin: center;
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+.tags {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 32px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--grayscale-primary-gray);
+    border-radius: 12px;
+    composes: label from global;
+    color: var(--grayscale-dark-gray);
+    margin-right: 8px;
+}
+
+.tagIcon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.cardImageWrapper {
+    width: 264px;
+    height: 264px;
+    flex-shrink: 0;
+    border-radius: 500px;
+    overflow: hidden;
+    align-self: center;
+    margin-bottom: 32px;
+}
+
+.cardImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+.cardTitle {
+    composes: subtitle_1 from global;
+    color: var(--grayscale-dark-gray);
+}
+
+.cardDescription {
+    composes: subinfo from global;
+    color: var(--grayscale-dark-gray);
+    flex: 1;
+    min-height: 0;
+    line-height: 1.4;
+    margin-bottom: 22px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.cardFooter {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: auto;
+}
+
+.userRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.userAvatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.userName {
+    composes: subinfo from global;
+    color: var(--grayscale-dark-gray);
+}
+
+.likesRow {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 8px;
+    background: var(--grayscale-primary-gray);
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.likesRow:active .likesIcon {
+    transform: scale(0.88);
+}
+
+.likesIcon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    transition: transform 0.15s ease;
+    display: block;
+}
+
+.likesCount {
+    composes: subinfo from global;
+    color: var(--grayscale-dark-gray);
+}
+
+/* ---------- Мобильная версия (1200px) ---------- */
+@media (max-width: 1200px) {
+    .outerWrapper {
+        padding: 40px 20px 0px 20px;
+        min-height: auto;
+    }
+
+    .outerWrapper::before {
+        background-position: center calc(50% + 70px);
+        background-size: contain;
+    }
+
+    .wrapper {
+        flex-direction: column;
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+        gap: 32px;
+        overflow: visible;
+    }
+
+    .left {
+        flex: none;
+        width: 100%;
+        height: auto;
+        padding: 0;
+        gap: 24px;
+    }
+
+    .leftBottom {
+        gap: 24px;
+    }
+
+    .buttonWrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* Десктопная правая часть скрыта */
+    .right {
+        display: none;
+    }
+
+    /* Мобильная правая часть: карусель */
+    .rightMobile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        gap: 24px;
+        margin-bottom: 10px;
+    }
+
+    .cardsSlider {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 16px;
+        touch-action: pan-y;
+    }
+
+    .cardsStack {
+        position: relative;
+        width: 100%;
+        min-height: 520px;
+    }
+
+    .cardsStackNoTransition .cardSlide {
+        transition: none;
+    }
+
+    .cardSlide {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        will-change: transform;
+    }
+
+    .cardSlide .card {
+        width: 100%;
+        max-width: 335px;
+        min-width: 280px;
+        height: 517px;
+        min-height: 517px;
+    }
+
+    .carouselNav {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+    }
+}
+
+/* Попап «Войдите, чтобы поставить Лайк» */
+.loginToLikeOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    animation: loginToLikeOverlayIn 0.28s ease-out forwards;
+    transition: opacity 0.28s ease-out;
+}
+
+@media (max-width: 768px) {
+    .loginToLikeOverlay {
+        padding-left: 16px;
+        padding-right: 16px;
+        box-sizing: border-box;
+    }
+}
+
+.loginToLikeOverlayClosing {
+    animation: loginToLikeOverlayOut 0.28s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes loginToLikeOverlayIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes loginToLikeOverlayOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.loginToLikePopup {
+    padding: 20px;
+    background: var(--grayscale-white);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 90vw;
+    animation: loginToLikePopIn 0.28s ease-out forwards;
+    transition: opacity 0.28s ease-out, transform 0.28s ease-out;
+}
+
+.loginToLikePopup h2 {
+    text-align: center;
+    width: 100%;
+}
+
+.loginToLikePopupClosing {
+    animation: loginToLikePopOut 0.28s ease-out forwards;
+}
+
+@keyframes loginToLikePopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes loginToLikePopOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+.loginToLikeButtons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 440px;
+}

@@ -1,0 +1,265 @@
+/* overflow: visible и паддинги — карточки при hover scale не обрезаются сверху/снизу и по бокам */
+.wrapper {
+    width: 100%;
+    max-width: 1164px;
+    margin-top: 40px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 12px 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: visible;
+}
+
+.title {
+    composes: title_1 from global;
+    color: var(--grayscale-dark-gray);
+    margin-bottom: 32px;
+    width: 100%;
+}
+
+.carouselBlock {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+}
+
+/* На десктопе кнопки по бокам от слайдера: nav не создаёт бокс, порядок задаётся order */
+.carouselNav {
+    display: contents;
+}
+
+.carouselBlock .carouselNav > *:first-child {
+    order: 1;
+}
+
+.carouselBlock .cardsSlider {
+    order: 2;
+}
+
+.carouselBlock .carouselNav > *:last-child {
+    order: 3;
+}
+
+.cardsSlider {
+    flex: 1;
+    width: 1045px;
+    max-width: 100%;
+    min-width: 0;
+    overflow: visible;
+    touch-action: pan-y;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+}
+
+/* Окно карусели: внутренний отступ 12px по вертикали, запас по горизонтали */
+.cardsSliderViewport {
+    width: calc(100% + 48px);
+    margin: 0 -24px;
+    padding: 12px 0;
+    overflow: hidden;
+    min-width: 0;
+    box-sizing: content-box;
+}
+
+.cardsTrack {
+    display: flex;
+    width: 200%; /* 6 слайдов [0,1,2,0,1,2], в окне 3 карточки */
+    margin: -12px 0; /* компенсация padding viewport — трек на полную высоту, запас сверху/снизу для scale карточки */
+    transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    align-items: stretch; /* все слайды одной высоты */
+}
+
+.cardsTrackNoTransition {
+    transition: none;
+}
+
+.cardSlide {
+    flex: 0 0 16.666%; /* 1/6 трека = одна карточка, в окне 3 карточки */
+    min-width: 0;
+    padding: 12px 10px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: stretch; /* карточка на всю высоту слайда — все карточки одинаковой высоты */
+    overflow: visible;
+}
+
+.cardSlide .card {
+    width: 100%;
+    height: 100%;
+    min-height: 420px; /* единая минимальная высота для всех карточек */
+}
+
+.card {
+    flex-shrink: 0;
+    background: var(--grayscale-white);
+    border-radius: 16px;
+    padding: 20px 20px 32px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    border: 1px solid var(--grayscale-primary-gray);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+    min-width: 280px;
+    max-width: 335px;
+    width: 100%;
+    height: 100%;
+    min-height: 0; /* чтобы flex корректно растягивал по высоте при align-items: stretch */
+    transition: transform 0.2s ease;
+    transform-origin: center;
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+.tags {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--grayscale-primary-gray);
+    border-radius: 12px;
+    composes: label from global;
+    color: var(--grayscale-dark-gray);
+}
+
+.tagIcon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.cardImageWrap {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.cardImage {
+    width: 300px;
+    height: 300px;
+    object-fit: contain;
+    align-self: center;
+    margin-bottom: 16px;
+}
+
+.cardImageLabel {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    composes: label from global;
+    color: var(--grayscale-dark-gray);
+}
+
+.cardTitle {
+    composes: subtitle_1 from global;
+    color: var(--grayscale-dark-gray);
+    margin-bottom: 12px;
+}
+
+.cardDescription {
+    composes: subinfo from global;
+    color: var(--grayscale-dark-gray);
+    line-height: 1.4;
+    flex: 1;
+}
+
+@media (max-width: 1200px) {
+
+    .title {
+        margin-bottom: 24px;
+    }
+
+    .carouselBlock {
+        gap: 16px;
+    }
+
+    .cardsSlider {
+        width: 100%;
+    }
+
+    /* В окне 2 карточки: трек 300%, шаг по-прежнему 1/6 трека = 50% viewport */
+    .cardsTrack {
+        width: 300%;
+    }
+
+    .cardSlide .card {
+        min-height: 440px;
+        min-width: 280px;
+        max-width: 335px;
+        width: 100%;
+    }
+}
+
+@media (max-width: 800px) {
+    /* Одна карточка в окне: трек 600%, шаг 1/6 трека = 100% viewport */
+    .carouselBlock {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .carouselNav {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 40px;
+        order: 2;
+    }
+
+    .carouselBlock .carouselNav > *:first-child,
+    .carouselBlock .carouselNav > *:last-child {
+        order: unset;
+    }
+
+    .carouselBlock .cardsSlider {
+        order: 1;
+        width: 100%;
+    }
+
+    .cardsTrack {
+        width: 600%;
+    }
+
+    /* Фиксированный размер карточки для стабильной адаптивной вёрстки */
+    .cardSlide {
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+        padding: 12px 8px;
+        box-sizing: border-box;
+    }
+
+    .cardSlide .card {
+        width: 100%;
+        min-width: 280px;
+        max-width: 335px;
+        height: 540px;
+    }
+}

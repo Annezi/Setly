@@ -1,0 +1,131 @@
+.block {
+	position: relative;
+	box-sizing: border-box;
+	border-radius: 20px;
+	overflow: hidden;
+	background-image: url("/img/main/welcome-banner.png");
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 690px;
+	margin-top: 20px;
+	padding-top: 200px;
+	color: var(--grayscale-white);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	max-width: 100%;
+}
+
+.title {
+	font-size: 64px;
+	font-weight: 400;
+	line-height: 1.2;
+	color: var(--grayscale-white);
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 35px;
+}
+
+.titleLine {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.titlePart {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.titleImageWrap {
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+}
+
+.titleImage {
+	object-fit: contain;
+	margin: 13px 0 0 20px;
+}
+
+.titleImageSecond {
+	margin: 13px 20px 0 0;
+}
+
+.subinfo {
+	margin: 0;
+	max-width: 600px;
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--grayscale-white);
+	margin-bottom: 65px;
+}
+
+/* Мобильное устройство: ширина < 800px — каждое слово заголовка на отдельной строке */
+@media (max-width: 800px) {
+	.title {
+		font-size: 40px;
+	}
+
+	.titleLine {
+		flex-direction: column;
+		flex-wrap: nowrap;
+	}
+
+	.titlePart {
+		display: block;
+		width: 100%;
+		text-align: center;
+	}
+
+	.titlePart .titleImageWrap {
+		display: flex;
+		text-align: center;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Первое изображение на мобильном */
+	.titleLine:first-child .titleImage {
+		width: 129px;
+		height: 33px;
+		margin-top: 0;
+	}
+
+	/* Второе изображение на мобильном */
+	.titleLine:last-child .titleImage {
+		margin-bottom: -10px;
+		width: 255px;
+		height: 45px;
+	}
+	.block {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 447px;
+		padding: 20px;
+	}
+	.subinfo {
+		margin-bottom: 21px;
+	}
+	.titleImage {
+		margin: 0;
+	}
+	.content {
+		padding: 20px 0;
+	}
+}
