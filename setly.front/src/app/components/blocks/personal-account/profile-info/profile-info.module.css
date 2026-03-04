@@ -1,0 +1,78 @@
+.wrapper {
+  max-width: 1045px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 20px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  position: relative;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  flex: 1;
+}
+
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.profileName {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--grayscale-dark-gray);
+  margin: 0;
+}
+
+.email {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--grayscale-gray);
+  margin: 0;
+}
+
+.settingsButton {
+  flex-shrink: 0;
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settingsButton .roundButton__icon img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.loading,
+.error {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+}
+
+.error {
+  color: var(--system-red);
+}
+
+@media (max-width: 800px) {
+  .profileName {
+    font-size: 24px;
+    font-weight: 600;
+  }
+}
