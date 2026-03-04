@@ -1,0 +1,508 @@
+.wrapper {
+  position: sticky;
+  top: 20px;
+  z-index: 50;
+  width: 100%;
+  background-color: transparent;
+  margin-top: 20px;
+}
+
+.container {
+  max-width: 1400px;
+  height: 44px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.logoLink {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logoLink:hover {
+  opacity: 0.85;
+}
+
+.logoDesktop {
+  display: block;
+}
+
+.logoMobile {
+  display: none;
+}
+
+
+.navWrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  transform: translateX(-25px);
+}
+
+/* Десктопная навигация (инлайн, без HeaderNavMenu) — прозрачный размывающий фон как у dropdown-filter-menu */
+.headerNav {
+  width: 467px;
+  height: 44px;
+  padding: 4px;
+  box-sizing: border-box;
+  background: var(--halftone-47-placeholder);
+  border-radius: 100px;
+}
+
+.headerNavList {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.headerNavItem {
+  flex: 0 0 auto;
+}
+
+.headerNavButton {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--grayscale-dark-gray);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, color 0.5s ease;
+  z-index: 1;
+  text-decoration: none;
+}
+
+.headerNavButton .headerNavLabel {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.headerNavButton[data-active="true"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  background: var(--blue-gradient);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 0;
+}
+
+.headerNavButton[data-active="true"] {
+  background-color: var(--grayscale-white);
+  color: var(--accent-blue);
+}
+
+/* Активная страница — без градиента при наведении */
+.headerNavButton[data-active="true"]:hover {
+  background-color: var(--grayscale-white);
+  color: var(--accent-blue);
+}
+
+.headerNavButton[data-active="true"]:hover::before {
+  opacity: 0;
+}
+
+.headerNavButton[data-active="false"]:hover {
+  background-color: var(--halftone-80-white);
+}
+
+.rightSlot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Кнопка «Войти» / «Профиль» (вместо Button color="white") */
+.headerAuthButton {
+  padding: 0 32px;
+  height: 44px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.5s ease, box-shadow 0.2s ease;
+  z-index: 1;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.15);
+  background-color: var(--grayscale-white);
+  color: var(--grayscale-dark-gray);
+  font: inherit;
+}
+
+.headerAuthButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  background: radial-gradient(circle at center,
+      rgba(36, 93, 245, 0.8),
+      rgba(136, 178, 232, 0.8));
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 0;
+}
+
+.headerAuthButton:hover {
+  color: var(--grayscale-white);
+}
+
+.headerAuthButton:hover::before {
+  opacity: 1;
+}
+
+.headerAuthButton:active {
+  transform: scale(0.98);
+}
+
+.headerAuthButtonText {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Круглая кнопка профиля (вместо RoundButton variant="profile") */
+.headerProfileButton {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: var(--blue-gradient);
+  color: var(--grayscale-white);
+  text-decoration: none;
+}
+
+.headerProfilePhoto {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.headerProfilePhoto:hover {
+  transform: scale(1.05);
+}
+
+.headerProfilePhoto:active {
+  transform: scale(0.98);
+}
+
+
+
+/* Кнопка гамбургер/крестик в мобильном хедере */
+.mobileMenuTrigger {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 100px;
+  background-color: var(--grayscale-white);
+  color: var(--grayscale-dark-gray);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.mobileMenuTrigger:active {
+  transform: scale(0.98);
+}
+
+
+
+/* Оверлей (shade) — на весь viewport без зазоров (рендер в body) */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.overlay.isOpen {
+  opacity: 1;
+}
+
+
+/* Мобильное меню — на весь viewport без зазоров (рендер в body) */
+.sidePanel {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  background: var(--grayscale-white);
+  z-index: 101;
+  display: none;
+  flex-direction: column;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.sidePanel.isOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Контент меню — появление из центра (scale + fade), внутренний отступ 20px */
+.sidePanelContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px;
+  transform-origin: center center;
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.sidePanelContent.isOpen {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.sidePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.sidePanelNav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+/* Мобильное меню: навигация вертикальным списком, ссылки слева, крупный жирный текст (title_1-mobile) */
+.sidePanelNavInner {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+.sidePanelNavList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidePanelNavItem {
+  width: 100%;
+}
+
+.sidePanelNavLink {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 0;
+  color: var(--grayscale-dark-gray);
+  background: transparent !important;
+  border: none;
+  border-radius: 0;
+  height: auto;
+  min-height: 0;
+  justify-content: flex-start;
+  transition: opacity 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.sidePanelNavLink .headerNavLabel,
+.sidePanelNavLink .subinfo {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.sidePanelNavLink:hover {
+  opacity: 0.8;
+}
+
+.sidePanelNavLink::before {
+  display: none;
+}
+
+.sidePanelLoginWrap {
+  padding: 43px 0 60px;
+  flex-shrink: 0;
+}
+
+.sidePanelLoginButton {
+  width: 100%;
+}
+
+.sidePanelLoginButton button {
+  width: 100%;
+}
+
+.sidePanelFooter {
+  margin-top: auto;
+  padding: 20px 0 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--grayscale-dark-gray);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.sidePanelFooterLinks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidePanelFooterLinks a {
+  color: var(--grayscale-dark-gray);
+  font-size: 14px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.sidePanelFooterLinks a:hover {
+  text-decoration: underline;
+}
+
+.sidePanelFooterBottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin-top: 12px;
+}
+
+.sidePanelFooterBottom .sidePanelCopyright {
+  margin: 0;
+}
+
+.sidePanelFooterBottom .sidePanelSlogan {
+  margin: 0;
+}
+
+.sidePanelSlogan,
+.sidePanelCopyright {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* Мобильная версия (до 800px) */
+@media (max-width: 800px) {
+  .wrapper {
+    background-color: var(--halftone-47-placeholder);
+    border-radius: 100px;
+    border-radius: 100px;
+    backdrop-filter: blur(12px);
+  }
+
+  .container {
+    height: 56px;
+    padding: 0 6px;
+  }
+
+  .navWrap {
+    display: none;
+  }
+
+  .rightSlot .headerDesktopAuth {
+    display: none;
+  }
+
+  .logoDesktop {
+    display: none;
+  }
+
+  .logoMobile {
+    display: block;
+    width: 56px;
+    height: 30px;
+    object-fit: contain;
+  }
+
+  .mobileMenuTrigger {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .overlay {
+    display: block;
+    pointer-events: none;
+  }
+
+  .overlay.isOpen {
+    pointer-events: auto;
+  }
+
+  .sidePanel {
+    display: flex;
+  }
+}

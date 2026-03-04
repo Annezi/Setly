@@ -1,0 +1,270 @@
+/* ЦВЕТА */
+
+:root {
+    /* ACCENT */
+    --accent-blue: #245DF5;
+    --accent-cyan: #88B2E8;
+    --accent-lavander: #9895E3;
+    --accent-purple: #6958EE;
+
+    /* GRAYSCALE */
+    --grayscale-dark-gray: #383838;
+    --grayscale-gray: #A6A6A6;
+    --grayscale-light-gray: #D9D9D9;
+    --grayscale-primary-gray: #F9F9F9;
+    --grayscale-white: #FFFFFF;
+
+    /* HALFTONE */
+    --halftone-80-white: rgba(255, 255, 255, 0.8);
+    --halftone-50-white: rgba(255, 255, 255, 0.5);
+    --halftone-60-primary-gray: rgba(249, 249, 249, 0.6);
+    --halftone-47-placeholder: rgba(242, 242, 242, 0.47);
+
+    /* SYSTEM */
+    --system-green: #68D464;
+    --system-red: #DB4646;
+
+    /* GRADIENTS */
+    --blue-gradient: radial-gradient(circle at center, rgba(36, 93, 245, 0.8), rgba(136, 178, 232, 0.8));
+}
+
+/* ТЕКСТ */
+
+.title_1 {
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.title_2 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.subtitle_1 {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.subtitle_2 {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.paragraph {
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.subinfo {
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.label {
+    font-size: 12px;
+    font-weight: 400;
+}
+
+* {
+    padding: 0px;
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        scroll-behavior: auto;
+    }
+}
+
+/* Скрыть кнопки-стрелки (степперы) у полос прокрутки на всём сайте */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+::-webkit-scrollbar-button:vertical:start:decrement,
+::-webkit-scrollbar-button:vertical:end:increment,
+::-webkit-scrollbar-button:horizontal:start:decrement,
+::-webkit-scrollbar-button:horizontal:end:increment {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Firefox: тонкая полоса без кнопок */
+html,
+body,
+* {
+    scrollbar-width: thin;
+}
+
+/* Текстовые области */
+textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+textarea::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+form {
+    width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+    margin: 0;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* Запрет перетаскивания картинок и иконок (дополняется DisableImageDrag.jsx) */
+img,
+svg,
+picture,
+[class*="icon"] img,
+[class*="icon"] svg {
+    -webkit-user-drag: none;
+    pointer-events: auto;
+}
+
+body {
+    background-color: #FFF;
+    /* ОТЛАДКА ЭЛЕМЕНТОВ */
+    /* background-color: #585858; */
+    margin: 0;
+    padding: 0 20px;
+    overflow-x: hidden;
+    cursor: default;
+}
+
+/* Текст по умолчанию — обычный курсор, не I-beam */
+* {
+    cursor: inherit;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+    cursor: text;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--grayscale-gray);
+}
+
+a,
+button,
+[role="button"] {
+    cursor: pointer;
+}
+
+.container {
+    width: 100%;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+#__next {
+    height: 100%;
+}
+
+/* Блок-сетка кнопок (галерея стилей) */
+.ButtonShowcase {
+    display: grid;
+    grid-template-columns: repeat(5, auto);
+    gap: 24px 20px;
+    justify-content: start;
+    align-items: center;
+    padding: 40px;
+    max-width: 100%;
+}
+
+.ButtonShowcaseCol1 {
+    display: grid;
+    grid-template-columns: repeat(1, auto);
+    gap: 24px 20px;
+    justify-content: start;
+    align-items: center;
+    padding: 40px;
+    max-width: 100%;
+}
+
+.component-blur {
+    backdrop-filter: blur(12px);
+}
+
+@media (max-width: 800px) {
+    .title_1 {
+        font-size: 24px;
+        font-weight: 600;
+    }
+
+    .title_2 {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .subtitle_1 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .paragraph {
+        font-size: 16px;
+        font-weight: 400;
+    }
+}
+
+input:-internal-autofill-selected {
+    background-color: transparent;
+}
+
+/* Лёгкое появление контента (не меняет визуал, только плавность) */
+main {
+    animation: contentReveal 0.2s ease-out;
+}
+
+@keyframes contentReveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.contentReveal {
+    animation: contentReveal 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main,
+    .contentReveal {
+        animation: none;
+        opacity: 1;
+    }
+}
