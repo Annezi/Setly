@@ -1,0 +1,42 @@
+# Backend
+backend/__pycache__
+backend/**/__pycache__
+backend/env/
+backend/.env
+backend/*.pyc
+backend/storage/*
+!backend/storage/.gitkeep
+
+# Database & local data
+db/
+
+# Root
+env/
+.env
+node_modules/
+
+# Frontend (setly.front) — дублируем правила чтобы корневой git их учитывал
+setly.front/node_modules/
+setly.front/.pnp
+setly.front/.pnp.*
+setly.front/.next/
+setly.front/out/
+setly.front/build/
+setly.front/.env*
+setly.front/.vercel
+setly.front/*.tsbuildinfo
+setly.front/next-env.d.ts
+setly.front/npm-debug.log*
+setly.front/yarn-debug.log*
+setly.front/yarn-error.log*
+setly.front/.pnpm-debug.log*
+setly.front/coverage/
+setly.front/.DS_Store
+setly.front/*.pem
+
+# Вложенный репозиторий фронта — не коммитим в корневой репо
+setly.front/.git/
+
+# Misc
+.DS_Store
+*.log

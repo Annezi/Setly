@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: setly_traefik
+    command:
+      - "--api.dashboard=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=danil.smi@inbox.ru"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_letsencrypt:/letsencrypt
+    networks:
+      - setly_network
+    restart: unless-stopped
+
+  database:
+    image: postgres:17
+    container_name: setly_database
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - ./db/db_data:/var/lib/postgresql/data
+    networks:
+      - setly_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  setly-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: setly-api
+    depends_on:
+      database:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    # ports:
+    #   - "8999:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_HOST: ${POSTGRES_HOST:-localhost}
+      CORS_ORIGINS: ${CORS_ORIGINS:-what}
+      JWT_SECRET: 08f1357da6d2b7b56d6c8ec215ca076f
+    networks:
+      - setly_network
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.setly-api-https.rule=Host(`api.setly.space`)"
+      - "traefik.http.routers.setly-api-https.entrypoints=websecure"
+      - "traefik.http.routers.setly-api-https.tls=true"
+      - "traefik.http.routers.setly-api-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.setly-api-https.service=setly-api-svc"
+      - "traefik.http.routers.setly-api-http.rule=Host(`api.setly.space`)"
+      - "traefik.http.routers.setly-api-http.entrypoints=web"
+      - "traefik.http.routers.setly-api-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.services.setly-api-svc.loadbalancer.server.port=8000"
+
+  setly-front:
+    build:
+      context: ./setly.front
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.setly.space}
+    container_name: setly-front
+    # ports:
+    #   - "3000:3000"
+    # Не монтировать исходники в /app — иначе перезаписывается собранный server.js из standalone
+    networks:
+      - setly_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.setly-front-https.rule=Host(`setly.space`)"
+      - "traefik.http.routers.setly-front-https.entrypoints=websecure"
+      - "traefik.http.routers.setly-front-https.tls=true"
+      - "traefik.http.routers.setly-front-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.setly-front-https.service=setly-front-svc"
+      - "traefik.http.routers.setly-front-http.rule=Host(`setly.space`)"
+      - "traefik.http.routers.setly-front-http.entrypoints=web"
+      - "traefik.http.routers.setly-apfronti-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.services.setly-front-svc.loadbalancer.server.port=3000"
+    command: node server.js
+
+networks:
+  setly_network:
+
+volumes:
+  traefik_letsencrypt:
