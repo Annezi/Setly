@@ -1,0 +1,329 @@
+/* Фантомная прогрузка страницы создания чекплана — повторяет раскладку /creating */
+
+.wrapper {
+  max-width: 1045px;
+  margin: 0 auto;
+  padding: 20px 20px 40px;
+}
+
+.backRow {
+  margin-top: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 100px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.backButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+}
+
+.backLabel {
+  width: 48px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.backLabel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+  animation-delay: 0.1s;
+}
+
+.titleBlock {
+  margin-top: 60px;
+}
+
+.titleLine {
+  width: 280px;
+  max-width: 100%;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.titleLine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+
+.mainBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+}
+
+@media (min-width: 700px) {
+  .mainBlock {
+    height: 710px;
+    justify-content: space-between;
+  }
+}
+
+.stepsRowSlider {
+  margin-top: 60px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.stepsRow {
+  margin-top: 0;
+  display: flex;
+  align-items: flex-start;
+  width: 584px;
+  max-width: 100%;
+  gap: 0;
+}
+
+.stepCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 90px;
+  width: 90px;
+  min-width: 90px;
+  text-align: center;
+}
+
+.stepCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.stepCircle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+}
+
+.stepLabel {
+  width: 70px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.stepLabel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+  animation-delay: 0.1s;
+}
+
+.connector {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 1px;
+  margin: 0 13px;
+  align-self: center;
+  margin-top: -20px;
+  border-radius: 1px;
+  background-color: var(--grayscale-light-gray);
+}
+
+.stepsRowInner:not(:last-child) {
+  display: flex;
+  align-items: flex-start;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.stepsRowInner:last-child {
+  display: flex;
+  align-items: flex-start;
+  flex: 0 0 83px;
+}
+
+.stepContent {
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 700px) {
+  .mainBlock {
+    height: auto;
+  }
+  .stepContent {
+    flex: none;
+  }
+}
+
+.contentSkeleton {
+  width: 100%;
+  max-width: 418px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.contentLine1 {
+  width: 90%;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.contentLine2 {
+  width: 70%;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.contentBlock {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.contentLine1::after,
+.contentLine2::after,
+.contentBlock::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+}
+
+.contentLine2::after {
+  animation-delay: 0.1s;
+}
+
+.contentBlock::after {
+  animation-delay: 0.2s;
+}
+
+.actionsRow {
+  margin-top: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 60px;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  width: 137px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--grayscale-primary-gray);
+  overflow: hidden;
+  position: relative;
+}
+
+.actionBtn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: phantomShimmer 1.2s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+
+@keyframes phantomShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

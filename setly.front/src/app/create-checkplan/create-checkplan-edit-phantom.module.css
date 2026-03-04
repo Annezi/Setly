@@ -1,0 +1,296 @@
+/* Фантомная прогрузка страницы редактирования чекплана /create-checkplan/[id] — раскладка как у CreateCheckplan */
+
+.wrapper {
+	margin-top: 60px;
+	background: var(--grayscale-white);
+	min-height: 100%;
+	padding: 20px 20px 40px;
+	padding-bottom: 140px;
+	max-width: 1045px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.backRow {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 40px;
+}
+
+.backButton {
+	width: 36px;
+	height: 36px;
+	border-radius: 100px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+	flex-shrink: 0;
+}
+
+.backButton::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+}
+
+.backLabel {
+	width: 48px;
+	height: 14px;
+	border-radius: 4px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.backLabel::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+	animation-delay: 0.1s;
+}
+
+.contentSection {
+	display: flex;
+	flex-direction: column;
+	gap: 40px;
+	max-width: 1045px;
+}
+
+.topRow {
+	display: flex;
+	gap: 22px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+}
+
+.card {
+	background: var(--grayscale-white);
+	border-radius: 16px;
+	padding: 20px;
+	min-width: 280px;
+	width: 335px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+.cardTitle {
+	width: 85%;
+	height: 32px;
+	border-radius: 6px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.cardTitle::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+	animation-delay: 0.15s;
+}
+
+.cardDesc {
+	width: 100%;
+	height: 14px;
+	border-radius: 4px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.cardDesc:nth-child(2) {
+	width: 92%;
+}
+
+.cardDesc:nth-child(3) {
+	width: 78%;
+}
+
+.cardDesc::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+	animation-delay: 0.2s;
+}
+
+.dropdownRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+}
+
+.dropdownLabel {
+	width: 73px;
+	height: 14px;
+	border-radius: 4px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.dropdownValue {
+	width: 120px;
+	height: 40px;
+	border-radius: 40px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.dropdownLabel::after,
+.dropdownValue::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+}
+
+.dropdownValue::after {
+	animation-delay: 0.1s;
+}
+
+.imageBlock {
+	width: 100%;
+	max-width: 688px;
+	height: 400px;
+	flex: 1;
+	min-width: 280px;
+	background: var(--grayscale-primary-gray);
+	border-radius: 16px;
+	overflow: hidden;
+	position: relative;
+}
+
+.imageBlock::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+	animation-delay: 0.1s;
+}
+
+.secondRow {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+}
+
+.secondRowLeft {
+	flex: 1 1 400px;
+	min-width: 280px;
+	height: 320px;
+	border-radius: 16px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.secondRowRight {
+	flex: 1 1 300px;
+	min-width: 280px;
+	height: 280px;
+	border-radius: 16px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+}
+
+.secondRowLeft::after,
+.secondRowRight::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+	animation-delay: 0.15s;
+}
+
+.creationDateLine {
+	width: 140px;
+	height: 14px;
+	border-radius: 4px;
+	background: var(--grayscale-primary-gray);
+	overflow: hidden;
+	position: relative;
+	margin: 40px auto 0;
+}
+
+.creationDateLine::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 50%,
+		transparent 100%
+	);
+	background-size: 200% 100%;
+	animation: editPhantomShimmer 1.2s ease-in-out infinite;
+	animation-delay: 0.2s;
+}
+
+@keyframes editPhantomShimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}

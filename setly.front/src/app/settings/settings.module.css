@@ -1,0 +1,201 @@
+.wrapper {
+  max-width: 1045px;
+  margin: 0 auto;
+  margin-bottom: 100px;
+}
+
+.backRow {
+  margin-top: 60px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--grayscale-dark-gray);
+  text-decoration: none;
+}
+
+.backRow:hover {
+  color: var(--grayscale-dark-gray);
+}
+
+.backRow .subinfo {
+  color: var(--grayscale-dark-gray);
+}
+
+/* Кнопка «Назад» на этой странице: 36×36px, иконка 12×12px */
+.backRow > button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.backRow > button img {
+  width: 12px;
+  height: 12px;
+}
+
+.titleBlock {
+  margin-top: 60px;
+}
+
+.titleBlock h1 {
+  color: var(--grayscale-dark-gray);
+}
+
+.fieldsBlock {
+  margin-top: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionTitle {
+  color: var(--grayscale-dark-gray);
+}
+
+.sectionDesc {
+  color: var(--grayscale-dark-gray);
+}
+
+.fieldLabelToInput {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nicknameInput {
+  width: 335px;
+}
+
+.passwordRow {
+  display: flex;
+  gap: 34px;
+  flex-wrap: wrap;
+}
+
+.passwordField {
+  width: 325px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emailRow {
+  display: flex;
+  gap: 34px;
+  flex-wrap: nowrap;
+}
+
+.emailField {
+  width: 335px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.buttonsBlock {
+  margin-top: 60px;
+  display: flex;
+  gap: 34px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.popupOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.popupBox {
+  background-color: var(--grayscale-white);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.popupText {
+  color: var(--grayscale-dark-gray);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.popupDeletePassword {
+  margin-top: 20px;
+  margin-bottom: 24px;
+}
+
+.popupButtons {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.popupButtons button {
+  flex: 1;
+  min-width: 0;
+}
+
+.popupButtonsCenter {
+  display: flex;
+  justify-content: center;
+}
+
+.popupButtonsCenter button {
+  min-width: 50%;
+}
+
+@media (max-width: 850px) {
+  .nicknameInput {
+    width: 100%;
+  }
+
+  .passwordRow {
+    flex-direction: column;
+    gap: 34px;
+  }
+
+  .passwordField {
+    width: 100%;
+  }
+
+  .emailRow {
+    flex-direction: column;
+    gap: 34px;
+  }
+
+  .emailField {
+    width: 100%;
+  }
+
+  .buttonsBlock {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 34px;
+  }
+
+  .buttonsBlock button {
+    width: 100%;
+  }
+  .popupBox {
+    background-color: var(--grayscale-white);
+    border-radius: 16px;
+    padding: 20px;
+  }
+}

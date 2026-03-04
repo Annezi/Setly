@@ -1,0 +1,83 @@
+[
+  {
+    "id": "setly",
+    "nickname": "Setly",
+    "email": "setly@setly.com",
+    "password": "password",
+    "passwordHash": "placeholder-hash-replace-in-production",
+    "avatarPath": "/img/users/avatars/setly-1772235309406.png",
+    "headerImagePath": "/img/users/headers/setly-1772235304812.png",
+    "createdChecklistIds": [
+      "setly-japan-2025",
+      "setly-mountains-1",
+      "setly-mountains-2",
+      "setly-mountains-3",
+      "setly-city-2",
+      "setly-city-3",
+      "setly-beach-1",
+      "setly-beach-2",
+      "setly-beach-3",
+      "setly-family-1",
+      "setly-family-2",
+      "setly-family-3",
+      "setly-long-1",
+      "setly-long-2",
+      "setly-long-3"
+    ],
+    "likedChecklistIds": [
+      "setly-japan-2025",
+      "setly-mountains-1",
+      "setly-mountains-2",
+      "setly-mountains-3",
+      "setly-city-2",
+      "setly-city-3",
+      "setly-beach-1",
+      "setly-beach-2",
+      "setly-beach-3",
+      "setly-family-1",
+      "setly-long-1",
+      "setly-long-2",
+      "setly-family-2",
+      "setly-family-3",
+      "setly-long-3"
+    ]
+  },
+  {
+    "id": "ytsoy70-1772250374553",
+    "nickname": "Юрий",
+    "email": "ytsoy70@gmail.com",
+    "password": "123123",
+    "passwordHash": "placeholder-hash-replace-in-production",
+    "avatarPath": "/img/users/avatars/ytsoy70-1772250374553-1772250827333.jpg",
+    "headerImagePath": "/img/users/headers/ytsoy70-1772250374553-1772250755402.jpg",
+    "createdChecklistIds": [],
+    "likedChecklistIds": [
+      "setly-mountains-1",
+      "setly-mountains-2",
+      "setly-mountains-3",
+      "setly-japan-2025",
+      "setly-city-2",
+      "setly-city-3",
+      "setly-beach-1",
+      "setly-beach-2",
+      "setly-beach-3",
+      "setly-family-1",
+      "setly-family-2",
+      "setly-family-3",
+      "setly-long-1",
+      "setly-long-2",
+      "setly-long-3"
+    ]
+  },
+  {
+    "id": "ax-annushka-1772303672874",
+    "nickname": "Annez",
+    "email": "ax.annushka@yandex.ru",
+    "password": "123123",
+    "passwordHash": "placeholder-hash-replace-in-production",
+    "avatarPath": "/img/users/avatars/ax-annushka-1772303672874-1772303691513.jpg",
+    "headerImagePath": "/img/users/headers/ax-annushka-1772303672874-1772303732169.jpg",
+    "createdChecklistIds": [],
+    "likedChecklistIds": []
+  }
+]
