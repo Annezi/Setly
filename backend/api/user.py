@@ -124,7 +124,7 @@ _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 async def me_save_image(
     category: str,
     current_user: Annotated[User, Depends(get_current_user)],
-    file: Annotated[UploadFile, File()],
+    file: Annotated[UploadFile, File(..., description="Файл изображения (поле form: file)")],
 ):
     """Сохранить изображение в категорию (файл сохраняется в storage/{category}/). Возвращает url сохранённого файла."""
     category = (category or "").strip()
@@ -134,6 +134,9 @@ async def me_save_image(
     safe_category = "".join(c if c.isalnum() or c in "-_" else "_" for c in category)
     if not safe_category:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid category")
+
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="file required")
 
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in _ALLOWED_EXTENSIONS:
@@ -151,9 +154,10 @@ async def me_save_image(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    api_url = "https://api.setly.space"
-    url = f"{api_url}/storage/{safe_category}/{unique_name}"
-    return {"ok": True, "url": url}
+    # Публичный URL API для ссылки на картинку (в проде: https://api.setly.space, в dev — свой хост)
+    api_public_url = (os.getenv("API_PUBLIC_URL") or os.getenv("PUBLIC_API_URL") or "https://api.setly.space").rstrip("/")
+    url = f"{api_public_url}/storage/{safe_category}/{unique_name}"
+    return {"ok": True, "url": url, "path": f"/storage/{safe_category}/{unique_name}"}
 
 
 # ---------- /me/likes ----------

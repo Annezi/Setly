@@ -156,6 +156,8 @@ export default function PreviewCheckplanPage() {
 
 		const currentUserId = getAuth()?.user?.id;
 		const isOwner = currentUserId != null && plan?.author_id === currentUserId;
+		// В режиме предпросмотра контент всегда только для чтения; тулбар зависит от isOwner (редактировать / добавить себе)
+		const readOnly = true;
 
 		return (
 		<div className="container createCheckplanPage">
@@ -164,9 +166,10 @@ export default function PreviewCheckplanPage() {
 				planIdStr={idStr}
 				initialPlan={plan}
 				initialPlanData={planData}
-				readOnly
+				readOnly={readOnly}
 				fromAccount={fromAccount}
 				isOwner={isOwner}
+				isPreview
 			/>
 			<div className="createCheckplanPageFooterWrap">
 				<Footer />

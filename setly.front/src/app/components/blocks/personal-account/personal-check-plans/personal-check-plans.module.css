@@ -43,10 +43,12 @@
   justify-content: center;
 }
 
+/* min-height как у скелетона — без скачка при замене скелетона на контент */
 .card {
   min-width: 0;
   max-width: 335px;
   width: 100%;
+  min-height: 560px;
   background: var(--grayscale-white);
   border-radius: 16px;
   padding: 20px;
@@ -77,7 +79,7 @@
 
 .cardLink .card {
   height: 100%;
-  min-height: 0;
+  min-height: 560px;
 }
 
 .tags {

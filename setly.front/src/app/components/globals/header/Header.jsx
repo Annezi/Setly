@@ -11,7 +11,7 @@ import styles from './header.module.css';
 
 const NAV_ITEMS = [
   { id: 'check-plans', label: 'Чек-планы', href: '/check-plans' },
-  { id: 'articles', label: 'Статьи', href: '#' },
+  { id: 'articles', label: 'Статьи', href: '/articles' },
   { id: 'tests', label: 'Тесты', href: '#' },
   { id: 'about', label: 'О нас', href: '#' },
 ];
@@ -92,6 +92,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
             height={24}
             priority
             className={styles.logoDesktop}
+            draggable={false}
           />
           <Image
             src="/icons/system/logo-mobile.svg"
@@ -99,6 +100,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
             width={56}
             height={30}
             className={styles.logoMobile}
+            draggable={false}
           />
         </Link>
 
@@ -151,6 +153,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
                 width={15}
                 height={15}
                 aria-hidden
+                draggable={false}
               />
             ) : (
               <Image
@@ -159,6 +162,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
                 width={15}
                 height={15}
                 aria-hidden
+                draggable={false}
               />
             )}
           </button>
@@ -188,6 +192,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
                       width={56}
                       height={30}
                       className={styles.logoMobile}
+                      draggable={false}
                     />
                   </Link>
                   <button
@@ -202,6 +207,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
                       width={15}
                       height={15}
                       aria-hidden
+                      draggable={false}
                     />
                   </button>
                 </div>

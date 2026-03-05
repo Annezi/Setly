@@ -52,6 +52,13 @@ BLOCK_DESCRIPTIONS = {
 }
 
 
+def _sanitize_image_url(url: str) -> str:
+    """Убирает пробелы и лишние запятые из URL/пути картинки, чтобы не ломать отображение."""
+    if not url or not isinstance(url, str):
+        return ""
+    return url.strip().rstrip(",").strip()
+
+
 def _plan_to_card(
     plan: CheckPlan,
     author: User,
@@ -59,10 +66,10 @@ def _plan_to_card(
     block_id: str | None = None,
 ) -> CheckPlanCard:
     """Собирает карточку для фронта из модели и автора."""
-    avatar = author.profile_photo_url or ""
+    avatar = _sanitize_image_url(author.profile_photo_url or "")
     if avatar and not avatar.startswith(("http", "/")):
         avatar = f"/storage/{avatar}"
-    image_src = plan.image_src or ""
+    image_src = _sanitize_image_url(plan.image_src or "")
     if image_src and not image_src.startswith(("http", "/")):
         image_src = f"/storage/{image_src}"
     return CheckPlanCard(
@@ -149,8 +156,8 @@ def _plan_to_response(plan: CheckPlan) -> CheckPlanResponse:
         id=plan.id,
         id_str=plan.id_str,
         author_id=plan.author_id,
-        image_src=plan.image_src or "",
-        image_alt=plan.image_alt or "",
+        image_src=_sanitize_image_url(plan.image_src or ""),
+        image_alt=_sanitize_image_url(plan.image_alt or "") or plan.title or "",
         days=plan.days or "",
         days_num=plan.days_num,
         location=plan.location or "",
@@ -252,9 +259,9 @@ async def update_check_plan(
             detail="CheckPlan not found",
         )
     if data.image_src is not None:
-        plan.image_src = data.image_src
+        plan.image_src = _sanitize_image_url(data.image_src)
     if data.image_alt is not None:
-        plan.image_alt = data.image_alt
+        plan.image_alt = _sanitize_image_url(data.image_alt)
     if data.days is not None:
         plan.days = data.days
     if data.days_num is not None:
@@ -334,6 +341,16 @@ async def copy_check_plan(
         if data_row is not None and data_row.data:
             new_data_dict = copy_module.deepcopy(dict(data_row.data))
             new_data_dict["title"] = (new_data_dict.get("title") or "").strip() + copy_title_suffix
+            # Личные заметки не копируются — у копии пустой блок
+            new_data_dict["personal_notes_block"] = []
+            # Чекбоксы «Что взять» в копии сбрасываются (неактивные)
+            for block_key in ("luggage_hand_block", "luggage_block"):
+                block = new_data_dict.get(block_key)
+                if isinstance(block, list):
+                    for item in block:
+                        if isinstance(item, dict):
+                            item["is_checked"] = False
+                            item["checked"] = False
             new_data = CheckPlanData(data=new_data_dict)
             session.add(new_data)
             await session.flush()
@@ -371,6 +388,7 @@ async def create_checkplan_custom(
 ):
     unic_str = f"{uuid.uuid4().hex}"
     str_id=f"{data.checkplan_name}-{unic_str}"
+    cover_url = _sanitize_image_url(data.cover_url or "")
 
     if data.is_pattern_needed:
         checkplan_data = CheckPlanData(
@@ -378,12 +396,12 @@ async def create_checkplan_custom(
                 "title": data.checkplan_name,
                 "description": "",
                 "access_type": "private",
-                "bg_url": data.cover_url,
-                "date_start": "2026-01-01",
-                "date_end": "2026-01-01",
+                "bg_url": cover_url,
+                "date_start": "",
+                "date_end": "",
                 "place": "",
                 "travel_type": data.travel_type,
-                "group_size": "1",
+                "group_size": "",
                 "luggage_type": False,
                 "luggage_hand_block": [],
                 "luggage_block": [],
@@ -393,10 +411,7 @@ async def create_checkplan_custom(
                     "what_to_eat": [],
                     "what_to_buy": [],
                 },
-                "useful_contacts_block": {
-                    "contacts_type": "email",
-                    "contacts": [],
-                },
+                "useful_contacts_block": None,
                 "budget_block": {
                     "title": "Бюджет",
                     "table": [],
@@ -420,12 +435,12 @@ async def create_checkplan_custom(
                 "title": data.checkplan_name,
                 "description": "",
                 "access_type": "private",
-                "bg_url": data.cover_url,
-                "date_start": "2026-01-01",
-                "date_end": "2026-01-01",
+                "bg_url": cover_url,
+                "date_start": "",
+                "date_end": "",
                 "place": "",
                 "travel_type": data.travel_type,
-                "group_size": "1",
+                "group_size": "",
                 "luggage_type": False,
                 "luggage_hand_block": None,
                 "luggage_block": None,
@@ -444,11 +459,11 @@ async def create_checkplan_custom(
     plan = CheckPlan(
         id_str=str_id,
         author_id=current_user.id,
-        image_src=data.cover_url,
-        image_alt=data.cover_url,
-        days="10 дней",
-        days_num=10,
-        location="Москва",
+        image_src=cover_url,
+        image_alt=cover_url,
+        days="",
+        days_num=0,
+        location="",
         title=data.checkplan_name,
         description="",
         visibility="private",
@@ -456,7 +471,7 @@ async def create_checkplan_custom(
         check_plan_data_id=checkplan_data_id,
         filter_tag=data.travel_type,
         region_tag=None,
-        traveler_tags=["Один"],
+        traveler_tags=[],
         season_tags=[]
     )
     session.add(plan)

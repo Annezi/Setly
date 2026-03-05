@@ -36,7 +36,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+# Copy public with correct ownership so nextjs can read/write uploads (checklist-covers, avatars, headers)
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+RUN mkdir -p public/img/checklist-covers public/img/users/avatars public/img/users/headers && chown -R nextjs:nodejs public
 
 # Set the correct permission for prerender cache
 RUN mkdir .next

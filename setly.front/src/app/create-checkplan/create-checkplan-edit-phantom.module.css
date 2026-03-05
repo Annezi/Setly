@@ -66,11 +66,13 @@
 	animation-delay: 0.1s;
 }
 
+/* Резерв высоты под контент — меньше скачок при замене фантома на форму */
 .contentSection {
 	display: flex;
 	flex-direction: column;
 	gap: 40px;
 	max-width: 1045px;
+	min-height: 760px;
 }
 
 .topRow {

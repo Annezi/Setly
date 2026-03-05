@@ -20,7 +20,8 @@ import { getAuth } from "@/app/lib/auth-storage";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 
 const DEFAULT_COVER_IMAGE = "/img/main/japan2025.png";
-const UPLOAD_COVER_API = "/api/upload/cover";
+/** Загрузка обложки через бэкенд POST /api/user/me/save-image/checklist-covers/ */
+const UPLOAD_COVER_API = "/api/user/me/save-image/checklist-covers/";
 
 /** Парсит строку даты "YYYY-MM-DD" или ISO в Date, иначе null */
 function parseDateStr(str) {
@@ -253,9 +254,13 @@ const ChecklistSection = memo(function ChecklistSection({
 	sortIndex,
 	setSortIndex,
 	readOnly = false,
+	isPreview = false,
 }) {
+	const showSortDropdown = !readOnly && !isPreview;
+	const showSortDropdownArea = !isPreview;
 	const canShowDeleteHand = handLuggageItems.length >= 2;
 	const canShowDeleteLuggage = luggageItems.length >= 2;
+	const canToggleCheckboxesOnly = false; // не используется: в предпросмотре чекбоксы только для чтения
 
 	return (
 		<div className={styles.checklistCard}>
@@ -389,19 +394,21 @@ const ChecklistSection = memo(function ChecklistSection({
 					)}
 				</div>
 			)}
-			<div className={styles.sortDropdownWrap}>
-				{readOnly ? (
-					<span className="subinfo" style={{ color: "var(--grayscale-dark-gray)" }}>{SORT_ITEMS[sortIndex]}</span>
-				) : (
-					<Dropdown
-						text={SORT_ITEMS[sortIndex]}
-						items={SORT_ITEMS}
-						selectedIndex={sortIndex}
-						onSelect={setSortIndex}
-						menuCentered
-					/>
-				)}
-			</div>
+			{showSortDropdownArea && (
+				<div className={styles.sortDropdownWrap}>
+					{showSortDropdown ? (
+						<Dropdown
+							text={SORT_ITEMS[sortIndex]}
+							items={SORT_ITEMS}
+							selectedIndex={sortIndex}
+							onSelect={setSortIndex}
+							menuCentered
+						/>
+					) : (
+						<span className="subinfo" style={{ color: "var(--grayscale-dark-gray)" }}>{SORT_ITEMS[sortIndex]}</span>
+					)}
+				</div>
+			)}
 		</div>
 	);
 });
@@ -478,7 +485,7 @@ const TextBlockCard = memo(function TextBlockCard({
 					)}
 				</div>
 				{readOnly ? (
-					<p className={`paragraph ${styles.textBlockDescInput}`} style={{ color: "var(--grayscale-dark-gray)", margin: 0 }}>{block.description || "—"}</p>
+					<p className={`paragraph ${styles.textBlockDescInput} ${styles.textBlockDescReadOnly}`} style={{ color: "var(--grayscale-dark-gray)", margin: 0 }}>{block.description || "—"}</p>
 				) : (
 					<DecoratedInput
 						decorator="none"
@@ -635,7 +642,7 @@ function isValidLink(value) {
 	}
 }
 
-const WhereToGoSectionRow = memo(function WhereToGoSectionRow({ rowId, rowIndex, sectionKey, row, placeholder, onUpdate, onRemove, canRemove }) {
+const WhereToGoSectionRow = memo(function WhereToGoSectionRow({ rowId, rowIndex, sectionKey, row, placeholder, onUpdate, onRemove, canRemove, readOnly = false }) {
 	const descTextareaRef = useRef(null);
 	const [rowHover, setRowHover] = useState(false);
 	const num = rowIndex + 1;
@@ -678,7 +685,41 @@ const WhereToGoSectionRow = memo(function WhereToGoSectionRow({ rowId, rowIndex,
 	}, [row.link]);
 
 	/* На мобильном кнопка удаления видна всегда (при canRemove); на десктопе — по hover на ряд */
-	const showDelete = canRemove && rowHover;
+	const showDelete = canRemove && rowHover && !readOnly;
+
+	if (readOnly) {
+		return (
+			<div className={styles.whereToGoRow}>
+				<div className={styles.whereToGoDescCell}>
+					<span className={`paragraph ${styles.whereToGoPrefix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
+						{prefix}
+					</span>
+					<span className={`paragraph ${styles.whereToGoDescInput} ${styles.whereToGoReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+						{userText || "—"}
+					</span>
+				</div>
+				<div className={styles.whereToGoLinkWrap}>
+					<div className={`${styles.whereToGoLinkCell} ${styles.whereToGoLinkCellReadOnly}`}>
+						<span className={`subinfo ${styles.whereToGoLinkInput} ${styles.whereToGoLinkInputReadOnly}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+							{row.link?.trim() || "—"}
+						</span>
+						{row.link?.trim() && (
+							<button
+								type="button"
+								className={styles.whereToGoLinkIconBtn}
+								aria-label="Открыть ссылку"
+								onClick={openLink}
+							>
+								{/* eslint-disable-next-line @next/next/no-img-element */}
+								<img src="/icons/system/LinkArrow.svg" alt="" width={14} height={14} className={styles.whereToGoLinkArrow} />
+							</button>
+						)}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div
 			className={`${styles.whereToGoRow} ${canRemove ? styles.whereToGoRowCanRemove : ""}`}
@@ -862,15 +903,18 @@ const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 										onUpdate={(u) => updateRow(key, ri, u)}
 										onRemove={() => removeRow(key, ri)}
 										canRemove={canRemove}
+										readOnly={readOnly}
 									/>
 								))}
-								<ButtonCard
-									text="Добавить пункт..."
-									icon={<img src="/icons/system/CrossMini.svg" alt="" width={9} height={9} />}
-									hoverIcon={<img src="/icons/system/CrossMiniDark.svg" alt="" width={9} height={9} />}
-									onClick={() => addRow(key)}
-									disabled={!canAddWhereToGoRow(rows)}
-								/>
+								{!readOnly && (
+									<ButtonCard
+										text="Добавить пункт..."
+										icon={<img src="/icons/system/CrossMini.svg" alt="" width={9} height={9} />}
+										hoverIcon={<img src="/icons/system/CrossMiniDark.svg" alt="" width={9} height={9} />}
+										onClick={() => addRow(key)}
+										disabled={!canAddWhereToGoRow(rows)}
+									/>
+								)}
 							</div>
 						);
 					})}
@@ -1031,19 +1075,22 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 										onUpdate={(u) => updateRow(key, ri, u)}
 										onRemove={() => removeRow(key, ri)}
 										canRemove={canRemove}
+										readOnly={readOnly}
 									/>
 								))}
-								<ButtonCard
-									text="Добавить пункт..."
-									icon={<img src="/icons/system/CrossMini.svg" alt="" width={9} height={9} />}
-									hoverIcon={<img src="/icons/system/CrossMiniDark.svg" alt="" width={9} height={9} />}
-									onClick={() => addRow(key)}
-									disabled={!canAddWhereToGoRow(rows)}
-								/>
+								{!readOnly && (
+									<ButtonCard
+										text="Добавить пункт..."
+										icon={<img src="/icons/system/CrossMini.svg" alt="" width={9} height={9} />}
+										hoverIcon={<img src="/icons/system/CrossMiniDark.svg" alt="" width={9} height={9} />}
+										onClick={() => addRow(key)}
+										disabled={!canAddWhereToGoRow(rows)}
+									/>
+								)}
 							</div>
 						);
 					})}
-					{USEFUL_CONTACTS_ADDABLE_SECTIONS.some((s) => !addedOrder.includes(s.key)) && (
+					{!readOnly && USEFUL_CONTACTS_ADDABLE_SECTIONS.some((s) => !addedOrder.includes(s.key)) && (
 						<div className={`${styles.whereToGoSection} ${styles.usefulContactsAddSections}`}>
 							{USEFUL_CONTACTS_ADDABLE_SECTIONS.filter((s) => !addedOrder.includes(s.key)).map((addable) => (
 								<ButtonCard
@@ -1127,6 +1174,30 @@ const BudgetTableRow = memo(function BudgetTableRow({
 	const showClearCategory = (categoryFocused || categoryHovered) && categoryVal.length > 0;
 	const showClearPlanned = (plannedFocused || plannedHovered) && plannedVal.length > 0;
 	const showClearSpent = (spentFocused || spentHovered) && spentVal.length > 0;
+
+	if (readOnly) {
+		return (
+			<div className={styles.budgetTableRow}>
+				<div className={styles.budgetTableCategoryCell}>
+					<span className={`paragraph ${styles.budgetTableCategoryInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+						{row.category?.trim() || "—"}
+					</span>
+				</div>
+				<div className={styles.budgetTableNumberCell}>
+					<span className={`subinfo ${styles.budgetTableNumberInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+						{row.planned?.trim() || "—"}
+					</span>
+					<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
+				</div>
+				<div className={styles.budgetTableNumberCell}>
+					<span className={`subinfo ${styles.budgetTableNumberInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+						{row.spent?.trim() || "—"}
+					</span>
+					<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div
@@ -1409,6 +1480,8 @@ const RightColumnSection = memo(function RightColumnSection({
 	onAddBudgetTableBlock,
 	suggestionLinksExiting,
 	readOnly = false,
+	isOwner = true,
+	isPreview = false,
 }) {
 	const canShowDeleteOnEmpty =
 		personalNotesItems.length >= 2 ||
@@ -1476,6 +1549,8 @@ const RightColumnSection = memo(function RightColumnSection({
 					)}
 				</div>
 			</div>
+			{/* Личные заметки видны только создателю; при просмотре чужого чекплана блок скрыт */}
+			{(!readOnly || isOwner) && (
 			<div className={styles.notesCard}>
 				<div className={styles.notesTitleRow}>
 					<Image src="/icons/images/Star.svg" alt="" width={24} height={24} className={styles.icon24} />
@@ -1533,6 +1608,7 @@ const RightColumnSection = memo(function RightColumnSection({
 					)}
 				</div>
 			</div>
+			)}
 			{contentBlocks.map((block, i) => {
 				if (block.type === "text") {
 					return (
@@ -2581,7 +2657,7 @@ const GuestViewToolbar = memo(function GuestViewToolbar({
 	);
 });
 
-export default function CreateCheckplan({ planIdStr = null, initialPlan = null, initialPlanData = null, readOnly = false, fromAccount = false, isOwner = true }) {
+export default function CreateCheckplan({ planIdStr = null, initialPlan = null, initialPlanData = null, readOnly = false, fromAccount = false, isOwner = true, isPreview = false }) {
 	const { setInitialLikeCounts } = useLikedChecklists();
 	const [planTitle, setPlanTitle] = useState(() => initialPlan?.title ?? "Китай 2026");
 	const [description, setDescription] = useState(() => initialPlan?.description ?? "");
@@ -2678,8 +2754,12 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	const descriptionRef = useRef(null);
 	const titleRef = useRef(null);
 	const initialSnapshotRef = useRef(null);
+	const initialSnapshotSetRef = useRef(false);
 	const contentBlockIdRef = useRef(0);
 	const hasHydratedFromPlanDataRef = useRef(false);
+	const [hydrationDone, setHydrationDone] = useState(false);
+	/** Чистый чек-план: с бэка пришёл luggage_hand_block не массив (null). Шаблонный: массив (в т.ч. []). Автозаполнение «что взять» только для шаблонного. */
+	const wasCreatedWithTemplateRef = useRef(Array.isArray(initialPlanData?.luggage_hand_block));
 
 	const adjustDescriptionHeight = useCallback(() => {
 		const ta = descriptionRef.current;
@@ -2719,6 +2799,7 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	useEffect(() => {
 		if (!initialPlanData || hasHydratedFromPlanDataRef.current) return;
 		hasHydratedFromPlanDataRef.current = true;
+		wasCreatedWithTemplateRef.current = Array.isArray(initialPlanData.luggage_hand_block);
 		setContentBlocks((prev) => {
 			if (prev.length > 0) return prev;
 			const { blocks, nextId } = buildContentBlocksFromPlanData(initialPlanData);
@@ -2746,6 +2827,7 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 		if (Array.isArray(notesBlock) && notesBlock.length > 0) {
 			setPersonalNotesItems(notesBlock.map((item) => ({ text: item?.title ?? item?.text ?? "" })));
 		}
+		setHydrationDone(true);
 	}, [initialPlanData]);
 
 	const router = useRouter();
@@ -2769,8 +2851,9 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 		};
 	}, []);
 
-	/** Если чеклист пустой и выбран тип — переключаем на «Ручная кладь и Багаж» и подставляем дефолтные пункты по типу */
+	/** Если чеклист пустой и выбран тип — переключаем на «Ручная кладь и Багаж» и подставляем дефолтные пункты по типу. Только для шаблонного плана; для чистого блок «что взять» остаётся пустым с вариантом «Ручная кладь». */
 	useEffect(() => {
+		if (!wasCreatedWithTemplateRef.current) return;
 		if (typeIndex < 0 || typeIndex >= TYPE_OPTIONS.length) return;
 		const typeLabel = TYPE_OPTIONS[typeIndex];
 		const defaults = DEFAULT_CHECKLIST_BY_TYPE[typeLabel];
@@ -2970,7 +3053,7 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 				const msg = dataResJson?.detail || dataResJson?.message || "Не удалось сохранить данные чек-плана";
 				throw new Error(Array.isArray(msg) ? msg[0]?.msg : msg);
 			}
-			router.push("/account");
+			router.push(`/preview-checkplan/${encodeURIComponent(planIdStr)}`);
 		} catch (err) {
 			setSaveError(err.message || "Ошибка сохранения");
 		} finally {
@@ -3367,10 +3450,20 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	);
 
 	useEffect(() => {
-		// Снимок исходного состояния формы при монтировании (один раз).
-		initialSnapshotRef.current = JSON.stringify(buildComparableState());
+		// Снимок исходного состояния при монтировании только для нового плана (без initialPlanData).
+		if (!initialPlanData && !initialSnapshotSetRef.current) {
+			initialSnapshotSetRef.current = true;
+			initialSnapshotRef.current = JSON.stringify(buildComparableState());
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- только при монтировании
 	}, []);
+
+	// Снимок после гидрации данных с сервера — чтобы сравнение учитывало Даты, Место, Тип, Люди.
+	useEffect(() => {
+		if (!initialPlanData || !hydrationDone || initialSnapshotSetRef.current) return;
+		initialSnapshotSetRef.current = true;
+		initialSnapshotRef.current = JSON.stringify(buildComparableState());
+	}, [initialPlanData, hydrationDone, buildComparableState]);
 
 	useEffect(() => {
 		if (!readOnly || isOwner) return;
@@ -3415,20 +3508,32 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 		try {
 			const formData = new FormData();
 			formData.append("file", file);
-			if (coverImage.startsWith("/img/checklist-covers/")) {
-				formData.append("previousPath", coverImage);
-			}
-			const res = await fetch(UPLOAD_COVER_API, {
+
+			const base = getApiUrl();
+			const uploadUrl = base ? `${base}${UPLOAD_COVER_API}` : UPLOAD_COVER_API;
+			const headers = {};
+			try {
+				const auth = getAuth();
+				if (auth?.token && typeof auth.token === "string") {
+					headers.Authorization = `Bearer ${auth.token.trim()}`;
+				}
+			} catch (_) {}
+
+			const res = await fetch(uploadUrl, {
 				method: "POST",
+				headers,
 				body: formData,
 			});
 			const data = await res.json().catch(() => ({}));
 			if (!res.ok) {
-				throw new Error(data?.message || "Ошибка загрузки");
+				const detail = data?.detail;
+				const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
+				throw new Error(msg || data?.message || "Ошибка загрузки");
 			}
-			const path = data.path ?? data.coverImagePath;
-			if (path) {
-				setCoverImage(path);
+			// Бэкенд возвращает url (полный) и path — для отображения и сохранения в плане используем url
+			const imageUrl = data.url || (base && data.path ? `${base.replace(/\/$/, "")}${data.path}` : null) || data.path || data.coverImagePath;
+			if (imageUrl) {
+				setCoverImage(imageUrl);
 			}
 		} catch (err) {
 			setCoverError(err.message || "Не удалось загрузить изображение");
@@ -3436,7 +3541,7 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 			setCoverLoading(false);
 			if (coverInputRef.current) coverInputRef.current.value = "";
 		}
-	}, [coverImage]);
+	}, []);
 
 	const handleCoverClick = useCallback(() => {
 		coverInputRef.current?.click();
@@ -3472,12 +3577,13 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	);
 
 	const currentVisibility = visibilityOverride ?? initialPlan?.visibility ?? "private";
-	const backHref = readOnly ? (fromAccount ? "/account" : "/check-plans") : "/account";
-	const backLabel = readOnly ? (fromAccount ? "В личный кабинет" : "К чек-планам") : "Назад";
+	const backHref = isPreview ? "/account" : (readOnly ? (fromAccount ? "/account" : "/check-plans") : "/account");
+	const backLabel = isPreview ? "Назад" : (readOnly ? (fromAccount ? "В личный кабинет" : "К чек-планам") : "Назад");
+	const backAriaLabel = isPreview ? "Назад" : (readOnly ? (fromAccount ? "Назад в личный кабинет" : "Назад к чек-планам") : "Назад в личный кабинет");
 
 	return (
-		<div className={styles.wrapper}>
-			<Link href={backHref} className={styles.backRow} aria-label={readOnly ? (fromAccount ? "Назад в личный кабинет" : "Назад к чек-планам") : "Назад в личный кабинет"}>
+		<div className={`${styles.wrapper} ${isPreview ? styles.wrapperPreview : ""}`}>
+			<Link href={backHref} className={styles.backRow} aria-label={backAriaLabel}>
 				<span className={styles.backButton}>
 					<Image
 						src="/icons/system/ArrowLeft.svg"
@@ -3636,6 +3742,7 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 						sortIndex={sortIndex}
 						setSortIndex={setSortIndex}
 						readOnly={readOnly}
+						isPreview={isPreview}
 					/>
 					<RightColumnSection
 						showPlatformNote={showPlatformNote}
@@ -3659,6 +3766,8 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 						onAddBudgetTableBlock={addBudgetTableBlock}
 						suggestionLinksExiting={suggestionLinksExiting}
 						readOnly={readOnly}
+						isOwner={isOwner}
+						isPreview={isPreview}
 					/>
 				</div>
 			</div>

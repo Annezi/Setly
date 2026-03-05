@@ -22,6 +22,7 @@ export default function DecoratedInput({
     checkboxChecked,
     onCheckboxChange,
     disabled = false,
+    readOnly = false,
     className,
     multiline = false,
     inputTextClass,
@@ -63,7 +64,7 @@ export default function DecoratedInput({
         }
     };
 
-    const showClear = (isFocused || isHovered) && !disabled && value.length > 0;
+    const showClear = (isFocused || isHovered) && !disabled && !readOnly && value.length > 0;
     const hasText = value.length > 0;
 
     const textClass = inputTextClass ?? "paragraph";
@@ -101,6 +102,7 @@ export default function DecoratedInput({
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
                         disabled={disabled}
+                        readOnly={readOnly}
                         aria-label={placeholder}
                         rows={1}
                         {...props}
@@ -117,6 +119,7 @@ export default function DecoratedInput({
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
                             disabled={disabled}
+                            readOnly={readOnly}
                             aria-label={placeholder}
                             {...props}
                         />

@@ -48,7 +48,14 @@ function PlanCard({ id: cardId, imageSrc, imageAlt, days, location, title, descr
         </span>
       </div>
       <div className={styles.cardImageWrapper}>
-        <Image src={imageSrc} alt={imageAlt} width={264} height={264} className={styles.cardImage} />
+        <Image
+          src={imageSrc}
+          alt={imageAlt || title || ""}
+          width={264}
+          height={264}
+          className={styles.cardImage}
+          unoptimized={typeof imageSrc === "string" && imageSrc.startsWith("http")}
+        />
       </div>
       <h3 className={`${styles.cardTitle} subtitle_1`}>{title}</h3>
       <p className={`${styles.cardDescription} subinfo`}>{description}</p>

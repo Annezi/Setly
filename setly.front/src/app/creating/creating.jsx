@@ -214,10 +214,15 @@ export default function Creating() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const detail = data?.detail;
-        const message = Array.isArray(detail) ? detail[0]?.msg : detail;
-        throw new Error(message || data?.message || "Ошибка загрузки");
+        let message = data?.message || "Ошибка загрузки";
+        if (detail != null) {
+          if (typeof detail === "string") message = detail;
+          else if (Array.isArray(detail) && detail[0]?.msg) message = detail[0].msg;
+        }
+        throw new Error(message);
       }
-      const imageUrl = data.url;
+      // Бэкенд возвращает url (полный) или path (относительный) — для отображения нужен полный URL
+      const imageUrl = data.url || (base && data.path ? `${base.replace(/\/$/, "")}${data.path}` : null) || data.path;
       if (imageUrl) setCoverImage(imageUrl);
     } catch (err) {
       setCoverError(err.message || "Не удалось загрузить изображение");

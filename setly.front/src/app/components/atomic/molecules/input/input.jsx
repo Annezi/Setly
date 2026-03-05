@@ -107,6 +107,7 @@ export default function Input({
                             alt=""
                             width={14}
                             height={14}
+                            draggable={false}
                         />
                     </span>
                 )}
@@ -124,12 +125,13 @@ export default function Input({
                             alt=""
                             width={24}
                             height={20}
+                            draggable={false}
                         />
                     </button>
                 )}
                 {isSearch && (
                     <button type="button" className={styles.searchButton} onClick={handleSearchSubmit} tabIndex={-1}>
-                        <img src="/icons/system/Search.svg" alt="" width={20} height={20} />
+                        <img src="/icons/system/Search.svg" alt="" width={20} height={20} draggable={false} />
                         <span>Найти</span>
                     </button>
                 )}

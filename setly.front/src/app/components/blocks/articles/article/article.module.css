@@ -1,0 +1,433 @@
+/* Страница статьи по макету Figma */
+
+.main {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--grayscale-white);
+  padding-bottom: 40px;
+}
+
+/* Хлебные крошки: кнопка «Назад» */
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 20px;
+  margin-top: 24px;
+  text-decoration: none;
+  color: var(--grayscale-dark-gray);
+}
+
+.breadcrumb:hover {
+  color: var(--grayscale-dark-gray);
+}
+
+.breadcrumbIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--grayscale-white);
+  box-shadow: 0 0 1px rgba(83, 83, 83, 0.25), 0 0 10px 4px rgba(209, 209, 209, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.breadcrumbText {
+  color: var(--grayscale-dark-gray);
+}
+
+.notFound {
+  max-width: 808px;
+  margin: 40px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.notFoundText {
+  color: var(--grayscale-dark-gray);
+  margin: 0 0 16px 0;
+}
+
+.notFoundLink {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}
+
+/* Hero: изображение слева, инфо справа */
+.hero {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  max-width: 1045px;
+  margin: 40px auto 0;
+  padding: 0 20px;
+}
+
+.heroImageWrap {
+  flex-shrink: 0;
+  width: 335px;
+  height: 338px;
+  border-radius: 500px;
+  overflow: hidden;
+  position: relative;
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 335px;
+}
+
+.tags {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--grayscale-primary-gray);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--grayscale-dark-gray);
+}
+
+.tagIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.heroTitle {
+  color: var(--grayscale-dark-gray);
+  text-align: center;
+  margin: 0;
+}
+
+.heroDescription {
+  color: var(--grayscale-dark-gray);
+  text-align: center;
+  margin: 0;
+}
+
+/* Тело статьи: блоки и изображения */
+.articleBody {
+  max-width: 1045px;
+  margin: 40px auto 0;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.block {
+  background: var(--grayscale-white);
+  padding: 20px 0;
+  border-radius: 16px;
+}
+
+.block:first-of-type {
+  padding-top: 20px;
+}
+
+.blockTitle {
+  color: var(--grayscale-dark-gray);
+  margin: 0 0 20px 0;
+}
+
+.paragraph {
+  color: var(--grayscale-dark-gray);
+  margin: 0 0 1em 0;
+  line-height: 1.5;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.figureImageWrap {
+  width: 100%;
+  height: 470px;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.figureImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.caption {
+  color: var(--grayscale-dark-gray);
+  text-align: center;
+}
+
+.listBlock {
+  margin: 20px 0;
+}
+
+.orderedList {
+  list-style: decimal;
+  padding-left: 30px;
+  margin: 0 0 20px 0;
+}
+
+.orderedList li {
+  margin-bottom: 20px;
+}
+
+.orderedList li:last-child {
+  margin-bottom: 0;
+}
+
+.bulletList {
+  list-style: disc;
+  padding-left: 27px;
+  margin: 12px 0 0 0;
+}
+
+.bulletList li {
+  margin-bottom: 0.5em;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--grayscale-dark-gray);
+  line-height: 1.5;
+}
+
+.stepList {
+  list-style: decimal;
+  padding-left: 30px;
+  margin: 20px 0 0 0;
+}
+
+.stepList li {
+  margin-bottom: 20px;
+}
+
+.stepList li .subtitle_1 {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.articleFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.articleDate {
+  color: var(--grayscale-gray);
+  text-align: center;
+}
+
+/* Тостер «Ссылка на статью скопирована»: по центру экрана, 2 сек */
+.copyLinkToast {
+  text-align: center;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  padding: 20px;
+  background: var(--halftone-50-white);
+  color: var(--grayscale-dark-gray);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 16px;
+  border: 1px solid var(--grayscale-primary-gray);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+  animation: copyLinkToastIn 0.3s ease-out forwards;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+}
+
+@keyframes copyLinkToastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Блок «Попробуй наши шаблоны» — в стиле ideal-way */
+.templatesBlock {
+  width: 100%;
+  max-width: 1400px;
+  margin: 60px auto 40px;
+  background-color: var(--grayscale-primary-gray);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 59px 118px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.templatesLeft {
+  width: 572px;
+  min-width: 572px;
+  height: 572px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.templatesImage {
+  border-radius: 16px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.templatesRight {
+  width: 572px;
+  min-width: 572px;
+  height: 572px;
+  flex-shrink: 0;
+  background-image: url('/img/main/gradient-1.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 16px;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.templatesTitle {
+  color: var(--accent-blue);
+  margin: 0;
+  max-width: 448px;
+}
+
+.templatesDescriptionWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.templatesDescription {
+  color: var(--grayscale-white);
+  margin: 0;
+  max-width: 395px;
+  line-height: 1.5;
+}
+
+/* Адаптив */
+@media (max-width: 1200px) {
+  .hero {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .heroImageWrap {
+    width: 100%;
+    max-width: 335px;
+    height: auto;
+    aspect-ratio: 335 / 338;
+  }
+
+  .templatesBlock {
+    flex-direction: column;
+    padding: 20px;
+    margin-top: 40px;
+  }
+
+  .templatesLeft,
+  .templatesRight {
+    width: 100%;
+    min-width: unset;
+    max-width: 572px;
+    height: auto;
+    min-height: 280px;
+  }
+
+  .templatesLeft {
+    aspect-ratio: 1;
+  }
+
+  .templatesRight {
+    min-height: 320px;
+    padding: 24px;
+  }
+
+  .templatesTitle {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .templatesDescription {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .breadcrumb {
+    margin-left: 16px;
+    margin-top: 16px;
+  }
+
+  .hero {
+    margin-top: 24px;
+    padding: 0;
+  }
+
+  .articleBody {
+    margin-top: 24px;
+    padding: 0 16px;
+    gap: 32px;
+  }
+
+  .figureImageWrap {
+    height: 280px;
+  }
+
+  .templatesBlock {
+    padding: 0px;
+    border-radius: 16px;
+  }
+}

@@ -47,6 +47,9 @@ def _normalize_payload(payload):
     if out.get("date_end") is None:
         out["date_end"] = legacy_date
     for key, default in _CHECKPLAN_DATA_DEFAULTS.items():
+        # Для чистого чек-плана luggage_hand_block/luggage_block хранятся как None — не подменять на []
+        if key in ("luggage_hand_block", "luggage_block") and key in out and out[key] is None:
+            continue
         if out.get(key) is None:
             out[key] = default
     # Шаблоны могут передавать useful_contacts_block в формате одного блока

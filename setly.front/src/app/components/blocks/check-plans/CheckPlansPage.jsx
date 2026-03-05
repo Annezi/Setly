@@ -79,12 +79,14 @@ function filterCardsBySearch(cards, query) {
     });
 }
 
-/** Подставляет базовый URL API для картинок из /storage. */
+/** Нормализует URL картинки (без лишних пробелов/запятых) и подставляет базовый URL API для /storage. */
 function resolveImageSrc(imageSrc) {
-    if (!imageSrc || typeof imageSrc !== "string") return imageSrc;
+    if (imageSrc == null || typeof imageSrc !== "string") return imageSrc;
+    const cleaned = imageSrc.trim().replace(/,+$/, "").trim();
+    if (!cleaned) return cleaned;
     const base = getApiUrl();
-    if (imageSrc.startsWith("/storage") && base) return base + imageSrc;
-    return imageSrc;
+    if (cleaned.startsWith("/storage") && base) return base + cleaned;
+    return cleaned;
 }
 
 export function CheckPlansPage() {
@@ -274,7 +276,7 @@ export function CheckPlansPage() {
                         sortIndex={sortIndex}
                         onSortSelect={setSortIndex}
                     />
-                    <div className={planStyles.filteredContainer} aria-busy="true" aria-label="Загрузка чек-планов">
+                    <div className={`${planStyles.filteredContainer} ${planStyles.filteredContainerLoading}`} aria-busy="true" aria-label="Загрузка чек-планов">
                         <div className={planStyles.cards}>
                             {[1, 2, 3, 4, 5, 6].map((i) => (
                                 <PlanCardSkeleton key={i} />

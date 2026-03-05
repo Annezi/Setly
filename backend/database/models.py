@@ -122,8 +122,8 @@ class CheckPlanDataStaff(BaseModel):
     group_size: str
 
     luggage_type: bool
-    luggage_hand_block: List[CheckFieldData]
-    luggage_block: List[CheckFieldData]
+    luggage_hand_block: Optional[List[CheckFieldData]] = None  # None = чистый чек-план (пустой блок «Что взять»)
+    luggage_block: Optional[List[CheckFieldData]] = None
 
     personal_notes_block: List[PersonalNotesField]
 

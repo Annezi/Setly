@@ -1003,10 +1003,17 @@
 	box-sizing: border-box;
 }
 
+/* Режим только чтение: сохраняем переносы строк в описании текстового блока */
+.textBlockDescReadOnly {
+	white-space: pre-line;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
 .textBlockDescInput textarea {
 	min-height: 44px;
 	box-sizing: border-box;
-	color: var(--grayscale-gray);
+	color: var(--grayscale-dark-gray);
 	/* Центрирование текста по вертикали при высоте 44px (paragraph: 18px × 1.4 ≈ 25px, (44−25)/2 ≈ 10px) */
 	padding-top: 10px;
 	padding-bottom: 10px;
@@ -1482,6 +1489,71 @@
 .whereToGoLinkArrow {
 	display: block;
 	pointer-events: none;
+}
+
+/* Режим предпросмотра: текст и ссылка с теми же отступами и обводкой */
+.whereToGoReadOnlyText {
+	padding: 10px 0;
+	display: block;
+	min-height: 24px;
+	line-height: 24px;
+}
+
+.whereToGoLinkCellReadOnly {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.whereToGoLinkInputReadOnly {
+	flex: 1;
+	min-width: 0;
+	padding: 10px 34px 10px 0;
+	line-height: 24px;
+	min-height: 24px;
+}
+
+/* Режим предпросмотра (страница preview-checkplan): без обводки у ячеек описания и ссылки, перенос текста */
+.wrapperPreview .whereToGoDescCell {
+	border: none;
+	box-shadow: none;
+	align-items: center;
+	min-height: auto;
+	padding-top: 0;
+	padding-bottom: 0;
+}
+
+.wrapperPreview .whereToGoLinkCellReadOnly,
+.wrapperPreview .whereToGoLinkCell {
+	height: auto;
+}
+
+.wrapperPreview .whereToGoLinkCellReadOnly {
+	border: none;
+	box-shadow: none;
+	justify-content: flex-end;
+}
+
+/* В предпросмотре: только иконка ссылки, текст ссылки скрыт; переход по клику на иконку */
+.wrapperPreview .whereToGoLinkInputReadOnly {
+	display: none;
+}
+
+.wrapperPreview .whereToGoReadOnlyText {
+	white-space: pre-wrap;
+	word-break: break-word;
+	min-height: auto;
+	height: auto;
+	padding-top: 0;
+	padding-bottom: 0;
+	display: flex;
+	align-items: center;
+}
+
+.budgetTableReadOnlyText {
+	padding: 10px 0;
+	display: block;
+	width: 100%;
 }
 
 .whereToGoLinkDeleteWrap {
@@ -2328,6 +2400,25 @@
 		padding-left: 16px;
 		padding-right: 0;
 	}
+
+	/* В предпросмотре на мобильном: два поля в один ряд */
+	.wrapperPreview .whereToGoRow {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.wrapperPreview .whereToGoDescCell {
+		flex: 1 1 0%;
+		min-width: 0;
+		width: auto;
+		max-width: none;
+	}
+
+	.wrapperPreview .whereToGoLinkWrap {
+		flex: 0 0 auto;
+		width: auto;
+		max-width: none;
+	}
 }
 
 /* Мобильная адаптация (порядок блоков, обложка, тулбар, блоки «Куда сходить»/бюджет) */
@@ -2444,6 +2535,60 @@
 		box-sizing: border-box;
 		padding-left: 16px;
 		padding-right: 0;
+	}
+
+	.whereToGoLinkCellReadOnly {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		min-height: auto;
+		padding: 12px 16px;
+	}
+
+	.whereToGoLinkCellReadOnly .whereToGoLinkInputReadOnly {
+		padding: 0;
+	}
+
+	.whereToGoLinkCellReadOnly .whereToGoLinkIconBtn {
+		position: static;
+		transform: none;
+		align-self: flex-end;
+	}
+
+	/* В режиме предпросмотра на мобильном: два поля в один ряд (не столбец), только иконка ссылки */
+	.wrapperPreview .whereToGoRow {
+		flex-direction: row;
+		align-items: center;
+	}
+
+	.wrapperPreview .whereToGoDescCell {
+		flex: 1 1 0%;
+		min-width: 0;
+		width: auto;
+		max-width: none;
+	}
+
+	.wrapperPreview .whereToGoLinkWrap {
+		flex: 0 0 auto;
+		width: auto;
+		max-width: none;
+	}
+
+	.wrapperPreview .whereToGoLinkInputReadOnly {
+		display: none;
+	}
+
+	.wrapperPreview .whereToGoLinkCellReadOnly {
+		flex-direction: row;
+		justify-content: flex-end;
+		align-items: center;
+		min-height: 44px;
+		padding: 0;
+		padding-right: 0;
+	}
+
+	.wrapperPreview .whereToGoLinkCellReadOnly .whereToGoLinkIconBtn {
+		align-self: center;
 	}
 
 	.whereToGoLinkInput {

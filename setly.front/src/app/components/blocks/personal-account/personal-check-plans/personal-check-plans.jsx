@@ -16,11 +16,17 @@ import styles from "./personal-check-plans.module.css";
 const API_PREFIX = "/api/user";
 const SORT_ITEMS = ["По популярности", "По новизне"];
 
+/** Нормализует URL/путь картинки (без лишних пробелов и запятых), чтобы Next/Image не ломал отображение */
+function sanitizeImageUrl(url) {
+  if (url == null || typeof url !== "string") return "";
+  return url.trim().replace(/,+$/, "").trim();
+}
+
 /** Преобразует ответ GET /api/check-plans/{id_str} в формат карточки для PersonalPlanCard */
 function planResponseToCard(apiPlan, baseUrl) {
   if (!apiPlan) return null;
   const id = apiPlan.id_str || apiPlan.id;
-  let imageSrc = apiPlan.image_src || "";
+  let imageSrc = sanitizeImageUrl(apiPlan.image_src || apiPlan.imageSrc || "");
   if (imageSrc && !imageSrc.startsWith("http") && !imageSrc.startsWith("/")) {
     imageSrc = (baseUrl ? `${baseUrl.replace(/\/$/, "")}/storage/` : "/storage/") + imageSrc;
   }
@@ -28,7 +34,7 @@ function planResponseToCard(apiPlan, baseUrl) {
   return {
     id: String(id),
     imageSrc: imageSrc || "/img/main/create-folio.png",
-    imageAlt: apiPlan.image_alt || apiPlan.title || "",
+    imageAlt: sanitizeImageUrl(apiPlan.image_alt || apiPlan.imageAlt || "") || apiPlan.title || "",
     days: apiPlan.days || "",
     location: apiPlan.location || "",
     title: apiPlan.title || "",
@@ -58,7 +64,9 @@ function PersonalPlanCard({ plan }) {
   const likes = isPublic ? getLikeCount(plan.id) : 0;
 
   return (
-    <Link href={`/preview-checkplan/${encodeURIComponent(plan.id)}?from=account`} className={styles.cardLink} aria-label={`Открыть ${plan.title}`}>
+    <>
+      {/* Из личного кабинета открываем чек-план в режиме предпросмотра, не редактирования */}
+      <Link href={`/preview-checkplan/${encodeURIComponent(plan.id)}?from=account`} className={styles.cardLink} aria-label={`Открыть ${plan.title}`}>
     <article className={styles.card}>
       <div className={styles.tags}>
         <span className={styles.tag}>
@@ -73,10 +81,11 @@ function PersonalPlanCard({ plan }) {
       <div className={styles.cardImageWrapper}>
         <Image
           src={plan.imageSrc}
-          alt={plan.imageAlt}
+          alt={plan.imageAlt || plan.title || ""}
           width={264}
           height={264}
           className={styles.cardImage}
+          unoptimized={plan.imageSrc.startsWith("http")}
         />
       </div>
       <h3 className={`${styles.cardTitle} subtitle_1`}>{plan.title}</h3>
@@ -115,7 +124,8 @@ function PersonalPlanCard({ plan }) {
         )}
       </div>
     </article>
-    </Link>
+      </Link>
+    </>
   );
 }
 
