@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { clearAuth } from "@/app/lib/auth-storage";
+import { applyTypograf } from "@/app/lib/typograf";
 import buttonStyles from "@/app/components/atomic/atoms/buttons-round/buttons-round.module.css";
 import Dropdown from "@/app/components/atomic/atoms/dropdown/dropdown";
 import { getPersonalCheckPlans } from "@/data/personal-check-plans";
@@ -88,8 +89,8 @@ function PersonalPlanCard({ plan }) {
           unoptimized={plan.imageSrc.startsWith("http")}
         />
       </div>
-      <h3 className={`${styles.cardTitle} subtitle_1`}>{plan.title}</h3>
-      <p className={`${styles.cardDescription} subinfo`}>{plan.description}</p>
+      <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(plan.title)}</h3>
+      <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(plan.description)}</p>
       <div className={styles.cardFooter}>
         <div className={styles.visibilityRow}>
           <Image

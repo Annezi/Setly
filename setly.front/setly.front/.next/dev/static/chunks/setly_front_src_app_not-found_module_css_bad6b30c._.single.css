@@ -1,0 +1,50 @@
+/* [project]/setly.front/src/app/not-found.module.css [app-client] (css) */
+.not-found-module__4yb8jq__main {
+  margin-top: 60px;
+}
+
+.not-found-module__4yb8jq__content {
+  text-align: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  display: flex;
+}
+
+.not-found-module__4yb8jq__image {
+  width: 295px;
+  height: 299px;
+}
+
+.not-found-module__4yb8jq__title {
+  color: var(--grayscale-dark-gray);
+  max-width: 520px;
+}
+
+.not-found-module__4yb8jq__description {
+  color: var(--grayscale-dark-gray);
+  max-width: 480px;
+}
+
+.not-found-module__4yb8jq__buttonWrap {
+  justify-content: center;
+  display: flex;
+}
+
+@media (max-width: 800px) {
+  .not-found-module__4yb8jq__image {
+    width: 280px;
+    height: 283px;
+  }
+
+  .not-found-module__4yb8jq__title {
+    max-width: 420px;
+  }
+
+  .not-found-module__4yb8jq__description {
+    max-width: 340px;
+  }
+}
+
+/*# sourceMappingURL=setly_front_src_app_not-found_module_css_bad6b30c._.single.css.map*/

@@ -1,0 +1,33 @@
+.wrapper {
+  width: 100%;
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.inner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logoLink:hover {
+  opacity: 0.85;
+}
+
+.logo {
+  display: block;
+  width: auto;
+  height: auto;
+}

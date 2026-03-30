@@ -27,7 +27,7 @@ function useIsMobileView(breakpoint = MOBILE_BREAKPOINT) {
 }
 
 /**
- * Блок-фон шапки личного кабинета (1008×200px).
+ * Блок-фон шапки личного кабинета (маска desktop 1045×200px, mobile 560×334px).
  * По умолчанию — personal-bg-default.png; при наличии пользователя — profile_bg_url с бэкенда.
  * При наведении можно загрузить своё фото (сохраняется на бэкенде в storage/profile_bg, привязывается к /me).
  *

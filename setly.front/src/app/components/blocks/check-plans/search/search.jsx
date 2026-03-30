@@ -8,7 +8,7 @@ export default function Search({ value = "", onChange, onSearchSubmit }) {
         <div className={styles.wrap}>
             <Input
                 typeOfInput="search"
-                placeholder="Например, Китай"
+                placeholder="Поиск"
                 value={value}
                 onChange={onChange}
                 onSearchSubmit={onSearchSubmit}

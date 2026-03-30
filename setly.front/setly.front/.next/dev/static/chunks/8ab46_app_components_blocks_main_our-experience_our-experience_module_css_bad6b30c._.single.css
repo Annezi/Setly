@@ -1,0 +1,242 @@
+/* [project]/setly.front/src/app/components/blocks/main/our-experience/our-experience.module.css [app-client] (css) */
+.our-experience-module__5Be3lq__wrapper {
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1164px;
+  margin-top: 40px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 12px 0;
+  display: flex;
+  overflow: visible;
+}
+
+.our-experience-module__5Be3lq__title {
+  color: var(--grayscale-dark-gray);
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.our-experience-module__5Be3lq__carouselBlock {
+  box-sizing: border-box;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  display: flex;
+  overflow: visible;
+}
+
+.our-experience-module__5Be3lq__carouselNav {
+  display: contents;
+}
+
+.our-experience-module__5Be3lq__carouselBlock .our-experience-module__5Be3lq__carouselNav > :first-child {
+  order: 1;
+}
+
+.our-experience-module__5Be3lq__carouselBlock .our-experience-module__5Be3lq__cardsSlider {
+  order: 2;
+}
+
+.our-experience-module__5Be3lq__carouselBlock .our-experience-module__5Be3lq__carouselNav > :last-child {
+  order: 3;
+}
+
+.our-experience-module__5Be3lq__cardsSlider {
+  touch-action: pan-y;
+  box-sizing: border-box;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  overflow: visible;
+}
+
+.our-experience-module__5Be3lq__cardsSliderViewport {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  overflow: hidden;
+}
+
+.our-experience-module__5Be3lq__cardsTrack {
+  will-change: transform;
+  flex-flow: row;
+  align-items: stretch;
+  margin: -12px 0;
+  transition: transform .35s cubic-bezier(.25, .46, .45, .94);
+  display: flex;
+}
+
+.our-experience-module__5Be3lq__cardsTrackNoTransition {
+  transition: none;
+}
+
+.our-experience-module__5Be3lq__cardSlide {
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: stretch;
+  min-width: 0;
+  padding: 12px 0;
+  display: flex;
+  overflow: visible;
+}
+
+.our-experience-module__5Be3lq__cardSlide .our-experience-module__5Be3lq__card {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+}
+
+.our-experience-module__5Be3lq__cardLink {
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  display: flex;
+}
+
+.our-experience-module__5Be3lq__card {
+  background: var(--grayscale-white);
+  border: 1px solid var(--grayscale-primary-gray);
+  box-sizing: border-box;
+  text-align: center;
+  transform-origin: center;
+  border-radius: 16px;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  width: 100%;
+  min-width: 280px;
+  max-width: 335px;
+  height: 100%;
+  min-height: 0;
+  padding: 20px;
+  transition: transform .2s;
+  display: flex;
+  box-shadow: 0 0 1px #00000080;
+}
+
+.our-experience-module__5Be3lq__card:hover {
+  transform: scale(1.02);
+}
+
+.our-experience-module__5Be3lq__tags {
+  flex-direction: row;
+  gap: 8px;
+  margin-bottom: 16px;
+  display: flex;
+}
+
+.our-experience-module__5Be3lq__tag {
+  background: var(--grayscale-primary-gray);
+  color: var(--grayscale-dark-gray);
+  border-radius: 12px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  display: inline-flex;
+}
+
+.our-experience-module__5Be3lq__tagIcon {
+  object-fit: contain;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.our-experience-module__5Be3lq__cardImageWrap {
+  justify-content: center;
+  width: 100%;
+  display: flex;
+  position: relative;
+}
+
+.our-experience-module__5Be3lq__cardImage {
+  object-fit: contain;
+  align-self: center;
+  width: 300px;
+  height: 300px;
+  margin-bottom: 16px;
+}
+
+.our-experience-module__5Be3lq__cardImageLabel {
+  color: var(--grayscale-dark-gray);
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.our-experience-module__5Be3lq__cardTitle {
+  color: var(--grayscale-dark-gray);
+  margin-bottom: 12px;
+}
+
+.our-experience-module__5Be3lq__cardDescription {
+  color: var(--grayscale-dark-gray);
+  flex: 1;
+  line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+  .our-experience-module__5Be3lq__title {
+    margin-bottom: 24px;
+  }
+
+  .our-experience-module__5Be3lq__cardSlide .our-experience-module__5Be3lq__card {
+    width: 100%;
+    min-width: 280px;
+    max-width: 335px;
+    min-height: 440px;
+  }
+}
+
+@media (max-width: 800px) {
+  .our-experience-module__5Be3lq__carouselBlock {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .our-experience-module__5Be3lq__carouselNav {
+    flex-direction: row;
+    order: 2;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    display: flex;
+  }
+
+  .our-experience-module__5Be3lq__carouselBlock .our-experience-module__5Be3lq__carouselNav > :first-child, .our-experience-module__5Be3lq__carouselBlock .our-experience-module__5Be3lq__carouselNav > :last-child {
+    order: unset;
+  }
+
+  .our-experience-module__5Be3lq__carouselBlock .our-experience-module__5Be3lq__cardsSlider {
+    order: 1;
+    width: 100%;
+  }
+
+  .our-experience-module__5Be3lq__cardSlide {
+    padding: 12px 0;
+  }
+
+  .our-experience-module__5Be3lq__cardSlide .our-experience-module__5Be3lq__card {
+    width: 100%;
+    min-width: 280px;
+    max-width: 335px;
+    height: 540px;
+  }
+}
+
+/*# sourceMappingURL=8ab46_app_components_blocks_main_our-experience_our-experience_module_css_bad6b30c._.single.css.map*/

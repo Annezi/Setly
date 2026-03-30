@@ -30,6 +30,10 @@ class UserUpdate(BaseModel):
     """Обновление профиля (только перечисленные поля)."""
     profile_photo_url: str | None = None
     profile_bg_url: str | None = None
+    nickname: str | None = None
+    email: EmailStr | None = None
+    new_password: str | None = None
+    current_password: str | None = None
 
 
 class Token(BaseModel):

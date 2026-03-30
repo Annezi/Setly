@@ -1,7 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Header } from "@/app/components/globals/header/Header";
-import Settings from "./settings";
+
+const Settings = dynamic(() => import("./settings").then((m) => m.default), {
+  ssr: false,
+  loading: () => <div style={{ minHeight: "60vh" }} aria-busy="true" aria-label="Загрузка настроек" />,
+});
 
 export default function SettingsPage() {
   return (

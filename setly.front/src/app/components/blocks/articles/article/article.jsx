@@ -11,7 +11,9 @@ import { Footer } from '@/app/components/globals/footer/Footer';
 import OurExperience from '@/app/components/blocks/main/our-experience/our-experience';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
+import { getAuth } from '@/app/lib/auth-storage';
 import { getArticleById } from '@/data/articles-data';
+import { applyTypograf } from '@/app/lib/typograf';
 import styles from './article.module.css';
 
 /** Тостер «Ссылка на статью скопирована»: по центру экрана, 2 сек */
@@ -48,6 +50,15 @@ export default function Article({ articleId }) {
       setShowCopyLinkToast(true);
     }
   }, [pathname]);
+
+  const handleUseTemplate = useCallback(() => {
+    const auth = getAuth();
+    if (auth?.token) {
+      router.push('/creating');
+      return;
+    }
+    router.push('/login');
+  }, [router]);
 
   if (!article) {
     return (
@@ -106,15 +117,15 @@ export default function Article({ articleId }) {
                 {article.readTime}
               </span>
             </div>
-            <h1 className={`${styles.heroTitle} title_1`}>{article.title}</h1>
-            <p className={`${styles.heroDescription} subinfo`}>{article.description}</p>
+            <h1 className={`${styles.heroTitle} title_1`}>{applyTypograf(article.title)}</h1>
+            <p className={`${styles.heroDescription} subinfo`}>{applyTypograf(article.description)}</p>
           </div>
         </section>
 
         <article className={styles.articleBody}>
           <div className={styles.block}>
             <h2 className={`${styles.blockTitle} title_2`}>Предисловие</h2>
-            <p className={`${styles.paragraph} paragraph`}>{article.preamble}</p>
+            <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.preamble)}</p>
           </div>
 
           <figure className={styles.figure}>
@@ -127,20 +138,20 @@ export default function Article({ articleId }) {
                 className={styles.figureImage}
               />
             </div>
-            <figcaption className={`${styles.caption} subinfo`}>{article.image1Caption}</figcaption>
+            <figcaption className={`${styles.caption} subinfo`}>{applyTypograf(article.image1Caption)}</figcaption>
           </figure>
 
           <div className={styles.block}>
-            <h2 className={`${styles.blockTitle} title_2`}>{article.step1Title}</h2>
-            <p className={`${styles.paragraph} paragraph`}>{article.step1Intro}</p>
+            <h2 className={`${styles.blockTitle} title_2`}>{applyTypograf(article.step1Title)}</h2>
+            <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.step1Intro)}</p>
             <div className={styles.listBlock}>
               <ol className={styles.orderedList}>
                 {article.step1Items.map((item, idx) => (
                   <li key={idx}>
-                    <span className="subtitle_1">{item.subtitle}</span>
+                    <span className="subtitle_1">{applyTypograf(item.subtitle)}</span>
                     <ul className={styles.bulletList}>
                       {item.bullets.map((b, i) => (
-                        <li key={i}>{b}</li>
+                        <li key={i}>{applyTypograf(b)}</li>
                       ))}
                     </ul>
                   </li>
@@ -148,7 +159,7 @@ export default function Article({ articleId }) {
               </ol>
             </div>
             {article.step1Outro && (
-              <p className={`${styles.paragraph} paragraph`}>{article.step1Outro}</p>
+              <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.step1Outro)}</p>
             )}
           </div>
 
@@ -163,19 +174,19 @@ export default function Article({ articleId }) {
                   className={styles.figureImage}
                 />
               </div>
-              <figcaption className={`${styles.caption} subinfo`}>{article.image2Caption}</figcaption>
+              <figcaption className={`${styles.caption} subinfo`}>{applyTypograf(article.image2Caption)}</figcaption>
             </figure>
           )}
 
           {article.step2Title && article.step2Steps?.length > 0 && (
             <div className={styles.block}>
-              <h2 className={`${styles.blockTitle} title_2`}>{article.step2Title}</h2>
-              <p className={`${styles.paragraph} paragraph`}>{article.step2Intro}</p>
+              <h2 className={`${styles.blockTitle} title_2`}>{applyTypograf(article.step2Title)}</h2>
+              <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.step2Intro)}</p>
               <ol className={styles.stepList}>
                 {article.step2Steps.map((step, idx) => (
                   <li key={idx}>
-                    <span className="subtitle_1">{step.title}</span>
-                    <p className={`${styles.paragraph} paragraph`}>{step.text}</p>
+                    <span className="subtitle_1">{applyTypograf(step.title)}</span>
+                    <p className={`${styles.paragraph} paragraph`}>{applyTypograf(step.text)}</p>
                   </li>
                 ))}
               </ol>
@@ -184,7 +195,7 @@ export default function Article({ articleId }) {
 
           <div className={styles.block}>
             <h2 className={`${styles.blockTitle} title_2`}>Ключевой принцип</h2>
-            <p className={`${styles.paragraph} paragraph`}>{article.keyPrinciple}</p>
+            <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.keyPrinciple)}</p>
           </div>
 
           <div className={styles.articleFooter}>
@@ -214,16 +225,16 @@ export default function Article({ articleId }) {
           </div>
           <div className={styles.templatesRight}>
             <h2 id="templates-heading" className={`${styles.templatesTitle} title_1`}>
-              Попробуй наши шаблоны для поездок
+              {applyTypograf('Попробуй наши шаблоны для поездок')}
             </h2>
             <div className={styles.templatesDescriptionWrap}>
               <p className={`${styles.templatesDescription} paragraph`}>
-                Практично, удобно, а ещё мы предусмотрели все важные пункты, тебе осталось только скопировать и настроить под себя
+                {applyTypograf('Практично, удобно, а ещё мы предусмотрели все важные пункты, тебе осталось только скопировать и настроить под себя')}
               </p>
               <Button
                 Text="Использовать"
                 color="white"
-                onClick={() => router.push('/creating')}
+                onClick={handleUseTemplate}
               />
             </div>
           </div>

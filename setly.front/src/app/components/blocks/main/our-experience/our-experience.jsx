@@ -1,117 +1,184 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import {
+    useState,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useMemo,
+} from "react";
+import Link from "next/link";
 import Image from "next/image";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import { ARTICLES_LIST } from "@/data/articles-data";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./our-experience.module.css";
 
-const EXPERIENCE_CARDS = [
-    {
-        imageSrc: "/img/main/suit-case-2.png",
-        imageAlt: "Чемодан",
-        title: "Как собраться в поездку за 15 минут",
-        description:
-            "Не обязательно брать все подряд, чтобы быть готовым ко всему",
-    },
-    {
-        imageSrc: "/img/main/question-sign.png",
-        imageAlt: "Вопрос",
-        title: "Почему вы всё ещё забываете вещи",
-        description:
-            "Разбираемся как перестать это делать и систематизировать свой опыт",
-    },
-    {
-        imageSrc: "/img/main/med-kit.png",
-        imageAlt: "Аптечка",
-        title: "Как собрать универсальную дорожную аптечку",
-        description:
-            "Собираем базовый минимум, чтобы исключить рискованный максимум",
-    },
-];
+const CARD_GAP_PX = 20;
+const MIN_CARD_WIDTH_PX = 280;
+const MAX_CARD_WIDTH_PX = 335;
 
-function ExperienceCard({ imageSrc, imageAlt, title, description }) {
-    return (
-        <article className={styles.card}>
-            <div className={styles.tags}>
-                <span className={styles.tag}>
-                    <Image
-                        src="/icons/images/Lightbulb.svg"
-                        alt=""
-                        width={20}
-                        height={20}
-                        className={styles.tagIcon}
-                    />
-                    Статья
-                </span>
-                <span className={styles.tag}>
-                    <Image
-                        src="/icons/images/Clock.svg"
-                        alt=""
-                        width={20}
-                        height={20}
-                        className={styles.tagIcon}
-                    />
-                    5 минут
-                </span>
-            </div>
-            <div className={styles.cardImageWrap}>
-                <Image
-                    src={imageSrc}
-                    alt={imageAlt}
-                    width={264}
-                    height={264}
-                    className={styles.cardImage}
-                />
-            </div>
-            <h3 className={`${styles.cardTitle} subtitle_1`}>{title}</h3>
-            <p className={`${styles.cardDescription} subinfo`}>{description}</p>
-        </article>
+const EXPERIENCE_CARDS = ARTICLES_LIST.map((article) => ({
+    id: article.id,
+    imageSrc: article.imageSrc,
+    imageAlt: article.imageAlt,
+    title: article.title,
+    description: article.description,
+    readTime: article.readTime,
+}));
+
+/**
+ * Сначала подбираем ширину карточки в [280, 335], затем число колонок:
+ * 3 колонки, если в слоте ≥ 280px; иначе 2 при ≥ 280; иначе 1.
+ * Между карточками всегда ровно CARD_GAP_PX. Ряд короче viewport — центрируем через centerOffset.
+ */
+function computeCarouselLayout(viewportWidth) {
+    const W = viewportWidth;
+    if (W <= 0) {
+        return {
+            visibleCount: 1,
+            cardWidth: MIN_CARD_WIDTH_PX,
+            centerOffset: 0,
+        };
+    }
+
+    const raw3 = (W - 2 * CARD_GAP_PX) / 3;
+    if (raw3 >= MIN_CARD_WIDTH_PX) {
+        const cardWidth = Math.min(MAX_CARD_WIDTH_PX, raw3);
+        const rowWidth = 3 * cardWidth + 2 * CARD_GAP_PX;
+        const centerOffset = Math.max(0, (W - rowWidth) / 2);
+        return { visibleCount: 3, cardWidth, centerOffset };
+    }
+
+    const raw2 = (W - CARD_GAP_PX) / 2;
+    if (raw2 >= MIN_CARD_WIDTH_PX) {
+        const cardWidth = Math.min(MAX_CARD_WIDTH_PX, raw2);
+        const rowWidth = 2 * cardWidth + CARD_GAP_PX;
+        const centerOffset = Math.max(0, (W - rowWidth) / 2);
+        return { visibleCount: 2, cardWidth, centerOffset };
+    }
+
+    const cardWidth = Math.min(
+        MAX_CARD_WIDTH_PX,
+        Math.max(MIN_CARD_WIDTH_PX, W),
     );
+    const centerOffset = Math.max(0, (W - cardWidth) / 2);
+    return { visibleCount: 1, cardWidth, centerOffset };
 }
 
-/* Трек [0,1,2,0,1,2]: полный дубликат для бесконечного цикла без перескакивания */
+/* Дубликат трека для бесконечной прокрутки */
 const trackCards = [...EXPERIENCE_CARDS, ...EXPERIENCE_CARDS];
-const totalSlides = trackCards.length; /* 6 */
-const totalPositions = EXPERIENCE_CARDS.length + 1; /* 0,1,2,3 — позиция 3 = клон начала */
-const trackStepPercent = 100 / totalSlides; /* один слайд = 16.666% трека */
+const totalSlides = trackCards.length;
+const totalPositions = EXPERIENCE_CARDS.length + 1;
 
 const SWIPE_MIN_PX = 50;
 const MOBILE_BREAKPOINT = 2561;
 
+function ExperienceCard({ id, imageSrc, imageAlt, title, description, readTime }) {
+    return (
+        <Link
+            href={`/articles/${id}`}
+            className={styles.cardLink}
+            aria-label={`Читать: ${title}`}
+        >
+            <article className={styles.card}>
+                <div className={styles.tags}>
+                    <span className={styles.tag}>
+                        <Image
+                            src="/icons/images/Lightbulb.svg"
+                            alt=""
+                            width={20}
+                            height={20}
+                            className={styles.tagIcon}
+                        />
+                        Статья
+                    </span>
+                    <span className={styles.tag}>
+                        <Image
+                            src="/icons/images/Clock.svg"
+                            alt=""
+                            width={20}
+                            height={20}
+                            className={styles.tagIcon}
+                        />
+                        {readTime}
+                    </span>
+                </div>
+                <div className={styles.cardImageWrap}>
+                    <Image
+                        src={imageSrc}
+                        alt={imageAlt}
+                        width={264}
+                        height={264}
+                        className={styles.cardImage}
+                    />
+                </div>
+                <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
+                <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
+            </article>
+        </Link>
+    );
+}
+
 export default function OurExperience() {
-    const [carouselIndex, setCarouselIndex] = useState(0); /* 0..3 */
+    const viewportRef = useRef(null);
+    const [viewportWidth, setViewportWidth] = useState(1164);
+    const [carouselIndex, setCarouselIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [skipTransition, setSkipTransition] = useState(false);
     const isJumpingRef = useRef(false);
     const touchStartX = useRef(null);
+
+    const layout = useMemo(
+        () => computeCarouselLayout(viewportWidth),
+        [viewportWidth],
+    );
+    const { cardWidth: cardWidthPx, centerOffset } = layout;
+    const stepPx = cardWidthPx + CARD_GAP_PX;
+    const trackWidthPx =
+        totalSlides * cardWidthPx + (totalSlides - 1) * CARD_GAP_PX;
+
+    useLayoutEffect(() => {
+        const el = viewportRef.current;
+        if (!el) return;
+        const measure = () => {
+            setViewportWidth(el.getBoundingClientRect().width);
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        setCarouselIndex(0);
+    }, [viewportWidth]);
 
     const isMobileView = () =>
         typeof window !== "undefined" &&
         window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches;
 
     const goNext = () => {
-        if (isTransitioning) return;
+        if (isTransitioning || stepPx <= 0 || cardWidthPx <= 0) return;
         setIsTransitioning(true);
         setCarouselIndex((prev) => (prev < totalPositions - 1 ? prev + 1 : prev));
     };
 
     const goPrev = () => {
-        if (isTransitioning) return;
+        if (isTransitioning || stepPx <= 0 || cardWidthPx <= 0) return;
         if (carouselIndex > 0) {
             setIsTransitioning(true);
             setCarouselIndex((prev) => prev - 1);
             return;
         }
-        /* С позиции 0 «назад» = показываем конец трека [2,0,1]: мгновенно в позицию 3, затем анимация в 2 */
         setSkipTransition(true);
-        setCarouselIndex(totalPositions - 1); /* 3 */
+        setCarouselIndex(totalPositions - 1);
         isJumpingRef.current = true;
     };
 
     const handleTransitionEnd = (e) => {
         if (e.propertyName !== "transform") return;
         setIsTransitioning(false);
-        /* После анимации вперёд до позиции 3 (клон начала) — мгновенно сброс в 0 без скачка */
         if (carouselIndex === totalPositions - 1) {
             setSkipTransition(true);
             setCarouselIndex(0);
@@ -139,11 +206,13 @@ export default function OurExperience() {
             if (isJumpingRef.current) {
                 isJumpingRef.current = false;
                 setIsTransitioning(true);
-                setCarouselIndex(totalPositions - 2); /* 2 — показываем [2,0,1] */
+                setCarouselIndex(totalPositions - 2);
             }
         });
         return () => cancelAnimationFrame(id);
     }, [skipTransition]);
+
+    const translateX = centerOffset - carouselIndex * stepPx;
 
     return (
         <section className={styles.wrapper}>
@@ -190,18 +259,24 @@ export default function OurExperience() {
                     role="region"
                     aria-label="Карусель статей"
                 >
-                    <div className={styles.cardsSliderViewport}>
+                    <div className={styles.cardsSliderViewport} ref={viewportRef}>
                         <div
                             className={`${styles.cardsTrack} ${skipTransition ? styles.cardsTrackNoTransition : ""}`}
                             style={{
-                                transform: `translateX(-${carouselIndex * trackStepPercent}%)`,
+                                width: trackWidthPx,
+                                gap: CARD_GAP_PX,
+                                transform: `translateX(${translateX}px)`,
                             }}
                             onTransitionEnd={handleTransitionEnd}
                         >
                             {trackCards.map((card, i) => (
                                 <div
-                                    key={`${card.title}-${i}`}
+                                    key={`${card.id}-${i}`}
                                     className={styles.cardSlide}
+                                    style={{
+                                        width: cardWidthPx,
+                                        flex: `0 0 ${cardWidthPx}px`,
+                                    }}
                                 >
                                     <ExperienceCard {...card} />
                                 </div>

@@ -1,27 +1,35 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import ProfilePhoto from '@/app/components/atomic/atoms/profile-photo/profile-photo';
-import { getAuth } from '@/app/lib/auth-storage';
+import Button from '@/app/components/atomic/atoms/buttons/buttons';
+import { getAuth, clearAuth } from '@/app/lib/auth-storage';
 import styles from './header.module.css';
 
 const NAV_ITEMS = [
   { id: 'check-plans', label: 'Чек-планы', href: '/check-plans' },
   { id: 'articles', label: 'Статьи', href: '/articles' },
-  { id: 'tests', label: 'Тесты', href: '#' },
-  { id: 'about', label: 'О нас', href: '#' },
+  { id: 'tests', label: 'Тесты', href: '/tests' },
+  { id: 'about', label: 'О нас', href: '/about' },
 ];
+
+const isAccountPage = (path) => path === '/account';
 
 export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigation = false }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [storageAuth, setStorageAuth] = useState(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [logoutPopupOpen, setLogoutPopupOpen] = useState(false);
+  const [accountMenuPosition, setAccountMenuPosition] = useState({ top: 0, left: 0 });
+  const accountMenuWrapRef = useRef(null);
   const router = useRouter();
   const pathname = usePathname();
+  const onAccountPage = isAccountPage(pathname);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
@@ -51,6 +59,45 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
     closeMobileMenu();
     router.push('/account');
   }, [closeMobileMenu, router]);
+
+  const updateAccountMenuPosition = useCallback(() => {
+    const el = accountMenuWrapRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setAccountMenuPosition({
+        top: rect.bottom + 12,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  }, []);
+
+  const handleAccountMenuToggle = useCallback((e) => {
+    e?.preventDefault?.();
+    if (!accountMenuOpen) updateAccountMenuPosition();
+    setAccountMenuOpen((prev) => !prev);
+  }, [accountMenuOpen, updateAccountMenuPosition]);
+
+  const handleLogoutFromMenu = useCallback(() => {
+    setAccountMenuOpen(false);
+    setLogoutPopupOpen(true);
+  }, []);
+
+  const handleLogoutConfirm = useCallback(() => {
+    clearAuth();
+    setLogoutPopupOpen(false);
+    router.push('/');
+  }, [router]);
+
+  useEffect(() => {
+    if (!onAccountPage || !accountMenuOpen) return;
+    const h = (e) => {
+      const inWrap = accountMenuWrapRef.current?.contains(e.target);
+      const menuEl = document.querySelector(`.${styles.accountDropdownMenuPortal}`);
+      if (!inWrap && !menuEl?.contains(e.target)) setAccountMenuOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [onAccountPage, accountMenuOpen]);
 
   const renderNavLink = (item, buttonClass, onClick) => {
     const isActive = item.id === activeNavId;
@@ -105,7 +152,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
         </Link>
 
         {!hideNavigation && (
-          <div className={styles.navWrap}>
+          <div className={`${styles.navWrap} ${!isLoggedIn ? styles.navWrapUnauth : ''}`}>
             <nav className={`component-blur ${styles.headerNav}`} role="navigation" aria-label="Навигация по разделам">
               <ul className={styles.headerNavList}>
                 {NAV_ITEMS.map((item) => (
@@ -128,6 +175,20 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
               >
                 <span className={styles.headerAuthButtonText}>Войти</span>
               </button>
+            ) : onAccountPage ? (
+              <span ref={accountMenuWrapRef} className={styles.accountMenuWrap}>
+                <ProfilePhoto
+                  src={user?.profile_photo_url ?? user?.avatarPath}
+                  href={undefined}
+                  hideUploadOnHover
+                  size={44}
+                  className={styles.headerProfilePhoto}
+                  onClick={handleAccountMenuToggle}
+                  aria-label="Меню аккаунта"
+                  aria-haspopup="menu"
+                  aria-expanded={accountMenuOpen}
+                />
+              </span>
             ) : (
               <ProfilePhoto
                 src={user?.profile_photo_url ?? user?.avatarPath}
@@ -168,6 +229,59 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
           </button>
         </div>
       </div>
+
+      {/* Выпадающее меню аккаунта (только на /account) */}
+      {mounted && onAccountPage && isLoggedIn && accountMenuOpen &&
+        createPortal(
+          <div
+            className={`component-blur ${styles.accountDropdownMenu} ${styles.accountDropdownMenuPortal}`}
+            role="menu"
+            style={{ top: accountMenuPosition.top, left: accountMenuPosition.left }}
+          >
+            <button
+              type="button"
+              className={`subinfo ${styles.accountDropdownMenuItem}`}
+              role="menuitem"
+              onClick={handleLogoutFromMenu}
+            >
+              Выйти из аккаунта
+            </button>
+          </div>,
+          document.body
+        )}
+
+      {/* Попап выхода из аккаунта (как на странице настроек) */}
+      {mounted && logoutPopupOpen &&
+        createPortal(
+          <div className={styles.logoutPopupOverlay} onClick={() => setLogoutPopupOpen(false)}>
+            <div
+              className={styles.logoutPopupBox}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="header-logout-popup-title"
+            >
+              <p id="header-logout-popup-title" className={`subtitle_1 ${styles.logoutPopupText}`}>
+                Вы уверены? Перед выходом не забудьте свой драгоценный пароль
+              </p>
+              <div className={styles.logoutPopupButtons}>
+                <Button
+                  color="blue"
+                  Text="Помню, выйти"
+                  type="button"
+                  onClick={handleLogoutConfirm}
+                />
+                <Button
+                  color="white"
+                  Text="Пойду вспоминать"
+                  type="button"
+                  onClick={() => setLogoutPopupOpen(false)}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Оверлей и боковое меню — рендер в body, чтобы перекрывать весь viewport без зазоров */}
       {mounted &&

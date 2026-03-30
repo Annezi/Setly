@@ -70,7 +70,6 @@
     margin: 0;
     font-family: "Inter", sans-serif;
     box-sizing: border-box;
-    scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -149,7 +148,7 @@ picture,
 [class*="icon"] img,
 [class*="icon"] svg {
     -webkit-user-drag: none;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 body {
@@ -173,6 +172,14 @@ textarea,
     cursor: text;
 }
 
+/* Все поля ввода занимают высоту родителя */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+    height: 44px;
+}
+
 input::placeholder,
 textarea::placeholder {
     color: var(--grayscale-gray);
@@ -190,6 +197,7 @@ button,
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
+    overflow: visible;
 }
 
 #__next {

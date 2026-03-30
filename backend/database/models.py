@@ -97,7 +97,11 @@ class UsefulContactsBlockType(BaseModel):
 class UsefulContactsBlock(BaseModel):
     blocks: List[UsefulContactsBlockType]
 
+
 class BaseBlock(BaseModel):
+    # Тип блока для сохранения порядка отображения на фронтенде.
+    # По умолчанию "text" — для старых записей и простых текстовых блоков.
+    type: str = "text"
     title: str
     description: str
 

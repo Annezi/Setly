@@ -3,19 +3,59 @@
 import { useState, useMemo, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { Header } from "../../globals/header/Header";
 import { Footer } from "../../globals/footer/Footer";
-import Search from "./search/search";
-import Filters from "./filters/filters";
-import UnfilteredPlans, { FilteredPlans } from "./plans/check-plans/check-plans";
 import planStyles from "./plans/check-plans/check-plans.module.css";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
-import NotFound from "./plans/notFound/notFound";
 import { parseAppliedFilters } from "./utils/parseFilterTags";
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
+
+const Search = dynamic(() => import("./search/search").then((m) => m.default), {
+	ssr: false,
+	loading: () => <div style={{ minHeight: 48 }} aria-busy="true" aria-label="Загрузка поиска" />,
+});
+const Filters = dynamic(() => import("./filters/filters").then((m) => m.default), {
+	ssr: false,
+	loading: () => <div style={{ minHeight: 80 }} aria-busy="true" aria-label="Загрузка фильтров" />,
+});
+const UnfilteredPlans = dynamic(
+	() => import("./plans/check-plans/check-plans").then((m) => m.default),
+	{
+		ssr: false,
+		loading: () => (
+			<div className={`${planStyles.filteredContainer} ${planStyles.filteredContainerLoading}`} aria-busy="true">
+				<div className={planStyles.cards}>
+					{[1, 2, 3].map((i) => (
+						<PlanCardSkeleton key={i} />
+					))}
+				</div>
+			</div>
+		),
+	}
+);
+const FilteredPlans = dynamic(
+	() => import("./plans/check-plans/check-plans").then((m) => m.FilteredPlans),
+	{
+		ssr: false,
+		loading: () => (
+			<div className={`${planStyles.filteredContainer} ${planStyles.filteredContainerLoading}`} aria-busy="true">
+				<div className={planStyles.cards}>
+					{[1, 2, 3].map((i) => (
+						<PlanCardSkeleton key={i} />
+					))}
+				</div>
+			</div>
+		),
+	}
+);
+const NotFound = dynamic(() => import("./plans/notFound/notFound").then((m) => m.default), {
+	ssr: false,
+	loading: () => <div style={{ minHeight: 220 }} aria-busy="true" aria-label="Загрузка результатов" />,
+});
 
 /** Попап «Войдите, чтобы поставить Лайк» + кнопка «Войти» */
 const LoginToLikePopup = memo(function LoginToLikePopup({ isClosing, onClose, onLogin }) {

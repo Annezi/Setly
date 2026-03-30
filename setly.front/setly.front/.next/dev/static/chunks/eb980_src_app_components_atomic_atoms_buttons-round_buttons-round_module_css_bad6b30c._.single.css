@@ -1,0 +1,97 @@
+/* [project]/setly.front/src/app/components/atomic/atoms/buttons-round/buttons-round.module.css [app-client] (css) */
+.buttons-round-module__NdKJCq__roundButton {
+  cursor: pointer;
+  z-index: 1;
+  border: none;
+  border-radius: 50%;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  transition: color .2s, box-shadow .2s;
+  display: inline-flex;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 1px #00000080;
+}
+
+.buttons-round-module__NdKJCq__roundButton:active {
+  transform: scale(.98);
+}
+
+.buttons-round-module__NdKJCq__roundButton:before {
+  content: "";
+  opacity: 0;
+  z-index: 0;
+  background: radial-gradient(circle, #88b2e8e6, #245df5e6);
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  transition: opacity .3s;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.buttons-round-module__NdKJCq__roundButton--white {
+  background-color: var(--grayscale-white);
+  color: var(--grayscale-dark-gray);
+}
+
+.buttons-round-module__NdKJCq__roundButton--white:hover:before {
+  opacity: 1;
+}
+
+.buttons-round-module__NdKJCq__roundButton--hover {
+  background-color: var(--accent-blue);
+  color: var(--grayscale-white);
+}
+
+.buttons-round-module__NdKJCq__roundButton--hover:hover:before {
+  opacity: 1;
+}
+
+.buttons-round-module__NdKJCq__roundButton--disabled {
+  background-color: var(--grayscale-light-gray);
+  color: var(--grayscale-white);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.buttons-round-module__NdKJCq__roundButton--profile {
+  background: var(--blue-gradient);
+  color: var(--grayscale-white);
+  transition: transform .2s;
+}
+
+.buttons-round-module__NdKJCq__roundButton--profile:hover {
+  transform: scale(1.05);
+}
+
+.buttons-round-module__NdKJCq__roundButton--disabled .buttons-round-module__NdKJCq__roundButton__icon {
+  color: var(--grayscale-white);
+}
+
+.buttons-round-module__NdKJCq__roundButton__icon {
+  z-index: 1;
+  justify-content: center;
+  align-items: center;
+  transition: color .2s, filter .2s;
+  display: flex;
+  position: relative;
+}
+
+.buttons-round-module__NdKJCq__roundButton:hover .buttons-round-module__NdKJCq__roundButton__icon {
+  color: var(--grayscale-white);
+}
+
+.buttons-round-module__NdKJCq__roundButton:hover .buttons-round-module__NdKJCq__roundButton__icon img {
+  filter: brightness(0) invert();
+}
+
+.buttons-round-module__NdKJCq__roundButton__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/*# sourceMappingURL=eb980_src_app_components_atomic_atoms_buttons-round_buttons-round_module_css_bad6b30c._.single.css.map*/

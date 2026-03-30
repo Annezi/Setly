@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import Input from "@/app/components/atomic/molecules/input/input";
 import { getAuth, setAuth, clearAuth } from "@/app/lib/auth-storage";
+import { apiFetch } from "@/app/lib/api";
 import styles from "./settings.module.css";
 
 const NICKNAME_MAX_LENGTH = 40;
@@ -53,11 +55,14 @@ export default function Settings() {
   const [newPasswordAgain, setNewPasswordAgain] = useState("");
   const [currentEmail, setCurrentEmail] = useState("");
   const [newEmail, setNewEmail] = useState("");
-  const [emailPassword, setEmailPassword] = useState("");
 
   const [passwordError, setPasswordError] = useState(null);
-  const [emailPasswordError, setEmailPasswordError] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  const [newEmailExistsError, setNewEmailExistsError] = useState(false);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
+  const [saveConfirmPassword, setSaveConfirmPassword] = useState("");
+  const [saveConfirmPasswordError, setSaveConfirmPasswordError] = useState(null);
+  const [saveConfirmEmailTakenError, setSaveConfirmEmailTakenError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [logoutPopupOpen, setLogoutPopupOpen] = useState(false);
   const [successPopupOpen, setSuccessPopupOpen] = useState(false);
@@ -65,6 +70,8 @@ export default function Settings() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deletePasswordError, setDeletePasswordError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const pendingPayloadRef = useRef(null);
 
   useEffect(() => {
     const auth = getAuth();
@@ -84,101 +91,219 @@ export default function Settings() {
     newPasswordAgain.length > 0 &&
     newPassword !== newPasswordAgain;
 
-  const handleSave = useCallback(
-    async (e) => {
+  const wantPasswordChange =
+    newPassword.length > 0 || newPasswordAgain.length > 0;
+
+  const passwordFieldsFilled =
+    newPassword.length > 0 && newPasswordAgain.length > 0;
+
+  const buildChangedPayload = useCallback(() => {
+    if (!user?.id) return null;
+
+    const nicknameTrimmed = nickname.trim().replace(/\s+/g, " ");
+    const payload = {};
+
+    if (nicknameTrimmed !== (user.nickname ?? "")) {
+      payload.nickname = nicknameTrimmed;
+    }
+
+    const newEmailTrimmed = newEmail.trim();
+    const wantEmailChange =
+      newEmailTrimmed.length > 0 &&
+      newEmailTrimmed.toLowerCase() !== (user.email ?? "").toLowerCase();
+
+    if (wantEmailChange) {
+      payload.email = newEmailTrimmed.toLowerCase();
+    }
+
+    if (wantPasswordChange && passwordFieldsFilled) {
+      payload.newPassword = newPassword;
+    }
+
+    if (Object.keys(payload).length === 0) return null;
+    return payload;
+  }, [
+    user,
+    nickname,
+    newEmail,
+    newPassword,
+    wantPasswordChange,
+    passwordFieldsFilled,
+  ]);
+
+  const openSaveConfirm = useCallback(() => {
+    setSaveConfirmPassword("");
+    setSaveConfirmPasswordError(null);
+    setSaveConfirmEmailTakenError(null);
+    setSaveError(null);
+    setNewEmailExistsError(false);
+    const payload = buildChangedPayload();
+    if (!payload) return;
+    pendingPayloadRef.current = payload;
+    setSaveConfirmOpen(true);
+  }, [buildChangedPayload]);
+
+  const handlePrepareSave = useCallback(
+    (e) => {
       e?.preventDefault?.();
       if (!user?.id) return;
 
       setSaveError(null);
       setPasswordError(null);
-      setEmailPasswordError(null);
+      setNewEmailExistsError(false);
 
-      const nicknameTrimmed = nickname.trim().replace(/\s+/g, " ");
       if (getNicknameError(nickname)) return;
 
-      const payload = {};
-      if (nicknameTrimmed !== (user.nickname ?? "")) {
-        payload.nickname = nicknameTrimmed;
-      }
-
-      const wantEmailChange =
-        newEmail.trim().length > 0 && newEmail.trim() !== (user.email ?? "");
-      const wantPasswordChange =
-        newPassword.length > 0 || newPasswordAgain.length > 0;
-
       if (wantPasswordChange) {
+        if (!passwordFieldsFilled) {
+          setPasswordError("Спокойно! Введите пароль в обоих полях");
+          return;
+        }
         const pwdErr = getPasswordError(newPassword);
         if (pwdErr) {
           setPasswordError(pwdErr);
           return;
         }
-        if (newPassword !== newPasswordAgain) return;
-        payload.newPassword = newPassword;
-        if (wantEmailChange) {
-          payload.currentPassword = emailPassword;
-        }
-      }
-
-      if (wantEmailChange) {
-        if (!EMAIL_PATTERN.test(newEmail.trim())) return;
-        setEmailPasswordError(null);
-        payload.email = newEmail.trim().toLowerCase();
-        payload.currentPassword = payload.currentPassword ?? emailPassword;
-      }
-
-      if (Object.keys(payload).length === 0) return;
-
-      setIsSaving(true);
-      try {
-        const res = await fetch(`/api/users/${user.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          if (res.status === 400 && data.message) {
-            if (
-              data.message.includes("пароль") &&
-              data.message.includes("почт")
-            ) {
-              setEmailPasswordError(data.message);
-            } else if (data.message.includes("Пароль не верный")) {
-              setEmailPasswordError(data.message);
-            } else {
-              setSaveError(data.message);
-            }
-          } else {
-            setSaveError(data.message || "Ошибка сохранения");
-          }
-          setIsSaving(false);
+        if (newPassword !== newPasswordAgain) {
           return;
         }
-
-        setAuth({ user: data });
-        setUser(data);
-        setNewPassword("");
-        setNewPasswordAgain("");
-        setEmailPassword("");
-        if (data.email) setCurrentEmail(data.email);
-        if (payload.email) setNewEmail("");
-        setSuccessPopupOpen(true);
-      } catch {
-        setSaveError("Ошибка сохранения");
-      } finally {
-        setIsSaving(false);
       }
+
+      const newEmailTrimmed = newEmail.trim();
+      const wantEmailChange =
+        newEmailTrimmed.length > 0 &&
+        newEmailTrimmed.toLowerCase() !== (user.email ?? "").toLowerCase();
+
+      if (wantEmailChange) {
+        if (!EMAIL_PATTERN.test(newEmailTrimmed)) {
+          setSaveError("Укажите корректный адрес почты");
+          return;
+        }
+      }
+
+      const payload = buildChangedPayload();
+      if (!payload) return;
+
+      const runCheckEmail = async () => {
+        if (wantEmailChange) {
+          try {
+            const checkRes = await apiFetch(
+              `/api/user/check-email?email=${encodeURIComponent(newEmailTrimmed.toLowerCase())}`
+            );
+            const checkData = await checkRes.json().catch(() => ({}));
+            if (checkData.exists) {
+              setNewEmailExistsError(true);
+              return;
+            }
+          } catch {
+            setSaveError("Не удалось проверить почту");
+            return;
+          }
+        }
+        openSaveConfirm();
+      };
+
+      void runCheckEmail();
     },
     [
       user,
       nickname,
+      newEmail,
       newPassword,
       newPasswordAgain,
-      newEmail,
-      emailPassword,
+      wantPasswordChange,
+      passwordFieldsFilled,
+      buildChangedPayload,
+      openSaveConfirm,
     ]
   );
+
+  const handleConfirmSave = useCallback(async () => {
+    if (!user?.id) return;
+    const pending = pendingPayloadRef.current;
+    if (!pending) {
+      setSaveConfirmOpen(false);
+      return;
+    }
+
+    setSaveConfirmPasswordError(null);
+    setSaveConfirmEmailTakenError(null);
+    const currentPwd = normalizePassword(saveConfirmPassword);
+    if (!currentPwd) {
+      setSaveConfirmPasswordError("Введите пароль");
+      return;
+    }
+
+    if (pending.newPassword && pending.newPassword === currentPwd) {
+      setSaveConfirmPasswordError(
+        "Новый пароль должен отличаться от текущего"
+      );
+      return;
+    }
+
+    const body = {
+      ...pending,
+      current_password: currentPwd,
+      new_password: pending.newPassword ?? undefined,
+    };
+    delete body.newPassword;
+
+    setIsSaving(true);
+    try {
+      const res = await apiFetch(`/api/user/me`, {
+        method: "PATCH",
+        body,
+      });
+      const data = await res.json().catch(() => ({}));
+      const errText = data?.detail || data?.message || "Ошибка сохранения";
+
+      if (!res.ok) {
+        if (res.status === 400) {
+          if (errText === "Спокойно. Пароли не совпадают") {
+            setSaveConfirmPasswordError(errText);
+          } else if (
+            errText === "Новый пароль должен отличаться от текущего"
+          ) {
+            setSaveConfirmPasswordError(errText);
+          } else if (
+            typeof errText === "string" &&
+            errText.includes("почт")
+          ) {
+            if (errText.toLowerCase().includes("уже зарегистрирован")) {
+              setSaveConfirmEmailTakenError("Введённая новая почта уже занята");
+            } else {
+              setSaveError(errText);
+              setSaveConfirmOpen(false);
+            }
+          } else {
+            setSaveError(errText);
+            setSaveConfirmOpen(false);
+          }
+        } else {
+          setSaveError(errText);
+          setSaveConfirmOpen(false);
+        }
+        setIsSaving(false);
+        return;
+      }
+
+      setAuth({ user: data });
+      setUser(data);
+      setNewPassword("");
+      setNewPasswordAgain("");
+      setSaveConfirmPassword("");
+      pendingPayloadRef.current = null;
+      setSaveConfirmOpen(false);
+      if (data.email) setCurrentEmail(data.email);
+      if (pending.email) setNewEmail("");
+      setSuccessPopupOpen(true);
+    } catch {
+      setSaveError("Ошибка сохранения");
+      setSaveConfirmOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user?.id, saveConfirmPassword]);
 
   const handleDeleteAccount = useCallback(async () => {
     if (!user?.id) return;
@@ -227,6 +352,81 @@ export default function Settings() {
     setDeletePasswordError(null);
   };
 
+  const closeSaveConfirm = () => {
+    if (isSaving) return;
+    setSaveConfirmOpen(false);
+    setSaveConfirmPassword("");
+    setSaveConfirmPasswordError(null);
+    setSaveConfirmEmailTakenError(null);
+    pendingPayloadRef.current = null;
+  };
+
+  const saveConfirmPopup =
+    saveConfirmOpen && typeof document !== "undefined"
+      ? createPortal(
+      <div
+        className={styles.deleteConfirmOverlay}
+        onClick={closeSaveConfirm}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-confirm-title"
+      >
+        <div
+          className={styles.deleteConfirmPopup}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2
+            id="save-confirm-title"
+            className="title_2"
+            style={{ color: "var(--grayscale-dark-gray)" }}
+          >
+            Введите Ваш текущий пароль
+          </h2>
+          <p className={`paragraph ${styles.saveConfirmDesc}`}>
+            Чтобы сохранить изменения введите ваш старый пароль
+          </p>
+          <div className={styles.saveConfirmInputWrap}>
+            <Input
+              typeOfInput="password"
+              placeholder="Пароль"
+              value={saveConfirmPassword}
+              onChange={(e) => {
+                setSaveConfirmPassword(normalizePassword(e.target.value));
+                setSaveConfirmPasswordError(null);
+                setSaveConfirmEmailTakenError(null);
+              }}
+              errorMessage={saveConfirmPasswordError ?? undefined}
+              autoComplete="current-password"
+            />
+          </div>
+          {saveConfirmEmailTakenError && (
+            <p
+              className="label"
+              style={{
+                color: "var(--system-red)",
+                marginTop: 8,
+                textAlign: "center",
+              }}
+              role="alert"
+            >
+              {saveConfirmEmailTakenError}
+            </p>
+          )}
+          <div className={styles.deleteConfirmButtons}>
+            <Button
+              Text={isSaving ? "Подтверждение..." : "Подтвердить"}
+              color="blue"
+              type="button"
+              onClick={handleConfirmSave}
+              disabled={isSaving}
+            />
+          </div>
+        </div>
+      </div>,
+      document.body
+    )
+      : null;
+
   return (
     <div className={styles.wrapper}>
       <div
@@ -266,7 +466,7 @@ export default function Settings() {
         </h1>
       </div>
 
-      <form onSubmit={handleSave} noValidate>
+      <form onSubmit={handlePrepareSave} noValidate>
         <div className={styles.fieldsBlock}>
           <div className={styles.section}>
             <h2 className={`subtitle_1 ${styles.sectionTitle}`}>Никнейм</h2>
@@ -275,14 +475,14 @@ export default function Settings() {
                 Не больше 40 символов
               </p>
               <div className={styles.nicknameInput}>
-              <Input
-                typeOfInput="text"
-                placeholder="Введите..."
-                value={nickname}
-                onChange={(e) => setNickname(normalizeNickname(e.target.value))}
-                maxLength={NICKNAME_MAX_LENGTH}
-                errorMessage={nicknameError ?? undefined}
-                autoComplete="username"
+                <Input
+                  typeOfInput="text"
+                  placeholder="Введите..."
+                  value={nickname}
+                  onChange={(e) => setNickname(normalizeNickname(e.target.value))}
+                  maxLength={NICKNAME_MAX_LENGTH}
+                  errorMessage={nicknameError ?? undefined}
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -354,23 +554,14 @@ export default function Settings() {
                   value={newEmail}
                   onChange={(e) => {
                     setNewEmail(e.target.value);
-                    setEmailPasswordError(null);
+                    setNewEmailExistsError(false);
                   }}
+                  errorMessage={
+                    newEmailExistsError
+                      ? "Спокойно! Пользователь с данной почтой уже зарегистрирован, используйте другую почту"
+                      : undefined
+                  }
                   autoComplete="email"
-                />
-              </div>
-              <div className={styles.emailField}>
-                <p className={`subtitle_2 ${styles.sectionDesc}`}>Пароль</p>
-                <Input
-                  typeOfInput="password"
-                  placeholder="Пароль"
-                  value={emailPassword}
-                  onChange={(e) => {
-                    setEmailPassword(normalizePassword(e.target.value));
-                    setEmailPasswordError(null);
-                  }}
-                  errorMessage={emailPasswordError ?? undefined}
-                  autoComplete="current-password"
                 />
               </div>
             </div>
@@ -386,7 +577,7 @@ export default function Settings() {
         <div className={styles.buttonsBlock}>
           <Button
             color="blue"
-            Text={isSaving ? "Сохранение..." : "Сохранить изменения"}
+            Text="Сохранить изменения"
             type="submit"
             disabled={isSaving}
           />
@@ -396,7 +587,7 @@ export default function Settings() {
             type="button"
             onClick={() => setLogoutPopupOpen(true)}
           />
-          <Button
+          {/* <Button
             color="dangerFilled"
             Text="Удалить аккаунт"
             type="button"
@@ -418,9 +609,11 @@ export default function Settings() {
             }
             aria-label="Удалить аккаунт"
             onClick={handleOpenDeletePopup}
-          />
+          /> */}
         </div>
       </form>
+
+      {saveConfirmPopup}
 
       {logoutPopupOpen && (
         <div className={styles.popupOverlay} onClick={() => setLogoutPopupOpen(false)}>
@@ -451,7 +644,7 @@ export default function Settings() {
           </div>
         </div>
       )}
-      {deletePopupOpen && (
+      {/* {deletePopupOpen && (
         <div className={styles.popupOverlay} onClick={() => !isDeleting && setDeletePopupOpen(false)}>
           <div
             className={styles.popupBox}
@@ -510,7 +703,7 @@ export default function Settings() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
       {successPopupOpen && (
         <div className={styles.popupOverlay} onClick={() => setSuccessPopupOpen(false)}>
           <div

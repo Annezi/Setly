@@ -1,10 +1,17 @@
-'use client';
-
 import dynamic from 'next/dynamic';
 import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
 import { PlanCardSkeleton } from '@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton';
 import planStyles from '@/app/components/blocks/check-plans/plans/check-plans/check-plans.module.css';
+
+export const metadata = {
+  title: "Чек-планы для путешествий",
+  description:
+    "Чек-листы для путешественников: что взять с собой и к чему быть готовым по приезду в любую страну или город.",
+  alternates: {
+    canonical: "https://setly.space/check-plans",
+  },
+};
 
 const CheckPlansPage = dynamic(
   () => import('@/app/components/blocks/check-plans/CheckPlansPage').then((m) => ({ default: m.CheckPlansPage })),

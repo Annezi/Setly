@@ -8,6 +8,7 @@
   flex-direction: column;
   gap: 60px;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .filteredContainer {
@@ -17,6 +18,8 @@
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
+  overflow: visible;
+  padding: 12px 0;
 }
 
 /* Резерв высоты при загрузке (2 ряда скелетонов) — меньше скачок при появлении контента */
@@ -33,12 +36,15 @@
   justify-items: stretch;
   width: 100%;
   align-items: stretch;
+  overflow: visible;
 }
 
 .block {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow: visible;
+  padding: 12px 0;
 }
 
 .titleRow {
@@ -65,27 +71,31 @@
   gap: 20px;
   align-items: stretch;
   justify-content: center;
+  overflow: visible;
 }
 
-/* min-height как у скелетона — без скачка при замене скелетона на контент */
+/* Карточка: тень и scale на одном элементе — при hover увеличивается и отбрасывает ту же тень */
 .card {
   min-width: 0;
   max-width: 335px;
   width: 100%;
-  height: 100%;
-  min-height: 560px;
+  min-height: 520px;
   background: var(--grayscale-white);
   border-radius: 16px;
+  border: 1px solid var(--grayscale-primary-gray);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
   padding: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   text-align: center;
   align-items: center;
-  border: 1px solid var(--grayscale-primary-gray);
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
   transition: transform 0.2s ease;
   transform-origin: center;
+}
+
+.card:hover {
+  transform: scale(1.01);
 }
 
 .cardLink {
@@ -98,10 +108,6 @@
   min-height: 0;
   text-decoration: none;
   color: inherit;
-}
-
-.card:hover {
-  transform: scale(1.02);
 }
 
 .tags {
@@ -161,10 +167,7 @@
   font-size: 14px;
   font-weight: 400;
   color: var(--grayscale-dark-gray);
-  line-height: 1.4;
-  margin-bottom: 22px;
   flex: 1;
-  min-height: 0;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -283,8 +286,7 @@
     width: 100%;
     max-width: 335px;
     min-width: 280px;
-    height: auto;
-    min-height: 560px;
+    min-height: 520px;
   }
 
   .carouselNav {
@@ -326,7 +328,7 @@
     width: 100%;
     min-width: 0;
     height: auto;
-    min-height: 560px;
+    min-height: 520px;
   }
 }
 

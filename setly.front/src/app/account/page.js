@@ -1,16 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
-import PersonalHeader from '@/app/components/blocks/personal-account/personal-header/personal-header';
-import ProfileInfo from '@/app/components/blocks/personal-account/profile-info/profile-info';
-import PersonalCheckPlans from '@/app/components/blocks/personal-account/personal-check-plans/personal-check-plans';
 import { getAuth, updateAuthUser, clearAuth } from '@/app/lib/auth-storage';
 import { apiFetch } from '@/app/lib/api';
 
 const API_PREFIX = '/api/user';
+const PersonalHeader = dynamic(
+  () => import('@/app/components/blocks/personal-account/personal-header/personal-header').then((m) => m.default),
+  { ssr: false, loading: () => <div style={{ minHeight: 200 }} aria-busy="true" aria-label="Загрузка профиля" /> }
+);
+const ProfileInfo = dynamic(
+  () => import('@/app/components/blocks/personal-account/profile-info/profile-info').then((m) => m.default),
+  { ssr: false, loading: () => <div style={{ minHeight: 120 }} aria-busy="true" aria-label="Загрузка профиля" /> }
+);
+const PersonalCheckPlans = dynamic(
+  () => import('@/app/components/blocks/personal-account/personal-check-plans/personal-check-plans').then((m) => m.default),
+  { ssr: false, loading: () => <div style={{ minHeight: 420 }} aria-busy="true" aria-label="Загрузка чек-планов" /> }
+);
 
 function refreshUser(token, setUser, router) {
   if (!token) return;

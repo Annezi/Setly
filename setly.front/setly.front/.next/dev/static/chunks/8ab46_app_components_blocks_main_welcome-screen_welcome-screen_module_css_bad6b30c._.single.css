@@ -1,0 +1,132 @@
+/* [project]/setly.front/src/app/components/blocks/main/welcome-screen/welcome-screen.module.css [app-client] (css) */
+.welcome-screen-module__4XwqzG__block {
+  box-sizing: border-box;
+  height: 690px;
+  color: var(--grayscale-white);
+  background-image: url("/img/main/welcome-banner.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 200px;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-screen-module__4XwqzG__content {
+  text-align: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  display: flex;
+}
+
+.welcome-screen-module__4XwqzG__title {
+  color: var(--grayscale-white);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0 0 35px;
+  font-size: 64px;
+  font-weight: 400;
+  line-height: 1.2;
+  display: flex;
+}
+
+.welcome-screen-module__4XwqzG__titleLine {
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
+.welcome-screen-module__4XwqzG__titlePart {
+  justify-content: center;
+  align-items: center;
+  display: inline-flex;
+}
+
+.welcome-screen-module__4XwqzG__titleImageWrap {
+  vertical-align: middle;
+  align-items: center;
+  display: inline-flex;
+}
+
+.welcome-screen-module__4XwqzG__titleImage {
+  object-fit: contain;
+  margin: 13px 0 0 20px;
+}
+
+.welcome-screen-module__4XwqzG__titleImageSecond {
+  margin: 13px 20px 0 0;
+}
+
+.welcome-screen-module__4XwqzG__subinfo {
+  max-width: 600px;
+  color: var(--grayscale-white);
+  margin: 0 0 65px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 800px) {
+  .welcome-screen-module__4XwqzG__title {
+    font-size: 40px;
+  }
+
+  .welcome-screen-module__4XwqzG__titleLine {
+    flex-flow: column;
+  }
+
+  .welcome-screen-module__4XwqzG__titlePart {
+    text-align: center;
+    width: 100%;
+    display: block;
+  }
+
+  .welcome-screen-module__4XwqzG__titlePart .welcome-screen-module__4XwqzG__titleImageWrap {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+  }
+
+  .welcome-screen-module__4XwqzG__titleLine:first-child .welcome-screen-module__4XwqzG__titleImage {
+    width: 129px;
+    height: 33px;
+    margin-top: 0;
+  }
+
+  .welcome-screen-module__4XwqzG__titleLine:last-child .welcome-screen-module__4XwqzG__titleImage {
+    width: 255px;
+    height: 45px;
+    margin-bottom: -10px;
+  }
+
+  .welcome-screen-module__4XwqzG__block {
+    justify-content: center;
+    align-items: center;
+    height: 447px;
+    padding: 20px;
+    display: flex;
+  }
+
+  .welcome-screen-module__4XwqzG__subinfo {
+    margin-bottom: 21px;
+  }
+
+  .welcome-screen-module__4XwqzG__titleImage {
+    margin: 0;
+  }
+
+  .welcome-screen-module__4XwqzG__content {
+    padding: 20px 0;
+  }
+}
+
+/*# sourceMappingURL=8ab46_app_components_blocks_main_welcome-screen_welcome-screen_module_css_bad6b30c._.single.css.map*/

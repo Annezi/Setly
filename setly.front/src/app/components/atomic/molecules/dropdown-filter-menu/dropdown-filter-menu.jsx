@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import Image from "next/image";
 import styles from "./dropdown-filter-menu.module.css";
 import FilterTag from "@/app/components/atomic/atoms/filter-tag/filter-tag";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
@@ -278,12 +277,13 @@ export default function DropdownFilterMenu({
                 <RoundButton
                     variant="white"
                     icon={
-                        <Image
+                        <img
                             src="/icons/system/Cross.svg"
                             alt=""
                             width={20}
                             height={20}
                             aria-hidden
+                            draggable={false}
                         />
                     }
                     onClick={onClose}
@@ -395,6 +395,7 @@ export default function DropdownFilterMenu({
                             alt=""
                             width={16}
                             height={16}
+                            draggable={false}
                         />
                     }
                     hoverIcon={
@@ -403,6 +404,7 @@ export default function DropdownFilterMenu({
                             alt=""
                             width={16}
                             height={16}
+                            draggable={false}
                         />
                     }
                 />

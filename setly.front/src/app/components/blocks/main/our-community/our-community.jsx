@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import { getAuth } from "@/app/lib/auth-storage";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./our-community.module.css";
 
 /** Попап «Войдите, чтобы поставить Лайк» + кнопка «Войти» */
@@ -24,7 +25,7 @@ const LoginToLikePopup = memo(function LoginToLikePopup({ isClosing, onClose, on
 				onClick={(e) => e.stopPropagation()}
 			>
 				<h2 id="our-community-login-to-like-title" className="title_2" style={{ color: "var(--grayscale-dark-gray)" }}>
-					Войдите, чтобы поставить Лайк
+					{applyTypograf("Войдите, чтобы поставить Лайк")}
 				</h2>
 				<div className={styles.loginToLikeButtons}>
 					<Button Text="Войти" color="blue" type="button" onClick={onLogin} />
@@ -94,7 +95,7 @@ function CheckPlanCard({
                         height={20}
                         className={styles.tagIcon}
                     />
-                    {days}
+                    {applyTypograf(days)}
                 </span>
                 <span className={styles.tag}>
                     <Image
@@ -104,7 +105,7 @@ function CheckPlanCard({
                         height={20}
                         className={styles.tagIcon}
                     />
-                    {location}
+                    {applyTypograf(location)}
                 </span>
             </div>
             <div className={styles.cardImageWrapper}>
@@ -116,8 +117,8 @@ function CheckPlanCard({
                     className={styles.cardImage}
                 />
             </div>
-            <h3 className={`${styles.cardTitle} subtitle_1`}>{title}</h3>
-            <p className={`${styles.cardDescription} subinfo`}>{description}</p>
+            <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
+            <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
             <div className={styles.cardFooter}>
                 <div className={styles.userRow}>
                     <Image
@@ -127,7 +128,7 @@ function CheckPlanCard({
                         height={32}
                         className={styles.userAvatar}
                     />
-                    <span className={`${styles.userName} subinfo`}>{userName}</span>
+                    <span className={`${styles.userName} subinfo`}>{applyTypograf(userName)}</span>
                 </div>
                 <button
                     type="button"
@@ -275,18 +276,19 @@ export default function OurCommunity() {
                 <div className={styles.left}>
                     <div className={styles.leftTop}>
                         <h2 className={`${styles.title} title_1`}>
-                            Откройте для себя наше сообщество
+                            {applyTypograf("Откройте для себя наше сообщество")}
                         </h2>
                     </div>
                     <div className={styles.leftBottom}>
                         <p className={`${styles.description} paragraph`}>
-                            Нам нравится делиться опытом с друг другом, опубликуйте свой следующий
-                            чек-план, возможно, он кому-то пригодится
+                            {applyTypograf(
+                                "Нам нравится делиться опытом с друг другом, опубликуйте свой следующий чек-план, возможно, он кому-то пригодится"
+                            )}
                         </p>
                         <div className={styles.buttonWrapper}>
                             <Button
                                 color="blue"
-                                Text="Смотреть, чем поделились другие"
+                                Text={applyTypograf("Смотреть, чем поделились другие")}
                                 onClick={() => router.push("/check-plans")}
                             />
                         </div>

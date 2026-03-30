@@ -1,0 +1,123 @@
+/* [project]/setly.front/src/app/components/blocks/main/three-steps/three-steps.module.css [app-client] (css) */
+.three-steps-module__d51WlG__wrapper {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  position: relative;
+  overflow: hidden visible;
+}
+
+.three-steps-module__d51WlG__wrapper:before {
+  content: "";
+  z-index: -1;
+  background-image: url("/img/main/three-steps-bg.png");
+  background-position: 50% calc(50% + 10px);
+  background-repeat: no-repeat;
+  background-size: auto;
+  position: absolute;
+  inset: 0;
+}
+
+.three-steps-module__d51WlG__block {
+  box-sizing: border-box;
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 120px auto 200px;
+  display: flex;
+  position: relative;
+}
+
+.three-steps-module__d51WlG__title {
+  color: var(--grayscale-dark-gray);
+  text-align: left;
+  text-align: center;
+  align-self: flex-start;
+  width: 100%;
+  margin-bottom: 40px;
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.three-steps-module__d51WlG__cards {
+  flex-direction: row;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  gap: 52px;
+  display: flex;
+}
+
+.three-steps-module__d51WlG__card {
+  background: var(--grayscale-white);
+  border: 1px solid var(--grayscale-primary-gray);
+  box-sizing: border-box;
+  border-radius: 16px;
+  flex-direction: column;
+  align-items: center;
+  max-width: 335px;
+  padding: 20px;
+  display: flex;
+  box-shadow: 0 0 1px #00000080;
+}
+
+.three-steps-module__d51WlG__card--rotateLeft {
+  transform: rotate(-5deg);
+}
+
+.three-steps-module__d51WlG__card--rotateRight {
+  transform: rotate(5deg);
+}
+
+.three-steps-module__d51WlG__cardImage {
+  object-fit: cover;
+  border-radius: 12px;
+  width: 183px;
+  height: auto;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.three-steps-module__d51WlG__cardTitle {
+  color: var(--grayscale-dark-gray);
+}
+
+.three-steps-module__d51WlG__cardSubtitle {
+  color: var(--grayscale-dark-gray);
+  margin-bottom: 20px;
+}
+
+.three-steps-module__d51WlG__cardDescription {
+  color: var(--grayscale-dark-gray);
+  line-height: 1.4;
+}
+
+.three-steps-module__d51WlG__buttonWrap {
+  justify-content: center;
+  margin-top: 40px;
+  display: flex;
+}
+
+@media (max-width: 800px) {
+  .three-steps-module__d51WlG__wrapper:before {
+    background-image: url("/img/main/three-steps-bg-mobile.png");
+  }
+
+  .three-steps-module__d51WlG__title {
+    text-align: center;
+    align-self: center;
+  }
+
+  .three-steps-module__d51WlG__cards {
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  .three-steps-module__d51WlG__card {
+    width: 80%;
+    max-width: 80%;
+  }
+}
+
+/*# sourceMappingURL=eb980_src_app_components_blocks_main_three-steps_three-steps_module_css_bad6b30c._.single.css.map*/

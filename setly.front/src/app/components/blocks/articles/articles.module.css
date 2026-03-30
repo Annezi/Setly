@@ -6,6 +6,8 @@
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
+  overflow: visible;
+  padding: 12px 0;
 }
 
 .cards {
@@ -16,6 +18,7 @@
   justify-items: stretch;
   width: 100%;
   align-items: stretch;
+  overflow: visible;
 }
 
 .cardLink {
@@ -25,6 +28,11 @@
   min-width: 0;
 }
 
+.cardLink:hover .card {
+  transform: scale(1.01);
+}
+
+/* Тень и scale на карточке — при hover увеличивается и отбрасывает ту же тень */
 .card {
   flex-shrink: 0;
   min-width: 0;
@@ -34,20 +42,16 @@
   min-height: 420px;
   background: var(--grayscale-white);
   border-radius: 16px;
-  padding: 20px 20px 32px 20px;
+  border: 1px solid var(--grayscale-primary-gray);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+  padding: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   text-align: center;
   align-items: center;
-  border: 1px solid var(--grayscale-primary-gray);
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
   transition: transform 0.2s ease;
   transform-origin: center;
-}
-
-.card:hover {
-  transform: scale(1.02);
 }
 
 .tags {

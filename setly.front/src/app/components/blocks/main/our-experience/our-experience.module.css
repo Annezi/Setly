@@ -1,11 +1,11 @@
-/* overflow: visible и паддинги — карточки при hover scale не обрезаются сверху/снизу и по бокам */
+/* Блок 1164px по контенту (без горизонтальных паддингов — иначе внутри получается 1116px) */
 .wrapper {
     width: 100%;
     max-width: 1164px;
     margin-top: 40px;
     margin-left: auto;
     margin-right: auto;
-    padding: 12px 24px;
+    padding: 12px 0;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -24,7 +24,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 24px;
+    gap: 20px;
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -53,7 +53,7 @@
 
 .cardsSlider {
     flex: 1;
-    width: 1045px;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow: visible;
@@ -63,23 +63,23 @@
     box-sizing: border-box;
 }
 
-/* Окно карусели: внутренний отступ 12px по вертикали, запас по горизонтали */
 .cardsSliderViewport {
-    width: calc(100% + 48px);
-    margin: 0 -24px;
+    width: 100%;
     padding: 12px 0;
     overflow: hidden;
     min-width: 0;
-    box-sizing: content-box;
+    box-sizing: border-box;
 }
 
 .cardsTrack {
     display: flex;
-    width: 200%; /* 6 слайдов [0,1,2,0,1,2], в окне 3 карточки */
-    margin: -12px 0; /* компенсация padding viewport — трек на полную высоту, запас сверху/снизу для scale карточки */
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin: -12px 0; /* компенсация padding viewport — запас сверху/снизу для scale карточки */
     transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform;
-    align-items: stretch; /* все слайды одной высоты */
+    align-items: stretch;
+    /* gap задаётся inline (20px) вместе с шириной слайдов из ResizeObserver */
 }
 
 .cardsTrackNoTransition {
@@ -87,13 +87,12 @@
 }
 
 .cardSlide {
-    flex: 0 0 16.666%; /* 1/6 трека = одна карточка, в окне 3 карточки */
     min-width: 0;
-    padding: 12px 10px;
+    padding: 12px 0;
     box-sizing: border-box;
     display: flex;
     justify-content: center;
-    align-items: stretch; /* карточка на всю высоту слайда — все карточки одинаковой высоты */
+    align-items: stretch;
     overflow: visible;
 }
 
@@ -103,23 +102,33 @@
     min-height: 420px; /* единая минимальная высота для всех карточек */
 }
 
+.cardLink {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    text-decoration: none;
+    justify-content: center;
+    align-items: stretch;
+}
+
+/* Тень и scale на карточке — при hover увеличивается и отбрасывает ту же тень */
 .card {
     flex-shrink: 0;
     background: var(--grayscale-white);
     border-radius: 16px;
-    padding: 20px 20px 32px 20px;
+    border: 1px solid var(--grayscale-primary-gray);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+    padding: 20px 20px 20px 20px;
+    min-width: 280px;
+    max-width: 335px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     text-align: center;
     align-items: center;
-    border: 1px solid var(--grayscale-primary-gray);
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
-    min-width: 280px;
-    max-width: 335px;
-    width: 100%;
-    height: 100%;
-    min-height: 0; /* чтобы flex корректно растягивал по высоте при align-items: stretch */
     transition: transform 0.2s ease;
     transform-origin: center;
 }
@@ -196,19 +205,6 @@
         margin-bottom: 24px;
     }
 
-    .carouselBlock {
-        gap: 16px;
-    }
-
-    .cardsSlider {
-        width: 100%;
-    }
-
-    /* В окне 2 карточки: трек 300%, шаг по-прежнему 1/6 трека = 50% viewport */
-    .cardsTrack {
-        width: 300%;
-    }
-
     .cardSlide .card {
         min-height: 440px;
         min-width: 280px;
@@ -218,10 +214,9 @@
 }
 
 @media (max-width: 800px) {
-    /* Одна карточка в окне: трек 600%, шаг 1/6 трека = 100% viewport */
     .carouselBlock {
         flex-direction: column;
-        gap: 24px;
+        gap: 20px;
     }
 
     .carouselNav {
@@ -243,17 +238,8 @@
         width: 100%;
     }
 
-    .cardsTrack {
-        width: 600%;
-    }
-
-    /* Фиксированный размер карточки для стабильной адаптивной вёрстки */
     .cardSlide {
-        display: flex;
-        justify-content: center;
-        align-items: stretch;
-        padding: 12px 8px;
-        box-sizing: border-box;
+        padding: 12px 0;
     }
 
     .cardSlide .card {

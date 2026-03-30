@@ -4002,6 +4002,11 @@ typescript-eslint@^8.46.0:
     "@typescript-eslint/typescript-estree" "8.54.0"
     "@typescript-eslint/utils" "8.54.0"
 
+typograf@^7.6.0:
+  version "7.6.0"
+  resolved "https://registry.yarnpkg.com/typograf/-/typograf-7.6.0.tgz#10fb010f7a2e392a671bc8d561f167ea1644f783"
+  integrity sha512-sqYx4X1L7EDNRuJpqg/V+GCWMOpzVD5Om9IW0udi294sQYPwGGeRpPwsLC3gPt2BTsLtLiWJKpkwiyuO5PK2lQ==
+
 unbox-primitive@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/unbox-primitive/-/unbox-primitive-1.1.0.tgz#8d9d2c9edeea8460c7f35033a88867944934d1e2"

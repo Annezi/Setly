@@ -1,0 +1,258 @@
+/* [project]/setly.front/src/app/globals.css [app-client] (css) */
+:root {
+  --accent-blue: #245df5;
+  --accent-cyan: #88b2e8;
+  --accent-lavander: #9895e3;
+  --accent-purple: #6958ee;
+  --grayscale-dark-gray: #383838;
+  --grayscale-gray: #a6a6a6;
+  --grayscale-light-gray: #d9d9d9;
+  --grayscale-primary-gray: #f9f9f9;
+  --grayscale-white: #fff;
+  --halftone-80-white: #fffc;
+  --halftone-50-white: #ffffff80;
+  --halftone-60-primary-gray: #f9f9f999;
+  --halftone-47-placeholder: #f2f2f278;
+  --system-green: #68d464;
+  --system-red: #db4646;
+  --blue-gradient: radial-gradient(circle at center, #245df5cc, #88b2e8cc);
+}
+
+.title_1 {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.title_2 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.subtitle_1 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.subtitle_2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.paragraph {
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.subinfo {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Inter, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-button {
+  background: none !important;
+  border: none !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: none !important;
+}
+
+::-webkit-scrollbar-button:vertical:start:decrement {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+::-webkit-scrollbar-button:vertical:end:increment {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+::-webkit-scrollbar-button:horizontal:start:decrement {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+::-webkit-scrollbar-button:horizontal:end:increment {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+html, body, * {
+  scrollbar-width: thin;
+}
+
+textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+textarea::-webkit-scrollbar-button {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+form {
+  width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+}
+
+img, svg, picture, [class*="icon"] img, [class*="icon"] svg {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+body {
+  cursor: default;
+  background-color: #fff;
+  margin: 0;
+  padding: 0 20px;
+  overflow-x: hidden;
+}
+
+* {
+  cursor: inherit;
+}
+
+input, textarea, [contenteditable="true"] {
+  cursor: text;
+}
+
+input, textarea, select, [contenteditable="true"] {
+  height: 44px;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--grayscale-gray);
+}
+
+a, button, [role="button"] {
+  cursor: pointer;
+}
+
+.container {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: visible;
+}
+
+#__next {
+  height: 100%;
+}
+
+.ButtonShowcase {
+  grid-template-columns: repeat(5, auto);
+  justify-content: start;
+  align-items: center;
+  gap: 24px 20px;
+  max-width: 100%;
+  padding: 40px;
+  display: grid;
+}
+
+.ButtonShowcaseCol1 {
+  grid-template-columns: repeat(1, auto);
+  justify-content: start;
+  align-items: center;
+  gap: 24px 20px;
+  max-width: 100%;
+  padding: 40px;
+  display: grid;
+}
+
+.component-blur {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 800px) {
+  .title_1 {
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .title_2 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .subtitle_1 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .paragraph {
+    font-size: 16px;
+    font-weight: 400;
+  }
+}
+
+input:-internal-autofill-selected {
+  background-color: #0000;
+}
+
+main {
+  animation: .2s ease-out contentReveal;
+}
+
+@keyframes contentReveal {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.contentReveal {
+  animation: .2s ease-out contentReveal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main, .contentReveal {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/*# sourceMappingURL=setly_front_src_app_globals_62b41194.css.map*/

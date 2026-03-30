@@ -98,28 +98,29 @@
     display: none;
 }
 
+/* Тень и scale на карточке — при hover увеличивается и отбрасывает ту же тень */
 .card {
     height: 517px;
     flex-shrink: 0;
     background: var(--grayscale-white);
     border-radius: 16px;
+    border: 1px solid var(--grayscale-primary-gray);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
     padding: 20px;
+    min-width: 280px;
+    max-width: 335px;
+    width: 100%;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     text-align: center;
     align-items: center;
-    border: 1px solid var(--grayscale-primary-gray);
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
-    min-width: 280px;
-    max-width: 335px;
-    width: 100%;
     transition: transform 0.2s ease;
     transform-origin: center;
 }
 
 .card:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
 }
 
 .tags {

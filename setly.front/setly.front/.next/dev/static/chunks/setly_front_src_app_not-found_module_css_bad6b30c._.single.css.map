@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/setly.front/src/app/not-found.module.css"],"sourcesContent":[".main {\n  margin-top: 60px;\n}\n\n.content {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  text-align: center;\n  gap: 20px;\n}\n\n.image {\n  width: 295px;\n  height: 299px;\n}\n\n.title {\n  color: var(--grayscale-dark-gray);\n  max-width: 520px;\n}\n\n.description {\n  color: var(--grayscale-dark-gray);\n  max-width: 480px;\n}\n\n.buttonWrap {\n  display: flex;\n  justify-content: center;\n}\n\n@media (max-width: 800px) {\n  .image {\n    width: 280px;\n    height: 283px;\n  }\n\n  .title {\n    max-width: 420px;\n  }\n\n  .description {\n    max-width: 340px;\n  }\n}\n"],"names":[],"mappings":"AAAA;;;;AAIA;;;;;;;;;AASA;;;;;AAKA;;;;;AAKA;;;;;AAKA;;;;;AAKA;EACE;;;;;EAKA;;;;EAIA"}}]
+}

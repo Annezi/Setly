@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 from typing import Annotated
 
@@ -25,6 +26,19 @@ from api.schemas.user import (
 )
 
 router = APIRouter(prefix="/user", tags=["user"])
+
+NICKNAME_MAX_LENGTH = 40
+PASSWORD_MIN_LENGTH = 6
+PASSWORD_ALLOWED = re.compile(r"^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;':\",./<>?`~\\]*$")
+
+
+def _normalize_nickname(value: str) -> str:
+    return " ".join((value or "").strip().split())
+
+
+def _validate_password(value: str) -> bool:
+    pwd = (value or "").replace(" ", "")
+    return len(pwd) >= PASSWORD_MIN_LENGTH and bool(PASSWORD_ALLOWED.fullmatch(pwd))
 
 
 @router.get("/check-email")
@@ -102,11 +116,72 @@ async def me_update(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Обновить профиль текущего пользователя (profile_photo_url, profile_bg_url)."""
+    """Обновить профиль текущего пользователя (фото/фон/никнейм/почта/пароль)."""
     if data.profile_photo_url is not None:
         current_user.profile_photo_url = data.profile_photo_url
     if data.profile_bg_url is not None:
         current_user.profile_bg_url = data.profile_bg_url
+
+    nickname_changed = False
+    email_changed = False
+    password_change_requested = False
+
+    nickname_trimmed = None
+    if data.nickname is not None:
+        nickname_trimmed = _normalize_nickname(str(data.nickname))
+        current_nickname = _normalize_nickname(current_user.nickname or "")
+        nickname_changed = nickname_trimmed != current_nickname
+
+    email_trimmed = None
+    if data.email is not None:
+        email_trimmed = str(data.email).strip().lower()
+        email_changed = email_trimmed != (current_user.email or "").lower()
+
+    if data.new_password is not None:
+        password_change_requested = len(str(data.new_password).replace(" ", "")) > 0
+
+    needs_current_password = nickname_changed or email_changed or password_change_requested
+    if needs_current_password:
+        current_pwd = str(data.current_password or "")
+        if not current_pwd or not verify_password(current_pwd, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Спокойно. Пароли не совпадают",
+            )
+
+    if nickname_changed:
+        if len(nickname_trimmed) > NICKNAME_MAX_LENGTH:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Спокойно! Никнейм не должен превышать 40 символов",
+            )
+        current_user.nickname = nickname_trimmed
+
+    if email_changed:
+        result = await session.execute(
+            select(User).where(User.email == email_trimmed, User.id != current_user.id)
+        )
+        if result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Спокойно! Пользователь с данной почтой уже зарегистрирован",
+            )
+        current_user.email = email_trimmed
+
+    if password_change_requested:
+        next_password = str(data.new_password or "").replace(" ", "")
+        if not _validate_password(next_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Некорректный пароль",
+            )
+        if verify_password(next_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Новый пароль должен отличаться от текущего",
+            )
+        current_user.password_hash = hash_password(next_password)
+
     session.add(current_user)
     await session.commit()
     await session.refresh(current_user)

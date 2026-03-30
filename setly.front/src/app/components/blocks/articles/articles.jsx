@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ARTICLES_LIST } from "@/data/articles-data";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./articles.module.css";
 
 function normalizeForSearch(s) {
@@ -37,8 +38,8 @@ function ArticleCard({ id, imageSrc, imageAlt, title, description, readTime }) {
       <div className={styles.cardImageWrap}>
         <Image src={imageSrc} alt={imageAlt} width={264} height={264} className={styles.cardImage} />
       </div>
-      <h3 className={`${styles.cardTitle} subtitle_1`}>{title}</h3>
-      <p className={`${styles.cardDescription} subinfo`}>{description}</p>
+      <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
+      <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
     </>
   );
 

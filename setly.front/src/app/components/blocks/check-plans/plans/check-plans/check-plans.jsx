@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import { applyTypograf } from "@/app/lib/typograf";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import styles from "./check-plans.module.css";
 
@@ -19,7 +20,7 @@ function formatLikes(n) {
   return String(n);
 }
 
-function PlanCard({ id: cardId, imageSrc, imageAlt, days, location, title, description, userName, avatarSrc = DEFAULT_AVATAR, initialLikes = 0, filterTag, isAuthenticated, onRequestLogin }) {
+export function PlanCard({ id: cardId, imageSrc, imageAlt, days, location, title, description, userName, avatarSrc = DEFAULT_AVATAR, initialLikes = 0, filterTag, isAuthenticated, onRequestLogin }) {
   const { isLiked, toggle, getLikeCount } = useLikedChecklists();
   const liked = isLiked(cardId);
   const likes = getLikeCount(cardId);
@@ -57,12 +58,12 @@ function PlanCard({ id: cardId, imageSrc, imageAlt, days, location, title, descr
           unoptimized={typeof imageSrc === "string" && imageSrc.startsWith("http")}
         />
       </div>
-      <h3 className={`${styles.cardTitle} subtitle_1`}>{title}</h3>
-      <p className={`${styles.cardDescription} subinfo`}>{description}</p>
+      <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
+      <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
       <div className={styles.cardFooter}>
         <div className={styles.userRow}>
           <Image src={avatarSrc} alt={userName} width={24} height={24} className={styles.userAvatar} />
-          <span className={`${styles.userName} subinfo`}>{userName}</span>
+          <span className={`${styles.userName} subinfo`}>{applyTypograf(userName)}</span>
         </div>
         <button
           type="button"
@@ -290,7 +291,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
   return (
     <section className={styles.block}>
       <div className={styles.titleRow}>
-        <h2 className={`${styles.title} title_1`}>{block.title}</h2>
+        <h2 className={`${styles.title} title_1`}>{applyTypograf(block.title)}</h2>
         <RoundButton
           variant="white"
           icon={<Image src="/icons/system/ArrowRight.svg" alt="" width={20} height={20} />}
@@ -298,7 +299,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
           aria-label={`Применить фильтр: ${block.filterTag}`}
         />
       </div>
-      <p className={`${styles.description} paragraph`}>{block.description}</p>
+      <p className={`${styles.description} paragraph`}>{applyTypograf(block.description)}</p>
 
       {/* Десктоп (≥1024px): сетка из 3 карточек */}
       <div className={styles.cards}>

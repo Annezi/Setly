@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import Dropdown from "@/app/components/atomic/atoms/dropdown/dropdown";
 import DropdownFilterMenu from "@/app/components/atomic/molecules/dropdown-filter-menu/dropdown-filter-menu";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
@@ -113,12 +112,13 @@ export default function Filters({
           )}
           bgView={false}
           icon={
-            <Image
+            <img
               src="/icons/system/ArrowDown.svg"
               alt=""
               width={20}
               height={20}
               aria-hidden
+              draggable={false}
             />
           }
         />
@@ -152,12 +152,13 @@ export default function Filters({
           onSelect={onSortSelect}
           menuCentered
           icon={
-            <Image
+            <img
               src="/icons/system/ArrowDown.svg"
               alt=""
               width={20}
               height={20}
               aria-hidden
+              draggable={false}
             />
           }
         />

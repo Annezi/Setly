@@ -1,0 +1,167 @@
+/* [project]/setly.front/src/app/components/blocks/main/ideal-way/ideal-way.module.css [app-client] (css) */
+.ideal-way-module__LiIGcW__block {
+  background-color: var(--grayscale-primary-gray);
+  box-sizing: border-box;
+  border-radius: 20px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 1400px;
+  height: 690px;
+  margin-bottom: 40px;
+  padding: 59px 118px;
+  display: flex;
+  overflow: hidden;
+}
+
+.ideal-way-module__LiIGcW__leftPart {
+  box-sizing: border-box;
+  flex-direction: column;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  width: 572px;
+  min-width: 572px;
+  height: 572px;
+  display: flex;
+  position: relative;
+}
+
+.ideal-way-module__LiIGcW__suitcaseImage {
+  object-fit: contain;
+  border-radius: 16px;
+  width: 100%;
+  height: 100%;
+}
+
+.ideal-way-module__LiIGcW__rightPart {
+  box-sizing: border-box;
+  background-image: url("/img/main/gradient-1.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: 16px;
+  flex-direction: column;
+  flex-shrink: 0;
+  justify-content: space-between;
+  align-items: start;
+  width: 572px;
+  min-width: 572px;
+  height: 572px;
+  padding: 20px;
+  display: flex;
+}
+
+.ideal-way-module__LiIGcW__rightPartHeader {
+  flex-shrink: 0;
+  max-width: 448px;
+}
+
+.ideal-way-module__LiIGcW__rightPartContent {
+  flex-direction: column;
+  align-items: flex-start;
+  display: flex;
+}
+
+.ideal-way-module__LiIGcW__title {
+  color: var(--accent-blue);
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ideal-way-module__LiIGcW__avatars {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 24px;
+  display: flex;
+}
+
+.ideal-way-module__LiIGcW__avatar {
+  object-fit: cover;
+  box-sizing: border-box;
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+}
+
+.ideal-way-module__LiIGcW__avatar:not(:first-child) {
+  margin-left: -20px;
+}
+
+.ideal-way-module__LiIGcW__avatar:first-child {
+  z-index: 1;
+}
+
+.ideal-way-module__LiIGcW__avatar:nth-child(2) {
+  z-index: 2;
+}
+
+.ideal-way-module__LiIGcW__avatar:nth-child(3) {
+  z-index: 3;
+}
+
+.ideal-way-module__LiIGcW__descriptionWrap .ideal-way-module__LiIGcW__description:first-child {
+  margin-bottom: 1em;
+}
+
+.ideal-way-module__LiIGcW__description {
+  color: var(--grayscale-white);
+  max-width: 100%;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.ideal-way-module__LiIGcW__buttonWrap {
+  margin-top: 20px;
+}
+
+@media (max-width: 1200px) {
+  .ideal-way-module__LiIGcW__block {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    height: auto;
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .ideal-way-module__LiIGcW__leftPart {
+    width: 100%;
+    min-width: unset;
+    aspect-ratio: 1;
+    max-width: 572px;
+    height: auto;
+    min-height: 280px;
+  }
+
+  .ideal-way-module__LiIGcW__rightPart {
+    width: 100%;
+    min-width: unset;
+    max-width: 572px;
+    height: auto;
+    min-height: 572px;
+    padding: 24px;
+  }
+
+  .ideal-way-module__LiIGcW__title {
+    margin-bottom: 16px;
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .ideal-way-module__LiIGcW__avatars {
+    margin-bottom: 16px;
+  }
+
+  .ideal-way-module__LiIGcW__description {
+    font-size: 16px;
+  }
+}
+
+/*# sourceMappingURL=6a21e_front_src_app_components_blocks_main_ideal-way_ideal-way_module_css_bad6b30c._.single.css.map*/

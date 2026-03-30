@@ -20,6 +20,7 @@ import { getAuth } from "@/app/lib/auth-storage";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 
 const DEFAULT_COVER_IMAGE = "/img/main/japan2025.png";
+
 /** Загрузка обложки через бэкенд POST /api/user/me/save-image/checklist-covers/ */
 const UPLOAD_COVER_API = "/api/user/me/save-image/checklist-covers/";
 
@@ -431,7 +432,7 @@ const TextBlockCard = memo(function TextBlockCard({
 	const onRemove = useCallback(() => onRequestRemoveContentBlock(index, block.type), [onRequestRemoveContentBlock, index, block.type]);
 
 	return (
-		<div className={styles.textBlockWrap}>
+		<div className={styles.textBlockWrap} data-block-id={block.id}>
 			<div className={styles.textBlock}>
 				<div className={styles.textBlockTitleRow}>
 					<div className={styles.textBlockTitleCell}>
@@ -503,9 +504,9 @@ const TextBlockCard = memo(function TextBlockCard({
 });
 
 const WHERE_TO_GO_SECTIONS = [
-	{ key: "look", title: "Посмотреть:", placeholder: "Что посмотреть" },
-	{ key: "eat", title: "Поесть:", placeholder: "Что поесть" },
-	{ key: "buy", title: "Покупки:", placeholder: "Что купить" },
+	{ key: "look", title: "Посмотреть", placeholder: "Что посмотреть" },
+	{ key: "eat", title: "Поесть", placeholder: "Что поесть" },
+	{ key: "buy", title: "Покупки", placeholder: "Что купить" },
 ];
 
 const USEFUL_CONTACTS_INITIAL_SECTIONS = [
@@ -534,7 +535,16 @@ const CONTACTS_TYPE_TITLE_TO_KEY = {};
 
 /**
  * Собирает массив contentBlocks и nextId из сохранённых данных чек-плана (initialPlanData).
- * Порядок: текстовые блоки → «Куда сходить» → «Полезные контакты» → «Бюджет».
+ *
+ * Новый формат: initialPlanData.blocks содержит элементы с полем type:
+ * - type: "text"          → текстовый блок
+ * - type: "whereToGo"     → блок «Куда сходить»
+ * - type: "usefulContacts"→ блок «Полезные контакты»
+ * - type: "budgetTable"   → блок «Бюджет»
+ *
+ * При наличии type порядок блоков полностью задаётся этим массивом.
+ * Для старых записей без type сохраняется прежний порядок:
+ * текстовые блоки → «Куда сходить» → «Полезные контакты» → «Бюджет».
  */
 function buildContentBlocksFromPlanData(initialPlanData) {
 	if (!initialPlanData) return { blocks: [], nextId: 0 };
@@ -542,8 +552,156 @@ function buildContentBlocksFromPlanData(initialPlanData) {
 	let nextId = 0;
 	const id = () => nextId++;
 
-	// Текстовые блоки
 	const textBlocks = initialPlanData.blocks;
+	const hasTypedBlocks =
+		Array.isArray(textBlocks) && textBlocks.some((b) => b && typeof b.type === "string" && b.type !== "text");
+
+	// Подготовка данных для специальных блоков
+	const wtg = initialPlanData.what_to_go_block;
+	const hasWhereToGo =
+		wtg && (Array.isArray(wtg.what_to_see) || Array.isArray(wtg.what_to_eat) || Array.isArray(wtg.what_to_buy));
+	const WHERE_TO_GO_API_FIELD = { look: "what_to_see", eat: "what_to_eat", buy: "what_to_buy" };
+	const buildWhereToGoBlock = () => {
+		if (!hasWhereToGo) return null;
+		const toRows = (arr) =>
+			Array.isArray(arr) && arr.length > 0
+				? arr.map((r) => ({ text: r?.title ?? "", link: r?.link ?? "" }))
+				: [];
+		const sections = {};
+		const removedWhereToGoSectionKeys = [];
+		for (const { key } of WHERE_TO_GO_SECTIONS) {
+			const field = WHERE_TO_GO_API_FIELD[key];
+			const rows = toRows(wtg[field]);
+			if (rows.length === 0) {
+				removedWhereToGoSectionKeys.push(key);
+			} else {
+				sections[key] = rows;
+			}
+		}
+		return {
+			type: "whereToGo",
+			id: id(),
+			sections,
+			removedWhereToGoSectionKeys,
+		};
+	};
+
+	const ucb = initialPlanData.useful_contacts_block?.blocks;
+	const hasUsefulContacts = Array.isArray(ucb) && ucb.length > 0;
+	const buildUsefulContactsBlock = () => {
+		if (!hasUsefulContacts) return null;
+		const sections = {};
+		const addedSectionOrder = [];
+		const removedInitialSectionKeys = [];
+		ucb.forEach((group) => {
+			const typeTitle = group?.contacts_type ?? "";
+			const key = CONTACTS_TYPE_TITLE_TO_KEY[typeTitle];
+			const rows = Array.isArray(group?.contacts)
+				? group.contacts.map((c) => ({
+						text: c?.title ?? c?.data ?? "",
+						link: c?.link ?? "",
+				  }))
+				: [];
+			if (key) {
+				if (USEFUL_CONTACTS_ADDABLE_SECTIONS.some((s) => s.key === key)) {
+					addedSectionOrder.push(key);
+				}
+				sections[key] = rows.length > 0 ? rows : [{ text: "", link: "" }];
+			}
+		});
+		USEFUL_CONTACTS_INITIAL_SECTIONS.forEach(({ key }) => {
+			if (!(key in sections)) removedInitialSectionKeys.push(key);
+		});
+		return {
+			type: "usefulContacts",
+			id: id(),
+			sections,
+			addedSectionOrder,
+			removedInitialSectionKeys,
+		};
+	};
+
+	const bb = initialPlanData.budget_block;
+	const hasBudget =
+		bb && (Array.isArray(bb.table) ? bb.table.length > 0 : Boolean(bb.title && bb.title.trim()));
+	const buildBudgetBlock = () => {
+		if (!hasBudget) return null;
+		const rows =
+			Array.isArray(bb.table) && bb.table.length > 0
+				? bb.table.map((r) => ({
+						category: r?.title ?? "",
+						planned: r?.plan != null ? String(r.plan) : "",
+						spent: r?.spent != null ? String(r.spent) : "",
+				  }))
+				: BUDGET_DEFAULT_ROWS.map((r) => ({ ...r }));
+		return {
+			type: "budgetTable",
+			id: id(),
+			title: bb?.title ?? "Бюджет",
+			rows,
+		};
+	};
+
+	// Новый путь: есть type у блоков — следуем порядку из initialPlanData.blocks
+	if (hasTypedBlocks) {
+		let whereToGoAdded = false;
+		let usefulContactsAdded = false;
+		let budgetAdded = false;
+
+		textBlocks.forEach((b) => {
+			const blockType = b?.type || "text";
+			if (blockType === "text") {
+				blocks.push({
+					type: "text",
+					id: id(),
+					title: b?.title ?? "",
+					description: b?.description ?? "",
+				});
+				return;
+			}
+			if (blockType === "whereToGo" && !whereToGoAdded) {
+				const w = buildWhereToGoBlock();
+				if (w) {
+					blocks.push(w);
+					whereToGoAdded = true;
+				}
+				return;
+			}
+			if (blockType === "usefulContacts" && !usefulContactsAdded) {
+				const u = buildUsefulContactsBlock();
+				if (u) {
+					blocks.push(u);
+					usefulContactsAdded = true;
+				}
+				return;
+			}
+			if (blockType === "budgetTable" && !budgetAdded) {
+				const bBlock = buildBudgetBlock();
+				if (bBlock) {
+					blocks.push(bBlock);
+					budgetAdded = true;
+				}
+			}
+		});
+
+		// На всякий случай добавляем отсутствующие специальные блоки в конце (совместимость)
+		if (hasWhereToGo && !whereToGoAdded) {
+			const w = buildWhereToGoBlock();
+			if (w) blocks.push(w);
+		}
+		if (hasUsefulContacts && !usefulContactsAdded) {
+			const u = buildUsefulContactsBlock();
+			if (u) blocks.push(u);
+		}
+		if (hasBudget && !budgetAdded) {
+			const bBlock = buildBudgetBlock();
+			if (bBlock) blocks.push(bBlock);
+		}
+
+		return { blocks, nextId };
+	}
+
+	// Старый путь: только текстовые блоки и фиксированный порядок остальных
 	if (Array.isArray(textBlocks)) {
 		textBlocks.forEach((b) => {
 			blocks.push({
@@ -555,81 +713,193 @@ function buildContentBlocksFromPlanData(initialPlanData) {
 		});
 	}
 
-	// Блок «Куда сходить» (what_to_go_block)
-	const wtg = initialPlanData.what_to_go_block;
-	if (wtg && (wtg.what_to_see?.length || wtg.what_to_eat?.length || wtg.what_to_buy?.length)) {
-		const toRows = (arr) =>
-			Array.isArray(arr) && arr.length > 0
-				? arr.map((r) => ({ text: r?.title ?? "", link: r?.link ?? "" }))
-				: [{ text: "", link: "" }];
-		blocks.push({
-			type: "whereToGo",
-			id: id(),
-			sections: {
-				look: toRows(wtg.what_to_see),
-				eat: toRows(wtg.what_to_eat),
-				buy: toRows(wtg.what_to_buy),
-			},
-		});
-	}
+	const whereToGoBlock = buildWhereToGoBlock();
+	if (whereToGoBlock) blocks.push(whereToGoBlock);
 
-	// Блок «Полезные контакты» (useful_contacts_block)
-	const ucb = initialPlanData.useful_contacts_block?.blocks;
-	if (Array.isArray(ucb) && ucb.length > 0) {
-		const sections = {
-			accommodation: [{ text: "", link: "" }],
-			embassy: [{ text: "", link: "" }],
-			guide: [{ text: "", link: "" }],
-		};
-		const addedSectionOrder = [];
-		ucb.forEach((group) => {
-			const typeTitle = group?.contacts_type ?? "";
-			const key = CONTACTS_TYPE_TITLE_TO_KEY[typeTitle];
-			const rows = Array.isArray(group?.contacts)
-				? group.contacts.map((c) => ({
-						text: c?.title ?? c?.data ?? "",
-						link: c?.link ?? "",
-				  }))
-				: [{ text: "", link: "" }];
-			if (key) {
-				if (USEFUL_CONTACTS_ADDABLE_SECTIONS.some((s) => s.key === key)) {
-					addedSectionOrder.push(key);
-				}
-				sections[key] = rows.length ? rows : [{ text: "", link: "" }];
-			}
-		});
-		blocks.push({
-			type: "usefulContacts",
-			id: id(),
-			sections,
-			addedSectionOrder,
-		});
-	}
+	const usefulContactsBlock = buildUsefulContactsBlock();
+	if (usefulContactsBlock) blocks.push(usefulContactsBlock);
 
-	// Блок «Бюджет» (budget_block)
-	const bb = initialPlanData.budget_block;
-	if (bb && (bb.table?.length > 0 || (bb.title && bb.title.trim()))) {
-		const rows =
-			Array.isArray(bb.table) && bb.table.length > 0
-				? bb.table.map((r) => ({
-						category: r?.title ?? "",
-						planned: r?.plan != null ? String(r.plan) : "",
-						spent: r?.spent != null ? String(r.spent) : "",
-				  }))
-				: BUDGET_DEFAULT_ROWS.map((r) => ({ ...r }));
-		blocks.push({
-			type: "budgetTable",
-			id: id(),
-			title: bb?.title ?? "Бюджет",
-			rows,
-		});
-	}
+	const budgetBlock = buildBudgetBlock();
+	if (budgetBlock) blocks.push(budgetBlock);
 
 	return { blocks, nextId };
 }
 
 const emptyWhereToGoRowCount = (rows) => rows.filter((r) => !(r.text || "").trim() && !(r.link || "").trim()).length;
 const canAddWhereToGoRow = (rows) => emptyWhereToGoRowCount(rows) < 3;
+
+/** Индекс вставки по Y внутри контейнера строк; attrName — data-* на корне каждой строки */
+function computeIndexedRowDropIndex(clientY, containerEl, attrName) {
+	if (!containerEl) return 0;
+	const rowEls = [...containerEl.querySelectorAll(`[${attrName}]`)];
+	if (rowEls.length === 0) return 0;
+	for (let i = 0; i < rowEls.length; i++) {
+		const r = rowEls[i].getBoundingClientRect();
+		const mid = r.top + r.height / 2;
+		if (clientY < mid) {
+			return Number.parseInt(rowEls[i].getAttribute(attrName) ?? "0", 10) || 0;
+		}
+	}
+	return Number.parseInt(rowEls[rowEls.length - 1].getAttribute(attrName) ?? "0", 10) || 0;
+}
+
+/**
+ * Как computeIndexedRowDropIndex, но только по строкам внутри одной секции;
+ * если курсор выше/ниже блока секции — зажимаем к первой/последней строке (нельзя увести в другую секцию).
+ */
+function computeSectionRowDropIndex(clientY, sectionBodyEl) {
+	if (!sectionBodyEl) return 0;
+	const attr = "data-rowlist-row-index";
+	const rowEls = [...sectionBodyEl.querySelectorAll(`[${attr}]`)];
+	if (rowEls.length === 0) return 0;
+	const bounds = sectionBodyEl.getBoundingClientRect();
+	const firstIdx = Number.parseInt(rowEls[0].getAttribute(attr) ?? "0", 10) || 0;
+	const lastIdx = Number.parseInt(rowEls[rowEls.length - 1].getAttribute(attr) ?? "0", 10) || rowEls.length - 1;
+	if (clientY < bounds.top) return firstIdx;
+	if (clientY > bounds.bottom) return lastIdx;
+	return computeIndexedRowDropIndex(clientY, sectionBodyEl, attr);
+}
+
+function useSectionedRowListDrag({ readOnly, rootRef, reorderInSection }) {
+	const [rowlistDragVisual, setRowlistDragVisual] = useState(null);
+	const rowlistDragFromRef = useRef(null);
+	const rowlistDragSectionKeyRef = useRef(null);
+	const rowlistDragUserSelectRef = useRef(null);
+	const rowlistDragRafRef = useRef(null);
+	const rowlistDragPendingRef = useRef(null);
+
+	useEffect(
+		() => () => {
+			if (rowlistDragRafRef.current != null) cancelAnimationFrame(rowlistDragRafRef.current);
+		},
+		[]
+	);
+
+	const getSectionBody = useCallback((sectionKey) => {
+		if (!sectionKey || !rootRef.current) return null;
+		return rootRef.current.querySelector(`[data-rowlist-section-body][data-rowlist-section-key="${sectionKey}"]`);
+	}, [rootRef]);
+
+	const onRowlistDragHandlePointerDown = useCallback(
+		(sectionKey, rowIndex, e) => {
+			if (readOnly || e.button !== 0) return;
+			e.preventDefault();
+			e.stopPropagation();
+			const rowEl = e.currentTarget.closest("[data-rowlist-row-index]");
+			const sectionBody = rowEl?.closest("[data-rowlist-section-body]");
+			if (!rowEl || !sectionBody) return;
+			const sk = sectionBody.getAttribute("data-rowlist-section-key");
+			if (sk !== sectionKey) return;
+			const rect = rowEl.getBoundingClientRect();
+			const grabOffsetY = e.clientY - rect.top;
+			let slotPx = rect.height + 20;
+			const nextEl = rowEl.nextElementSibling;
+			if (nextEl?.hasAttribute?.("data-rowlist-row-index")) {
+				slotPx = Math.max(1, nextEl.getBoundingClientRect().top - rect.top);
+			}
+			rowlistDragFromRef.current = rowIndex;
+			rowlistDragSectionKeyRef.current = sectionKey;
+			rowlistDragUserSelectRef.current = document.body.style.userSelect;
+			document.body.style.userSelect = "none";
+			setRowlistDragVisual({
+				sectionKey,
+				fromIndex: rowIndex,
+				overIndex: rowIndex,
+				floatTop: e.clientY - grabOffsetY,
+				floatLeft: rect.left,
+				floatWidth: rect.width,
+				grabOffsetY,
+				slotPx,
+			});
+			try {
+				e.currentTarget.setPointerCapture(e.pointerId);
+			} catch {
+				/* ignore */
+			}
+		},
+		[readOnly]
+	);
+
+	const onRowlistDragHandlePointerMove = useCallback(
+		(e) => {
+			if (rowlistDragFromRef.current === null || !rowlistDragSectionKeyRef.current) return;
+			e.preventDefault();
+			rowlistDragPendingRef.current = { clientY: e.clientY };
+			if (rowlistDragRafRef.current != null) return;
+			rowlistDragRafRef.current = requestAnimationFrame(() => {
+				rowlistDragRafRef.current = null;
+				const p = rowlistDragPendingRef.current;
+				const sk = rowlistDragSectionKeyRef.current;
+				if (!p || sk == null || rowlistDragFromRef.current === null) return;
+				const body = rootRef.current?.querySelector(`[data-rowlist-section-body][data-rowlist-section-key="${sk}"]`);
+				const over = body ? computeSectionRowDropIndex(p.clientY, body) : rowlistDragFromRef.current;
+				setRowlistDragVisual((prev) => {
+					if (!prev) return prev;
+					return {
+						...prev,
+						overIndex: over,
+						floatTop: p.clientY - prev.grabOffsetY,
+					};
+				});
+			});
+		},
+		[rootRef]
+	);
+
+	const onRowlistDragHandlePointerUp = useCallback(
+		(e) => {
+			document.body.style.userSelect = rowlistDragUserSelectRef.current ?? "";
+			rowlistDragUserSelectRef.current = null;
+			if (rowlistDragRafRef.current != null) {
+				cancelAnimationFrame(rowlistDragRafRef.current);
+				rowlistDragRafRef.current = null;
+			}
+			rowlistDragPendingRef.current = null;
+			const sk = rowlistDragSectionKeyRef.current;
+			const from = rowlistDragFromRef.current;
+			rowlistDragSectionKeyRef.current = null;
+			rowlistDragFromRef.current = null;
+			try {
+				e.currentTarget.releasePointerCapture(e.pointerId);
+			} catch {
+				/* ignore */
+			}
+			setRowlistDragVisual(null);
+			if (sk == null || from == null) return;
+			const body = rootRef.current?.querySelector(`[data-rowlist-section-body][data-rowlist-section-key="${sk}"]`);
+			const to = body ? computeSectionRowDropIndex(e.clientY, body) : from;
+			reorderInSection(sk, from, to);
+		},
+		[rootRef, reorderInSection]
+	);
+
+	const onRowlistDragHandlePointerCancel = useCallback((e) => {
+		document.body.style.userSelect = rowlistDragUserSelectRef.current ?? "";
+		rowlistDragUserSelectRef.current = null;
+		rowlistDragSectionKeyRef.current = null;
+		rowlistDragFromRef.current = null;
+		if (rowlistDragRafRef.current != null) {
+			cancelAnimationFrame(rowlistDragRafRef.current);
+			rowlistDragRafRef.current = null;
+		}
+		rowlistDragPendingRef.current = null;
+		setRowlistDragVisual(null);
+		try {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		} catch {
+			/* ignore */
+		}
+	}, []);
+
+	return {
+		rowlistDragVisual,
+		onRowlistDragHandlePointerDown,
+		onRowlistDragHandlePointerMove,
+		onRowlistDragHandlePointerUp,
+		onRowlistDragHandlePointerCancel,
+	};
+}
+
 function isValidLink(value) {
 	const s = (value || "").trim();
 	if (s === "") return true;
@@ -642,7 +912,62 @@ function isValidLink(value) {
 	}
 }
 
-const WhereToGoSectionRow = memo(function WhereToGoSectionRow({ rowId, rowIndex, sectionKey, row, placeholder, onUpdate, onRemove, canRemove, readOnly = false }) {
+const WhereToGoDragFloatRow = memo(function WhereToGoDragFloatRow({ top, left, width, rowIndex, row }) {
+	if (typeof document === "undefined") return null;
+	const num = rowIndex + 1;
+	const prefix = `${num}. `;
+	const userText = row.text ?? "";
+	const linkStr = row.link?.trim() || "—";
+	return createPortal(
+		<div className={styles.whereToGoRowFloatRoot} style={{ top, left, width }}>
+			<div className={styles.whereToGoRowFloatInner}>
+				<div className={styles.whereToGoRow}>
+					<div className={styles.whereToGoRowDragHandle} aria-hidden>
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img src="/icons/system/draggableDots.svg" alt="" width={11} height={18} draggable={false} />
+					</div>
+					<div className={styles.whereToGoDescCell}>
+						<span className={`paragraph ${styles.whereToGoPrefix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
+							{prefix}
+						</span>
+						<span className={`paragraph ${styles.whereToGoDescInput} ${styles.whereToGoReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+							{userText.trim() || "—"}
+						</span>
+					</div>
+					<div className={styles.whereToGoLinkWrap}>
+						<div className={`${styles.whereToGoLinkCell} ${styles.whereToGoLinkCellReadOnly}`}>
+							<span className={`subinfo ${styles.whereToGoLinkInput} ${styles.whereToGoLinkInputReadOnly}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+								{linkStr}
+							</span>
+						</div>
+					</div>
+					<div className={styles.whereToGoRowDeleteCell} aria-hidden />
+				</div>
+			</div>
+		</div>,
+		document.body
+	);
+});
+
+const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
+	rowId,
+	rowIndex,
+	sectionKey,
+	row,
+	placeholder,
+	onUpdate,
+	onRemove,
+	canRemove,
+	onRowlistDragHandlePointerDown,
+	onRowlistDragHandlePointerMove,
+	onRowlistDragHandlePointerUp,
+	onRowlistDragHandlePointerCancel,
+	rowlistDragShiftPx = 0,
+	rowlistIsDragSource = false,
+	rowlistIsDropTarget = false,
+	rowlistShiftTransition = false,
+	readOnly = false,
+}) {
 	const descTextareaRef = useRef(null);
 	const [rowHover, setRowHover] = useState(false);
 	const num = rowIndex + 1;
@@ -687,9 +1012,23 @@ const WhereToGoSectionRow = memo(function WhereToGoSectionRow({ rowId, rowIndex,
 	/* На мобильном кнопка удаления видна всегда (при canRemove); на десктопе — по hover на ряд */
 	const showDelete = canRemove && rowHover && !readOnly;
 
+	const handleRowlistDragPointerDown = useCallback(
+		(e) => onRowlistDragHandlePointerDown?.(sectionKey, rowIndex, e),
+		[onRowlistDragHandlePointerDown, sectionKey, rowIndex]
+	);
+
 	if (readOnly) {
 		return (
-			<div className={styles.whereToGoRow}>
+			<div
+				className={`${styles.whereToGoRow} ${rowlistShiftTransition ? styles.budgetTableRowShiftable : ""} ${rowlistIsDropTarget ? styles.budgetTableRowDropTarget : ""}`}
+				data-rowlist-row-index={rowIndex}
+				style={{
+					...(rowlistDragShiftPx !== 0 ? { transform: `translateY(${rowlistDragShiftPx}px)` } : {}),
+					visibility: rowlistIsDragSource ? "hidden" : undefined,
+					pointerEvents: rowlistIsDragSource ? "none" : undefined,
+				}}
+			>
+				<div className={styles.whereToGoRowLeadSpacer} aria-hidden />
 				<div className={styles.whereToGoDescCell}>
 					<span className={`paragraph ${styles.whereToGoPrefix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
 						{prefix}
@@ -722,10 +1061,30 @@ const WhereToGoSectionRow = memo(function WhereToGoSectionRow({ rowId, rowIndex,
 
 	return (
 		<div
-			className={`${styles.whereToGoRow} ${canRemove ? styles.whereToGoRowCanRemove : ""}`}
+			className={`${styles.whereToGoRow} ${canRemove ? styles.whereToGoRowCanRemove : ""} ${rowlistShiftTransition ? styles.budgetTableRowShiftable : ""} ${rowlistIsDropTarget ? styles.budgetTableRowDropTarget : ""}`}
+			data-rowlist-row-index={rowIndex}
 			onMouseEnter={() => setRowHover(true)}
 			onMouseLeave={() => setRowHover(false)}
+			style={{
+				...(rowlistDragShiftPx !== 0 ? { transform: `translateY(${rowlistDragShiftPx}px)` } : {}),
+				visibility: rowlistIsDragSource ? "hidden" : undefined,
+				pointerEvents: rowlistIsDragSource ? "none" : undefined,
+			}}
 		>
+			<div
+				className={styles.whereToGoRowDragHandle}
+				role="button"
+				tabIndex={-1}
+				aria-label="Изменить порядок строки"
+				onPointerDown={handleRowlistDragPointerDown}
+				onPointerMove={onRowlistDragHandlePointerMove}
+				onPointerUp={onRowlistDragHandlePointerUp}
+				onPointerCancel={onRowlistDragHandlePointerCancel}
+				onMouseDown={(e) => e.stopPropagation()}
+			>
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img src="/icons/system/draggableDots.svg" alt="" width={11} height={18} draggable={false} />
+			</div>
 			<div className={styles.whereToGoDescCell}>
 				<span className={`paragraph ${styles.whereToGoPrefix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
 					{prefix}
@@ -799,6 +1158,7 @@ const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 	const canMoveUp = index > 0;
 	const canMoveDown = index < totalCount - 1;
 	const sections = block.sections ?? { look: [{ text: "", link: "" }], eat: [{ text: "", link: "" }], buy: [{ text: "", link: "" }] };
+	const removedWhereToGoSectionKeys = block.removedWhereToGoSectionKeys ?? [];
 
 	const onUpdate = useCallback((updates) => updateContentBlock(index, updates), [updateContentBlock, index]);
 	const onMoveUp = useCallback(() => moveContentBlockUp(index), [moveContentBlockUp, index]);
@@ -842,8 +1202,73 @@ const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 		[sections, updateSection]
 	);
 
+	const restoreWhereToGoSection = useCallback(
+		(sectionKey) => {
+			onUpdate({
+				removedWhereToGoSectionKeys: removedWhereToGoSectionKeys.filter((k) => k !== sectionKey),
+				sections: { ...sections, [sectionKey]: [{ text: "", link: "" }] },
+			});
+		},
+		[onUpdate, sections, removedWhereToGoSectionKeys]
+	);
+
+	const removeWhereToGoSection = useCallback(
+		(sectionKey) => {
+			const nextSections = { ...sections };
+			delete nextSections[sectionKey];
+			const removed = new Set(removedWhereToGoSectionKeys);
+			removed.add(sectionKey);
+			onUpdate({
+				sections: nextSections,
+				removedWhereToGoSectionKeys: [...removed],
+			});
+		},
+		[onUpdate, sections, removedWhereToGoSectionKeys]
+	);
+
+	const rowlistRootRef = useRef(null);
+	const sectionsRefForRowReorder = useRef(sections);
+	sectionsRefForRowReorder.current = sections;
+
+	const reorderRowInSection = useCallback(
+		(sectionKey, fromIndex, toIndex) => {
+			if (!sectionKey || fromIndex === toIndex) return;
+			const current = sectionsRefForRowReorder.current[sectionKey] ?? [];
+			const len = current.length;
+			if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len) return;
+			const next = [...current];
+			const [removed] = next.splice(fromIndex, 1);
+			next.splice(toIndex, 0, removed);
+			updateSection(sectionKey, next);
+		},
+		[updateSection]
+	);
+
+	const {
+		rowlistDragVisual,
+		onRowlistDragHandlePointerDown,
+		onRowlistDragHandlePointerMove,
+		onRowlistDragHandlePointerUp,
+		onRowlistDragHandlePointerCancel,
+	} = useSectionedRowListDrag({
+		readOnly,
+		rootRef: rowlistRootRef,
+		reorderInSection: reorderRowInSection,
+	});
+
+	const visibleWhereToGoSections = WHERE_TO_GO_SECTIONS.filter((s) => {
+		if (removedWhereToGoSectionKeys.includes(s.key)) return false;
+		if (readOnly) {
+			const rows = sections[s.key] ?? [];
+			return rows.some((r) => (r.text || "").trim() || (r.link || "").trim());
+		}
+		return true;
+	});
+
+	if (readOnly && visibleWhereToGoSections.length === 0) return null;
+
 	return (
-		<div className={styles.whereToGoBlockWrap}>
+		<div ref={rowlistRootRef} className={styles.whereToGoBlockWrap} data-block-id={block.id}>
 			<div className={styles.whereToGoBlock}>
 				<div className={styles.whereToGoTitleRow}>
 					<h3 className={`title_2 ${styles.whereToGoTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
@@ -884,15 +1309,38 @@ const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 					)}
 				</div>
 				<div className={styles.whereToGoBody}>
-					{WHERE_TO_GO_SECTIONS.map(({ key, title, placeholder }) => {
+					{visibleWhereToGoSections.map(({ key, title, placeholder }) => {
 						const rows = sections[key] ?? [{ text: "", link: "" }];
 						const canRemove = rows.length >= 2;
 						return (
 							<div key={key} className={styles.whereToGoSection}>
-								<h4 className={`subtitle_1 ${styles.whereToGoSectionTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
-									{title}
-								</h4>
-								{rows.map((row, ri) => (
+								<div className={styles.whereToGoSectionTitleRow}>
+									<h4 className={`subtitle_1 ${styles.whereToGoSectionTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+										{title}
+									</h4>
+									{!readOnly && (
+										<button
+											type="button"
+											className={styles.whereToGoSectionDeleteBtn}
+											aria-label={`Удалить секцию «${title}»`}
+											onClick={(e) => {
+												e.preventDefault();
+												removeWhereToGoSection(key);
+											}}
+										>
+											{/* eslint-disable-next-line @next/next/no-img-element */}
+											<img src="/icons/system/Cross.svg" alt="" width={16} height={16} />
+										</button>
+									)}
+								</div>
+								<div className={styles.whereToGoSectionRows} data-rowlist-section-body data-rowlist-section-key={key}>
+									{rows.map((row, ri) => {
+										const d = rowlistDragVisual;
+										const inDragSection = d?.sectionKey === key;
+										const from = inDragSection ? (d?.fromIndex ?? -1) : -1;
+										const over = inDragSection ? (d?.overIndex ?? -1) : -1;
+										const slot = inDragSection ? (d?.slotPx ?? 0) : 0;
+										return (
 									<WhereToGoSectionRow
 										key={ri}
 										rowId={`${block.id}-${key}-${ri}`}
@@ -903,9 +1351,19 @@ const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 										onUpdate={(u) => updateRow(key, ri, u)}
 										onRemove={() => removeRow(key, ri)}
 										canRemove={canRemove}
+										onRowlistDragHandlePointerDown={onRowlistDragHandlePointerDown}
+										onRowlistDragHandlePointerMove={onRowlistDragHandlePointerMove}
+										onRowlistDragHandlePointerUp={onRowlistDragHandlePointerUp}
+										onRowlistDragHandlePointerCancel={onRowlistDragHandlePointerCancel}
+										rowlistDragShiftPx={budgetRowSiblingShiftPx(ri, from, over, slot)}
+										rowlistIsDragSource={d != null && d.sectionKey === key && d.fromIndex === ri}
+										rowlistIsDropTarget={d != null && d.sectionKey === key && d.fromIndex !== d.overIndex && d.overIndex === ri}
+										rowlistShiftTransition={d != null && d.sectionKey === key}
 										readOnly={readOnly}
 									/>
-								))}
+										);
+									})}
+								</div>
 								{!readOnly && (
 									<ButtonCard
 										text="Добавить пункт..."
@@ -918,6 +1376,29 @@ const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 							</div>
 						);
 					})}
+					{rowlistDragVisual &&
+						(sections[rowlistDragVisual.sectionKey] ?? [])[rowlistDragVisual.fromIndex] != null && (
+						<WhereToGoDragFloatRow
+							top={rowlistDragVisual.floatTop}
+							left={rowlistDragVisual.floatLeft}
+							width={rowlistDragVisual.floatWidth}
+							rowIndex={rowlistDragVisual.fromIndex}
+							row={(sections[rowlistDragVisual.sectionKey] ?? [])[rowlistDragVisual.fromIndex]}
+						/>
+					)}
+					{!readOnly && removedWhereToGoSectionKeys.length > 0 && (
+						<div className={`${styles.whereToGoSection} ${styles.usefulContactsAddSections}`}>
+							{WHERE_TO_GO_SECTIONS.filter((s) => removedWhereToGoSectionKeys.includes(s.key)).map((init) => (
+								<ButtonCard
+									key={init.key}
+									text={`Добавить "${init.title}"`}
+									icon={<img src="/icons/system/CrossMini.svg" alt="" width={9} height={9} />}
+									hoverIcon={<img src="/icons/system/CrossMiniDark.svg" alt="" width={9} height={9} />}
+									onClick={() => restoreWhereToGoSection(init.key)}
+								/>
+							))}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>
@@ -931,7 +1412,8 @@ const getUsefulContactsSections = (block) => {
 		guide: [{ text: "", link: "" }],
 	};
 	const addedOrder = block.addedSectionOrder ?? [];
-	return { sections, addedOrder };
+	const removedInitialSectionKeys = block.removedInitialSectionKeys ?? [];
+	return { sections, addedOrder, removedInitialSectionKeys };
 };
 
 const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
@@ -946,7 +1428,7 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 }) {
 	const canMoveUp = index > 0;
 	const canMoveDown = index < totalCount - 1;
-	const { sections, addedOrder } = getUsefulContactsSections(block);
+	const { sections, addedOrder, removedInitialSectionKeys } = getUsefulContactsSections(block);
 
 	const onUpdate = useCallback((updates) => updateContentBlock(index, updates), [updateContentBlock, index]);
 	const onMoveUp = useCallback(() => moveContentBlockUp(index), [moveContentBlockUp, index]);
@@ -1001,7 +1483,40 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 		[onUpdate, addedOrder, sections]
 	);
 
-	const initialSectionList = USEFUL_CONTACTS_INITIAL_SECTIONS.map(({ key, title, placeholder }) => ({
+	const restoreInitialSection = useCallback(
+		(sectionKey) => {
+			onUpdate({
+				removedInitialSectionKeys: removedInitialSectionKeys.filter((k) => k !== sectionKey),
+				sections: { ...sections, [sectionKey]: [{ text: "", link: "" }] },
+			});
+		},
+		[onUpdate, sections, removedInitialSectionKeys]
+	);
+
+	const removeSection = useCallback(
+		(sectionKey) => {
+			const nextSections = { ...sections };
+			delete nextSections[sectionKey];
+			if (addedOrder.includes(sectionKey)) {
+				onUpdate({
+					addedSectionOrder: addedOrder.filter((k) => k !== sectionKey),
+					sections: nextSections,
+				});
+			} else {
+				const removed = new Set(removedInitialSectionKeys);
+				removed.add(sectionKey);
+				onUpdate({
+					removedInitialSectionKeys: [...removed],
+					sections: nextSections,
+				});
+			}
+		},
+		[onUpdate, sections, addedOrder, removedInitialSectionKeys]
+	);
+
+	const initialSectionList = USEFUL_CONTACTS_INITIAL_SECTIONS.filter(
+		(s) => !removedInitialSectionKeys.includes(s.key)
+	).map(({ key, title, placeholder }) => ({
 		key,
 		title,
 		placeholder,
@@ -1013,9 +1528,47 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 		})
 		.filter(Boolean);
 	const allSections = [...initialSectionList, ...addedSectionList];
+	const displayedSections =
+		readOnly
+			? allSections.filter(({ key }) =>
+					(sections[key] ?? []).some((r) => (r.text || "").trim() || (r.link || "").trim())
+				)
+			: allSections;
+
+	const rowlistRootRef = useRef(null);
+	const sectionsRefForRowReorder = useRef(sections);
+	sectionsRefForRowReorder.current = sections;
+
+	const reorderRowInSection = useCallback(
+		(sectionKey, fromIndex, toIndex) => {
+			if (!sectionKey || fromIndex === toIndex) return;
+			const current = sectionsRefForRowReorder.current[sectionKey] ?? [];
+			const len = current.length;
+			if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len) return;
+			const next = [...current];
+			const [removed] = next.splice(fromIndex, 1);
+			next.splice(toIndex, 0, removed);
+			updateSection(sectionKey, next);
+		},
+		[updateSection]
+	);
+
+	const {
+		rowlistDragVisual,
+		onRowlistDragHandlePointerDown,
+		onRowlistDragHandlePointerMove,
+		onRowlistDragHandlePointerUp,
+		onRowlistDragHandlePointerCancel,
+	} = useSectionedRowListDrag({
+		readOnly,
+		rootRef: rowlistRootRef,
+		reorderInSection: reorderRowInSection,
+	});
+
+	if (readOnly && displayedSections.length === 0) return null;
 
 	return (
-		<div className={styles.whereToGoBlockWrap}>
+		<div ref={rowlistRootRef} className={styles.whereToGoBlockWrap} data-block-id={block.id}>
 			<div className={styles.whereToGoBlock}>
 				<div className={styles.whereToGoTitleRow}>
 					<h3 className={`title_2 ${styles.whereToGoTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
@@ -1056,15 +1609,38 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 					)}
 				</div>
 				<div className={styles.whereToGoBody}>
-					{allSections.map(({ key, title, placeholder }) => {
+					{displayedSections.map(({ key, title, placeholder }) => {
 						const rows = sections[key] ?? [{ text: "", link: "" }];
 						const canRemove = rows.length >= 2;
 						return (
 							<div key={key} className={styles.whereToGoSection}>
-								<h4 className={`subtitle_1 ${styles.whereToGoSectionTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
-									{title}
-								</h4>
-								{rows.map((row, ri) => (
+								<div className={styles.whereToGoSectionTitleRow}>
+									<h4 className={`subtitle_1 ${styles.whereToGoSectionTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+										{title}
+									</h4>
+									{!readOnly && (
+										<button
+											type="button"
+											className={styles.whereToGoSectionDeleteBtn}
+											aria-label={`Удалить секцию «${title}»`}
+											onClick={(e) => {
+												e.preventDefault();
+												removeSection(key);
+											}}
+										>
+											{/* eslint-disable-next-line @next/next/no-img-element */}
+											<img src="/icons/system/Cross.svg" alt="" width={16} height={16} />
+										</button>
+									)}
+								</div>
+								<div className={styles.whereToGoSectionRows} data-rowlist-section-body data-rowlist-section-key={key}>
+									{rows.map((row, ri) => {
+										const d = rowlistDragVisual;
+										const inDragSection = d?.sectionKey === key;
+										const from = inDragSection ? (d?.fromIndex ?? -1) : -1;
+										const over = inDragSection ? (d?.overIndex ?? -1) : -1;
+										const slot = inDragSection ? (d?.slotPx ?? 0) : 0;
+										return (
 									<WhereToGoSectionRow
 										key={ri}
 										rowId={`${block.id}-${key}-${ri}`}
@@ -1075,9 +1651,19 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 										onUpdate={(u) => updateRow(key, ri, u)}
 										onRemove={() => removeRow(key, ri)}
 										canRemove={canRemove}
+										onRowlistDragHandlePointerDown={onRowlistDragHandlePointerDown}
+										onRowlistDragHandlePointerMove={onRowlistDragHandlePointerMove}
+										onRowlistDragHandlePointerUp={onRowlistDragHandlePointerUp}
+										onRowlistDragHandlePointerCancel={onRowlistDragHandlePointerCancel}
+										rowlistDragShiftPx={budgetRowSiblingShiftPx(ri, from, over, slot)}
+										rowlistIsDragSource={d != null && d.sectionKey === key && d.fromIndex === ri}
+										rowlistIsDropTarget={d != null && d.sectionKey === key && d.fromIndex !== d.overIndex && d.overIndex === ri}
+										rowlistShiftTransition={d != null && d.sectionKey === key}
 										readOnly={readOnly}
 									/>
-								))}
+										);
+									})}
+								</div>
 								{!readOnly && (
 									<ButtonCard
 										text="Добавить пункт..."
@@ -1090,8 +1676,29 @@ const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 							</div>
 						);
 					})}
-					{!readOnly && USEFUL_CONTACTS_ADDABLE_SECTIONS.some((s) => !addedOrder.includes(s.key)) && (
+					{rowlistDragVisual &&
+						(sections[rowlistDragVisual.sectionKey] ?? [])[rowlistDragVisual.fromIndex] != null && (
+						<WhereToGoDragFloatRow
+							top={rowlistDragVisual.floatTop}
+							left={rowlistDragVisual.floatLeft}
+							width={rowlistDragVisual.floatWidth}
+							rowIndex={rowlistDragVisual.fromIndex}
+							row={(sections[rowlistDragVisual.sectionKey] ?? [])[rowlistDragVisual.fromIndex]}
+						/>
+					)}
+					{!readOnly &&
+						(USEFUL_CONTACTS_ADDABLE_SECTIONS.some((s) => !addedOrder.includes(s.key)) ||
+							removedInitialSectionKeys.length > 0) && (
 						<div className={`${styles.whereToGoSection} ${styles.usefulContactsAddSections}`}>
+							{USEFUL_CONTACTS_INITIAL_SECTIONS.filter((s) => removedInitialSectionKeys.includes(s.key)).map((init) => (
+								<ButtonCard
+									key={init.key}
+									text={`Добавить "${init.title}"`}
+									icon={<img src="/icons/system/CrossMini.svg" alt="" width={9} height={9} />}
+									hoverIcon={<img src="/icons/system/CrossMiniDark.svg" alt="" width={9} height={9} />}
+									onClick={() => restoreInitialSection(init.key)}
+								/>
+							))}
 							{USEFUL_CONTACTS_ADDABLE_SECTIONS.filter((s) => !addedOrder.includes(s.key)).map((addable) => (
 								<ButtonCard
 									key={addable.key}
@@ -1125,12 +1732,78 @@ const onlyNumericValue = (v) => {
 	return hasMinus ? `-${intPart}.${decPart}` : `${intPart}.${decPart}`;
 };
 
+function computeBudgetDropIndex(clientY, containerEl) {
+	return computeIndexedRowDropIndex(clientY, containerEl, "data-budget-row-index");
+}
+
+function budgetRowSiblingShiftPx(rowIndex, from, over, slotPx) {
+	if (from < 0 || over < 0 || !(slotPx > 0)) return 0;
+	if (rowIndex === from) return 0;
+	if (from < over) {
+		if (rowIndex > from && rowIndex <= over) return -slotPx;
+	} else if (from > over) {
+		if (rowIndex >= over && rowIndex < from) return slotPx;
+	}
+	return 0;
+}
+
+const BudgetTableDragFloatRow = memo(function BudgetTableDragFloatRow({ top, left, width, row }) {
+	if (typeof document === "undefined") return null;
+	return createPortal(
+		<div className={styles.budgetTableRowFloatRoot} style={{ top, left, width }}>
+			<div className={styles.budgetTableRowFloatInner}>
+				<div className={styles.budgetTableRow}>
+					<div className={styles.budgetTableRowDragHandle} aria-hidden>
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img src="/icons/system/draggableDots.svg" alt="" width={11} height={18} draggable={false} />
+					</div>
+					<div className={styles.budgetTableCategoryCell}>
+						<span className={`paragraph ${styles.budgetTableCategoryInput}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+							{row.category?.trim() || "—"}
+						</span>
+					</div>
+					<div className={styles.budgetTableNumberCell}>
+						<div className={styles.budgetTableNumberInputWrap}>
+							<span className={`subinfo ${styles.budgetTableNumberInput}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+								{row.planned?.trim() || "—"}
+							</span>
+							<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
+								₽
+							</span>
+						</div>
+					</div>
+					<div className={styles.budgetTableNumberCell}>
+						<div className={styles.budgetTableNumberInputWrap}>
+							<span className={`subinfo ${styles.budgetTableNumberInput}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+								{row.spent?.trim() || "—"}
+							</span>
+							<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
+								₽
+							</span>
+						</div>
+					</div>
+					<div className={styles.budgetTableRowDeleteCell} aria-hidden />
+				</div>
+			</div>
+		</div>,
+		document.body
+	);
+});
+
 const BudgetTableRow = memo(function BudgetTableRow({
 	row,
 	rowIndex,
 	rowsCount,
 	blockIndex,
 	onUpdate,
+	onBudgetDragHandlePointerDown,
+	onBudgetDragHandlePointerMove,
+	onBudgetDragHandlePointerUp,
+	onBudgetDragHandlePointerCancel,
+	budgetRowDragShiftPx = 0,
+	budgetRowIsDragSource = false,
+	budgetRowIsDropTarget = false,
+	budgetRowShiftTransition = false,
 	openDeleteRowConfirm,
 	readOnly = false,
 }) {
@@ -1140,12 +1813,6 @@ const BudgetTableRow = memo(function BudgetTableRow({
 		[openDeleteRowConfirm, blockIndex, rowIndex]
 	);
 	const [rowHover, setRowHover] = useState(false);
-	const [categoryHovered, setCategoryHovered] = useState(false);
-	const [categoryFocused, setCategoryFocused] = useState(false);
-	const [plannedHovered, setPlannedHovered] = useState(false);
-	const [plannedFocused, setPlannedFocused] = useState(false);
-	const [spentHovered, setSpentHovered] = useState(false);
-	const [spentFocused, setSpentFocused] = useState(false);
 	const canRemove = rowsCount > 1;
 	const showDelete = canRemove && rowHover && !readOnly;
 
@@ -1158,42 +1825,42 @@ const BudgetTableRow = memo(function BudgetTableRow({
 		(e) => handleUpdate({ spent: onlyNumericValue(e.target.value) }),
 		[handleUpdate]
 	);
-	const handleClearPlanned = useCallback(() => {
-		handleUpdate({ planned: "" });
-	}, [handleUpdate]);
-	const handleClearSpent = useCallback(() => {
-		handleUpdate({ spent: "" });
-	}, [handleUpdate]);
-	const handleClearCategory = useCallback(() => {
-		handleUpdate({ category: "" });
-	}, [handleUpdate]);
-
-	const categoryVal = (row.category ?? "").trim();
-	const plannedVal = (row.planned ?? "").trim();
-	const spentVal = (row.spent ?? "").trim();
-	const showClearCategory = (categoryFocused || categoryHovered) && categoryVal.length > 0;
-	const showClearPlanned = (plannedFocused || plannedHovered) && plannedVal.length > 0;
-	const showClearSpent = (spentFocused || spentHovered) && spentVal.length > 0;
-
+	const handleBudgetDragPointerDown = useCallback(
+		(e) => onBudgetDragHandlePointerDown?.(rowIndex, e),
+		[onBudgetDragHandlePointerDown, rowIndex]
+	);
 	if (readOnly) {
 		return (
-			<div className={styles.budgetTableRow}>
+			<div
+				className={`${styles.budgetTableRow} ${budgetRowShiftTransition ? styles.budgetTableRowShiftable : ""} ${budgetRowIsDropTarget ? styles.budgetTableRowDropTarget : ""}`}
+				data-budget-row-index={rowIndex}
+				style={{
+					...(budgetRowDragShiftPx !== 0 ? { transform: `translateY(${budgetRowDragShiftPx}px)` } : {}),
+					visibility: budgetRowIsDragSource ? "hidden" : undefined,
+					pointerEvents: budgetRowIsDragSource ? "none" : undefined,
+				}}
+			>
+				<div className={styles.budgetTableRowLeadSpacer} aria-hidden />
 				<div className={styles.budgetTableCategoryCell}>
 					<span className={`paragraph ${styles.budgetTableCategoryInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
 						{row.category?.trim() || "—"}
 					</span>
 				</div>
 				<div className={styles.budgetTableNumberCell}>
-					<span className={`subinfo ${styles.budgetTableNumberInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
-						{row.planned?.trim() || "—"}
-					</span>
-					<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
+					<div className={styles.budgetTableNumberInputWrap}>
+						<span className={`subinfo ${styles.budgetTableNumberInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+							{row.planned?.trim() || "—"}
+						</span>
+						<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
+					</div>
 				</div>
 				<div className={styles.budgetTableNumberCell}>
-					<span className={`subinfo ${styles.budgetTableNumberInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
-						{row.spent?.trim() || "—"}
-					</span>
-					<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
+					<div className={styles.budgetTableNumberInputWrap}>
+						<span className={`subinfo ${styles.budgetTableNumberInput} ${styles.budgetTableReadOnlyText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+							{row.spent?.trim() || "—"}
+						</span>
+						<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
+					</div>
 				</div>
 			</div>
 		);
@@ -1201,16 +1868,32 @@ const BudgetTableRow = memo(function BudgetTableRow({
 
 	return (
 		<div
-			className={styles.budgetTableRow}
+			className={`${styles.budgetTableRow} ${budgetRowShiftTransition ? styles.budgetTableRowShiftable : ""} ${budgetRowIsDropTarget ? styles.budgetTableRowDropTarget : ""}`}
+			data-budget-row-index={rowIndex}
 			onMouseEnter={() => setRowHover(true)}
 			onMouseLeave={() => setRowHover(false)}
+			style={{
+				...(budgetRowDragShiftPx !== 0 ? { transform: `translateY(${budgetRowDragShiftPx}px)` } : {}),
+				visibility: budgetRowIsDragSource ? "hidden" : undefined,
+				pointerEvents: budgetRowIsDragSource ? "none" : undefined,
+			}}
 		>
-			<div className={`${styles.budgetTableCategoryCell} ${showClearCategory ? styles.budgetTableCategoryCellWithClear : ""}`}>
-				<div
-					className={styles.budgetTableCategoryInputWrap}
-					onMouseEnter={() => setCategoryHovered(true)}
-					onMouseLeave={() => setCategoryHovered(false)}
-				>
+			<div
+				className={styles.budgetTableRowDragHandle}
+				role="button"
+				tabIndex={-1}
+				aria-label="Изменить порядок строки"
+				onPointerDown={handleBudgetDragPointerDown}
+				onPointerMove={onBudgetDragHandlePointerMove}
+				onPointerUp={onBudgetDragHandlePointerUp}
+				onPointerCancel={onBudgetDragHandlePointerCancel}
+				onMouseDown={(e) => e.stopPropagation()}
+			>
+				{/* eslint-disable-next-line @next/next/no-img-element */}
+				<img src="/icons/system/draggableDots.svg" alt="" width={11} height={18} draggable={false} />
+			</div>
+			<div className={styles.budgetTableCategoryCell}>
+				<div className={styles.budgetTableCategoryInputWrap}>
 					<input
 						type="text"
 						className={`paragraph ${styles.budgetTableCategoryInput}`}
@@ -1218,31 +1901,12 @@ const BudgetTableRow = memo(function BudgetTableRow({
 						placeholder="Введите..."
 						value={row.category ?? ""}
 						onChange={handleCategoryChange}
-						onFocus={() => setCategoryFocused(true)}
-						onBlur={() => setCategoryFocused(false)}
 						aria-label="Категория"
 					/>
-					{showClearCategory && (
-						<button
-							type="button"
-							className={styles.budgetTableCategoryClear}
-							onClick={handleClearCategory}
-							onMouseDown={(e) => e.preventDefault()}
-							aria-label="Очистить"
-							tabIndex={-1}
-						>
-							{/* eslint-disable-next-line @next/next/no-img-element */}
-							<img src="/icons/system/Cross.svg" alt="" width={16} height={16} />
-						</button>
-					)}
 				</div>
 			</div>
 			<div className={styles.budgetTableNumberCell}>
-				<div
-					className={`${styles.budgetTableNumberInputWrap} ${showClearPlanned ? styles.budgetTableNumberInputWrapWithClear : ""}`}
-					onMouseEnter={() => setPlannedHovered(true)}
-					onMouseLeave={() => setPlannedHovered(false)}
-				>
+				<div className={styles.budgetTableNumberInputWrap}>
 					<input
 						type="text"
 						inputMode="decimal"
@@ -1251,32 +1915,13 @@ const BudgetTableRow = memo(function BudgetTableRow({
 						placeholder="0"
 						value={row.planned ?? ""}
 						onChange={handlePlannedChange}
-						onFocus={() => setPlannedFocused(true)}
-						onBlur={() => setPlannedFocused(false)}
 						aria-label="Планирую"
 					/>
 					<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
-					{showClearPlanned && (
-						<button
-							type="button"
-							className={styles.budgetTableNumberClear}
-							onClick={handleClearPlanned}
-							onMouseDown={(e) => e.preventDefault()}
-							aria-label="Очистить"
-							tabIndex={-1}
-						>
-							{/* eslint-disable-next-line @next/next/no-img-element */}
-							<img src="/icons/system/Cross.svg" alt="" width={16} height={16} />
-						</button>
-					)}
 				</div>
 			</div>
-		<div className={styles.budgetTableNumberCell}>
-				<div
-					className={`${styles.budgetTableNumberInputWrap} ${showClearSpent ? styles.budgetTableNumberInputWrapWithClear : ""}`}
-					onMouseEnter={() => setSpentHovered(true)}
-					onMouseLeave={() => setSpentHovered(false)}
-				>
+			<div className={styles.budgetTableNumberCell}>
+				<div className={styles.budgetTableNumberInputWrap}>
 					<input
 						type="text"
 						inputMode="decimal"
@@ -1285,24 +1930,9 @@ const BudgetTableRow = memo(function BudgetTableRow({
 						placeholder="0"
 						value={row.spent ?? ""}
 						onChange={handleSpentChange}
-						onFocus={() => setSpentFocused(true)}
-						onBlur={() => setSpentFocused(false)}
 						aria-label="Потратил"
 					/>
 					<span className={`subinfo ${styles.budgetTableNumberSuffix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>₽</span>
-					{showClearSpent && (
-						<button
-							type="button"
-							className={styles.budgetTableNumberClear}
-							onClick={handleClearSpent}
-							onMouseDown={(e) => e.preventDefault()}
-							aria-label="Очистить"
-							tabIndex={-1}
-						>
-							{/* eslint-disable-next-line @next/next/no-img-element */}
-							<img src="/icons/system/Cross.svg" alt="" width={16} height={16} />
-						</button>
-					)}
 				</div>
 			</div>
 			<div className={`${styles.budgetTableRowDeleteCell} ${showDelete ? styles.budgetTableRowDeleteCellVisible : ""}`}>
@@ -1365,13 +1995,137 @@ const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 		[rows, onUpdate]
 	);
 
+	const reorderRows = useCallback(
+		(fromIndex, toIndex) => {
+			if (fromIndex === toIndex) return;
+			const currentRows = rowsRef.current;
+			const len = currentRows.length;
+			if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len) return;
+			const next = [...currentRows];
+			const [removed] = next.splice(fromIndex, 1);
+			next.splice(toIndex, 0, removed);
+			onUpdate({ rows: next });
+		},
+		[onUpdate]
+	);
+
+	const [budgetRowDragVisual, setBudgetRowDragVisual] = useState(null);
+	const budgetRowsContainerRef = useRef(null);
+	const budgetRowDragFromRef = useRef(null);
+	const budgetRowDragUserSelectRef = useRef(null);
+	const budgetDragRafRef = useRef(null);
+	const budgetDragPendingRef = useRef(null);
+
+	useEffect(
+		() => () => {
+			if (budgetDragRafRef.current != null) cancelAnimationFrame(budgetDragRafRef.current);
+		},
+		[]
+	);
+
+	const onBudgetDragHandlePointerDown = useCallback(
+		(rowIndex, e) => {
+			if (readOnly || e.button !== 0) return;
+			e.preventDefault();
+			e.stopPropagation();
+			const rowEl = e.currentTarget.closest("[data-budget-row-index]");
+			if (!rowEl || !budgetRowsContainerRef.current) return;
+			const rect = rowEl.getBoundingClientRect();
+			const grabOffsetY = e.clientY - rect.top;
+			let slotPx = rect.height + 20;
+			const nextEl = rowEl.nextElementSibling;
+			if (nextEl?.hasAttribute?.("data-budget-row-index")) {
+				slotPx = Math.max(1, nextEl.getBoundingClientRect().top - rect.top);
+			}
+			budgetRowDragFromRef.current = rowIndex;
+			budgetRowDragUserSelectRef.current = document.body.style.userSelect;
+			document.body.style.userSelect = "none";
+			setBudgetRowDragVisual({
+				fromIndex: rowIndex,
+				overIndex: rowIndex,
+				floatTop: e.clientY - grabOffsetY,
+				floatLeft: rect.left,
+				floatWidth: rect.width,
+				grabOffsetY,
+				slotPx,
+			});
+			try {
+				e.currentTarget.setPointerCapture(e.pointerId);
+			} catch {
+				/* setPointerCapture may throw if target detached */
+			}
+		},
+		[readOnly]
+	);
+	const onBudgetDragHandlePointerMove = useCallback((e) => {
+		if (budgetRowDragFromRef.current === null) return;
+		e.preventDefault();
+		budgetDragPendingRef.current = { clientY: e.clientY };
+		if (budgetDragRafRef.current != null) return;
+		budgetDragRafRef.current = requestAnimationFrame(() => {
+			budgetDragRafRef.current = null;
+			const p = budgetDragPendingRef.current;
+			if (!p || budgetRowDragFromRef.current === null) return;
+			const container = budgetRowsContainerRef.current;
+			const over = container ? computeBudgetDropIndex(p.clientY, container) : budgetRowDragFromRef.current;
+			setBudgetRowDragVisual((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					overIndex: over,
+					floatTop: p.clientY - prev.grabOffsetY,
+				};
+			});
+		});
+	}, []);
+	const onBudgetDragHandlePointerUp = useCallback(
+		(e) => {
+			document.body.style.userSelect = budgetRowDragUserSelectRef.current ?? "";
+			budgetRowDragUserSelectRef.current = null;
+			if (budgetDragRafRef.current != null) {
+				cancelAnimationFrame(budgetDragRafRef.current);
+				budgetDragRafRef.current = null;
+			}
+			budgetDragPendingRef.current = null;
+			if (budgetRowDragFromRef.current === null) return;
+			const from = budgetRowDragFromRef.current;
+			budgetRowDragFromRef.current = null;
+			try {
+				e.currentTarget.releasePointerCapture(e.pointerId);
+			} catch {
+				/* ignore */
+			}
+			setBudgetRowDragVisual(null);
+			const container = budgetRowsContainerRef.current;
+			const to = container ? computeBudgetDropIndex(e.clientY, container) : from;
+			reorderRows(from, to);
+		},
+		[reorderRows]
+	);
+	const onBudgetDragHandlePointerCancel = useCallback((e) => {
+		document.body.style.userSelect = budgetRowDragUserSelectRef.current ?? "";
+		budgetRowDragUserSelectRef.current = null;
+		budgetRowDragFromRef.current = null;
+		if (budgetDragRafRef.current != null) {
+			cancelAnimationFrame(budgetDragRafRef.current);
+			budgetDragRafRef.current = null;
+		}
+		budgetDragPendingRef.current = null;
+		setBudgetRowDragVisual(null);
+		try {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		} catch {
+			/* ignore */
+		}
+	}, []);
+
 	const totalPlanned = useMemo(() => rows.reduce((s, r) => s + parseBudgetNumber(r.planned), 0), [rows]);
 	const totalSpent = useMemo(() => rows.reduce((s, r) => s + parseBudgetNumber(r.spent), 0), [rows]);
 
 	const formatSum = (n) => (Number.isFinite(n) ? n.toLocaleString("ru-RU") : "0") + " ₽";
 
 	return (
-		<div className={styles.budgetTableWrap}>
+		<div className={styles.budgetTableWrap} data-block-id={block.id}>
 			<div className={styles.budgetTable}>
 				<div className={styles.whereToGoTitleRow}>
 					<h3 className={`title_2 ${styles.whereToGoTitle}`} style={{ color: "var(--grayscale-dark-gray)" }}>
@@ -1412,11 +2166,18 @@ const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 					)}
 				</div>
 				<div className={styles.budgetTableHeaderRow}>
+					<div className={styles.budgetTableHeaderLead} aria-hidden />
 					<div className={styles.budgetTableHeaderCell}>Категория</div>
 					<div className={styles.budgetTableHeaderCell}>Планирую</div>
 					<div className={styles.budgetTableHeaderCell}>Потратил</div>
 				</div>
-				{rows.map((row, ri) => (
+				<div ref={budgetRowsContainerRef} className={styles.budgetTableRows}>
+					{rows.map((row, ri) => {
+						const d = budgetRowDragVisual;
+						const from = d?.fromIndex ?? -1;
+						const over = d?.overIndex ?? -1;
+						const slot = d?.slotPx ?? 0;
+						return (
 					<BudgetTableRow
 						key={ri}
 						row={row}
@@ -1424,10 +2185,28 @@ const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 						rowsCount={rows.length}
 						blockIndex={index}
 						onUpdate={updateRow}
+						onBudgetDragHandlePointerDown={onBudgetDragHandlePointerDown}
+						onBudgetDragHandlePointerMove={onBudgetDragHandlePointerMove}
+						onBudgetDragHandlePointerUp={onBudgetDragHandlePointerUp}
+						onBudgetDragHandlePointerCancel={onBudgetDragHandlePointerCancel}
+						budgetRowDragShiftPx={budgetRowSiblingShiftPx(ri, from, over, slot)}
+						budgetRowIsDragSource={d != null && d.fromIndex === ri}
+						budgetRowIsDropTarget={d != null && d.fromIndex !== d.overIndex && d.overIndex === ri}
+						budgetRowShiftTransition={d != null}
 						openDeleteRowConfirm={openDeleteRowConfirm}
 						readOnly={readOnly}
 					/>
-				))}
+						);
+					})}
+				</div>
+				{budgetRowDragVisual && rows[budgetRowDragVisual.fromIndex] != null && (
+					<BudgetTableDragFloatRow
+						top={budgetRowDragVisual.floatTop}
+						left={budgetRowDragVisual.floatLeft}
+						width={budgetRowDragVisual.floatWidth}
+						row={rows[budgetRowDragVisual.fromIndex]}
+					/>
+				)}
 				{!readOnly && (
 				<ButtonCard
 					text="Добавить пункт..."
@@ -1437,6 +2216,7 @@ const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 				/>
 				)}
 				<div className={styles.budgetTableTotalRow}>
+					<div className={styles.budgetTableTotalLead} aria-hidden />
 					<div className={`subtitle_1 ${styles.budgetTableTotalLabel}`} style={{ color: "var(--grayscale-dark-gray)" }}>
 						Итого
 					</div>
@@ -1505,6 +2285,7 @@ const RightColumnSection = memo(function RightColumnSection({
 
 	return (
 		<div className={styles.rightColumn}>
+			{!isPreview && (
 			<div className={`${styles.platformNote} ${!showPlatformNote ? styles.platformNoteHidden : ""}`}>
 				<div className={styles.platformNoteHeader}>
 					<div className={styles.platformNoteTitleRow}>
@@ -1549,6 +2330,7 @@ const RightColumnSection = memo(function RightColumnSection({
 					)}
 				</div>
 			</div>
+			)}
 			{/* Личные заметки видны только создателю; при просмотре чужого чекплана блок скрыт */}
 			{(!readOnly || isOwner) && (
 			<div className={styles.notesCard}>
@@ -1733,7 +2515,6 @@ const BottomBarSection = memo(function BottomBarSection({
 	canAddBudgetTableBlock,
 	onSave,
 	saveLoading,
-	hiddenAtBottom = false,
 	onDuplicatePlan,
 	onDeletePlan,
 	duplicateInProgress = false,
@@ -1880,7 +2661,7 @@ const BottomBarSection = memo(function BottomBarSection({
 	);
 
 	return (
-		<div className={`${styles.bottomBar} ${hiddenAtBottom ? styles.bottomBarHidden : ""}`}>
+		<div className={styles.bottomBar}>
 			<div className={styles.toolbar} ref={toolbarRef}>
 				<div className={styles.toolbarIconsRow}>
 					<button type="button" className={`${styles.toolbarButtonQuestion} `} aria-label="Помощь" onClick={onQuestionClick}>
@@ -1922,6 +2703,7 @@ const BottomBarSection = memo(function BottomBarSection({
 						size="small"
 						type="button"
 						disabled={!hasChanges || saveLoading}
+						title={!hasChanges && !saveLoading ? "Внесите изменения, чтобы сохранить" : undefined}
 						onClick={onSave}
 					/>
 				</div>
@@ -2193,12 +2975,12 @@ const CopyLinkToast = memo(function CopyLinkToast({ show, onExited }) {
 /** Тулбар режима просмотра: кнопка «Редактировать чек-план», Share, More (как в редактировании) */
 const ViewModeToolbar = memo(function ViewModeToolbar({
 	planIdStr,
+	fromAccount = false,
 	visibility = "private",
 	onVisibilityChange,
 	onCopyLink,
 	onDuplicatePlan,
 	onDeletePlan,
-	hiddenAtBottom = false,
 	duplicateInProgress = false,
 }) {
 	const [shareMenuOpen, setShareMenuOpen] = useState(false);
@@ -2375,9 +3157,9 @@ const ViewModeToolbar = memo(function ViewModeToolbar({
 	);
 
 	return (
-		<div className={`${styles.bottomBar} ${styles.bottomBarViewMode} ${hiddenAtBottom ? styles.bottomBarHidden : ""}`}>
+		<div className={`${styles.bottomBar} ${styles.bottomBarViewMode}`}>
 			<div className={styles.viewModeToolbar} ref={toolbarRef}>
-				<Link href={`/create-checkplan/${encodeURIComponent(planIdStr)}`} className={styles.viewModeEditWrap} aria-label="Редактировать чек-план">
+				<Link href={`/create-checkplan/${encodeURIComponent(planIdStr)}${fromAccount ? "?from=account" : ""}`} className={styles.viewModeEditWrap} aria-label="Редактировать чек-план">
 					<Button Text="Редактировать чек-план" color="blue" size="small" type="button" />
 				</Link>
 				<div className={styles.viewModeToolbarIcons}>
@@ -2459,9 +3241,9 @@ const ReportSentPopup = memo(function ReportSentPopup({ isClosing, onClose }) {
 				</h2>
 				<p className="paragraph" style={{ color: "var(--grayscale-dark-gray)" }}>
 					Если данный чек-план нарушает{" "}
-					<a href="#" onClick={(e) => e.preventDefault()} className={styles.reportPopupLink}>Политику конфиденциальности</a>
+					<a href="/__not_found__" className={styles.reportPopupLink}>Политику конфиденциальности</a>
 					{" и/или "}
-					<a href="#" onClick={(e) => e.preventDefault()} className={styles.reportPopupLink}>Пользовательское соглашение</a>
+					<a href="/__not_found__" className={styles.reportPopupLink}>Пользовательское соглашение</a>
 					, будут приняты меры в отношении данного чек-плана и его создателя.
 				</p>
 				<div className={styles.deleteConfirmButtons}>
@@ -2478,7 +3260,6 @@ const GuestViewToolbar = memo(function GuestViewToolbar({
 	isAuthenticated,
 	initialLikes = 0,
 	onCopyLink,
-	hiddenAtBottom = false,
 }) {
 	const router = useRouter();
 	const { isLiked, toggle, getLikeCount, setInitialLikeCounts } = useLikedChecklists();
@@ -2603,7 +3384,7 @@ const GuestViewToolbar = memo(function GuestViewToolbar({
 	const toolbarWidthClass = !isAuthenticated ? styles.guestToolbarWide : "";
 
 	return (
-		<div className={`${styles.bottomBar} ${styles.bottomBarGuest} ${hiddenAtBottom ? styles.bottomBarHidden : ""}`}>
+		<div className={`${styles.bottomBar} ${styles.bottomBarGuest}`}>
 			<div className={`${styles.guestToolbar} ${toolbarWidthClass}`} ref={toolbarRef}>
 				<button
 					type="button"
@@ -2657,7 +3438,16 @@ const GuestViewToolbar = memo(function GuestViewToolbar({
 	);
 });
 
-export default function CreateCheckplan({ planIdStr = null, initialPlan = null, initialPlanData = null, readOnly = false, fromAccount = false, isOwner = true, isPreview = false }) {
+export default function CreateCheckplan({
+	planIdStr = null,
+	initialPlan = null,
+	initialPlanData = null,
+	readOnly = false,
+	fromAccount = false,
+	isOwner = true,
+	isPreview = false,
+	showOnboardingInitially = false,
+}) {
 	const { setInitialLikeCounts } = useLikedChecklists();
 	const [planTitle, setPlanTitle] = useState(() => initialPlan?.title ?? "Китай 2026");
 	const [description, setDescription] = useState(() => initialPlan?.description ?? "");
@@ -2726,7 +3516,7 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	}, [typeIndex]);
 	const [showPlatformNote, setShowPlatformNote] = useState(true);
 	const [hasChanges, setHasChanges] = useState(false);
-	const [showOnboardingPopup, setShowOnboardingPopup] = useState(false);
+	const [showOnboardingPopup, setShowOnboardingPopup] = useState(() => Boolean(showOnboardingInitially));
 	const [onboardingPopupClosing, setOnboardingPopupClosing] = useState(false);
 	const [onboardingStep, setOnboardingStep] = useState(1);
 	const [deleteBlockTarget, setDeleteBlockTarget] = useState(null); // { index, type: 'text'|'whereToGo'|'usefulContacts'|'budgetTable' }
@@ -2749,7 +3539,6 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	const [suggestionLinksExiting, setSuggestionLinksExiting] = useState(() => new Set()); // 'whereToGo' | 'usefulContacts' | 'budgetTable'
 	const [saveLoading, setSaveLoading] = useState(false);
 	const [saveError, setSaveError] = useState(null);
-	const [toolbarHiddenAtBottom, setToolbarHiddenAtBottom] = useState(false);
 	const coverInputRef = useRef(null);
 	const descriptionRef = useRef(null);
 	const titleRef = useRef(null);
@@ -2834,23 +3623,6 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 
 	const SUGGESTION_EXIT_MS = 280;
 
-	/** Скрывать нижний тулбар, когда пользователь пролистал страницу до самого низа */
-	useEffect(() => {
-		const threshold = 80;
-		const checkAtBottom = () => {
-			if (typeof window === "undefined") return;
-			const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - threshold;
-			setToolbarHiddenAtBottom(atBottom);
-		};
-		checkAtBottom();
-		window.addEventListener("scroll", checkAtBottom, { passive: true });
-		window.addEventListener("resize", checkAtBottom);
-		return () => {
-			window.removeEventListener("scroll", checkAtBottom);
-			window.removeEventListener("resize", checkAtBottom);
-		};
-	}, []);
-
 	/** Если чеклист пустой и выбран тип — переключаем на «Ручная кладь и Багаж» и подставляем дефолтные пункты по типу. Только для шаблонного плана; для чистого блок «что взять» остаётся пустым с вариантом «Ручная кладь». */
 	useEffect(() => {
 		if (!wasCreatedWithTemplateRef.current) return;
@@ -2889,18 +3661,25 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 		(contentBlocks || [])
 			.filter((b) => b.type === "whereToGo" && b.sections)
 			.forEach((block) => {
-				(block.sections.look || []).forEach((r) => {
-					if ((r.text || "").trim() || (r.link || "").trim())
-						whatToSee.push({ title: (r.text || "").trim(), link: (r.link || "").trim() || null });
-				});
-				(block.sections.eat || []).forEach((r) => {
-					if ((r.text || "").trim() || (r.link || "").trim())
-						whatToEat.push({ title: (r.text || "").trim(), link: (r.link || "").trim() || null });
-				});
-				(block.sections.buy || []).forEach((r) => {
-					if ((r.text || "").trim() || (r.link || "").trim())
-						whatToBuy.push({ title: (r.text || "").trim(), link: (r.link || "").trim() || null });
-				});
+				const removedSec = new Set(block.removedWhereToGoSectionKeys ?? []);
+				if (!removedSec.has("look")) {
+					(block.sections.look || []).forEach((r) => {
+						if ((r.text || "").trim() || (r.link || "").trim())
+							whatToSee.push({ title: (r.text || "").trim(), link: (r.link || "").trim() || null });
+					});
+				}
+				if (!removedSec.has("eat")) {
+					(block.sections.eat || []).forEach((r) => {
+						if ((r.text || "").trim() || (r.link || "").trim())
+							whatToEat.push({ title: (r.text || "").trim(), link: (r.link || "").trim() || null });
+					});
+				}
+				if (!removedSec.has("buy")) {
+					(block.sections.buy || []).forEach((r) => {
+						if ((r.text || "").trim() || (r.link || "").trim())
+							whatToBuy.push({ title: (r.text || "").trim(), link: (r.link || "").trim() || null });
+					});
+				}
 			});
 
 		const usefulContactsBlocksList = [];
@@ -2912,15 +3691,20 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 			.filter((b) => b.type === "usefulContacts" && b.sections)
 			.forEach((block) => {
 				const addedOrder = block.addedSectionOrder || [];
-				const allKeys = [...USEFUL_CONTACTS_INITIAL_SECTIONS.map((s) => s.key), ...addedOrder];
+				const removedInitial = block.removedInitialSectionKeys || [];
+				const initialKeys = USEFUL_CONTACTS_INITIAL_SECTIONS.map((s) => s.key).filter((k) => !removedInitial.includes(k));
+				const allKeys = [...initialKeys, ...addedOrder];
 				allKeys.forEach((key) => {
 					const title = sectionKeyToTitle[key] || key;
 					const rows = block.sections[key] || [];
-					const contacts = rows.map((r) => ({
-						title: (r.text || "").trim(),
-						data: (r.text || "").trim(),
-						link: (r.link || "").trim() || null,
-					}));
+					const contacts = rows
+						.map((r) => ({
+							title: (r.text || "").trim(),
+							data: (r.text || "").trim(),
+							link: (r.link || "").trim() || null,
+						}))
+						.filter((c) => c.title || c.link);
+					if (contacts.length === 0) return;
 					usefulContactsBlocksList.push({ contacts_type: title, contacts });
 				});
 			});
@@ -2949,9 +3733,42 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 			});
 		}
 
-		const textBlocks = (contentBlocks || [])
-			.filter((b) => b.type === "text")
-			.map((b) => ({ title: (b.title || "").trim(), description: (b.description || "").trim() }));
+		const textBlocks = (contentBlocks || []).map((b) => {
+			if (b.type === "text") {
+				return {
+					type: "text",
+					title: (b.title || "").trim(),
+					description: (b.description || "").trim(),
+				};
+			}
+			if (b.type === "whereToGo") {
+				return {
+					type: "whereToGo",
+					title: "",
+					description: "",
+				};
+			}
+			if (b.type === "usefulContacts") {
+				return {
+					type: "usefulContacts",
+					title: "",
+					description: "",
+				};
+			}
+			if (b.type === "budgetTable") {
+				return {
+					type: "budgetTable",
+					title: "",
+					description: "",
+				};
+			}
+			// На всякий случай — неизвестный тип как текстовый блок
+			return {
+				type: "text",
+				title: (b.title || "").trim(),
+				description: (b.description || "").trim(),
+			};
+		});
 
 		const formatDateToApi = (d) => {
 			if (!d || !(d instanceof Date) || !Number.isFinite(d.getTime())) return "";
@@ -3053,57 +3870,121 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 				const msg = dataResJson?.detail || dataResJson?.message || "Не удалось сохранить данные чек-плана";
 				throw new Error(Array.isArray(msg) ? msg[0]?.msg : msg);
 			}
-			router.push(`/preview-checkplan/${encodeURIComponent(planIdStr)}`);
+			router.push(`/preview-checkplan/${encodeURIComponent(planIdStr)}${fromAccount ? "?from=account" : ""}`);
 		} catch (err) {
 			setSaveError(err.message || "Ошибка сохранения");
 		} finally {
 			setSaveLoading(false);
 		}
-	}, [planIdStr, saveLoading, planTitle, description, coverImage, locationLabel, typeIndex, peopleIndex, router, initialPlan, buildCheckPlanDataPayload, datesRange]);
+	}, [planIdStr, saveLoading, planTitle, description, coverImage, locationLabel, typeIndex, peopleIndex, router, initialPlan, buildCheckPlanDataPayload, datesRange, fromAccount]);
 
 
 	const addTextBlock = useCallback(() => {
-		setContentBlocks((prev) => [...prev, { type: "text", id: contentBlockIdRef.current++, title: "", description: "" }]);
+		let newId;
+		setContentBlocks((prev) => {
+			newId = contentBlockIdRef.current++;
+			return [...prev, { type: "text", id: newId, title: "", description: "" }];
+		});
 	}, []);
 	const addWhereToGoBlockRaw = useCallback(() => {
-		setContentBlocks((prev) => [
-			...prev,
-			{
-				type: "whereToGo",
-				id: contentBlockIdRef.current++,
-				sections: {
-					look: [{ text: "", link: "" }],
-					eat: [{ text: "", link: "" }],
-					buy: [{ text: "", link: "" }],
+		let newId;
+		setContentBlocks((prev) => {
+			newId = contentBlockIdRef.current++;
+			return [
+				...prev,
+				{
+					type: "whereToGo",
+					id: newId,
+					sections: {
+						look: [{ text: "", link: "" }],
+						eat: [{ text: "", link: "" }],
+						buy: [{ text: "", link: "" }],
+					},
+					removedWhereToGoSectionKeys: [],
 				},
-			},
-		]);
+			];
+		});
 	}, []);
 	const addUsefulContactsBlockRaw = useCallback(() => {
-		setContentBlocks((prev) => [
-			...prev,
-			{
-				type: "usefulContacts",
-				id: contentBlockIdRef.current++,
-				sections: {
-					accommodation: [{ text: "", link: "" }],
-					embassy: [{ text: "", link: "" }],
-					guide: [{ text: "", link: "" }],
+		let newId;
+		setContentBlocks((prev) => {
+			newId = contentBlockIdRef.current++;
+			return [
+				...prev,
+				{
+					type: "usefulContacts",
+					id: newId,
+					sections: {
+						accommodation: [{ text: "", link: "" }],
+						embassy: [{ text: "", link: "" }],
+						guide: [{ text: "", link: "" }],
+					},
+					addedSectionOrder: [],
+					removedInitialSectionKeys: [],
 				},
-				addedSectionOrder: [],
-			},
-		]);
+			];
+		});
 	}, []);
 	const addBudgetTableBlockRaw = useCallback(() => {
-		setContentBlocks((prev) => [
-			...prev,
-			{
-				type: "budgetTable",
-				id: contentBlockIdRef.current++,
-				rows: BUDGET_DEFAULT_ROWS.map((r) => ({ ...r })),
-			},
-		]);
+		let newId;
+		setContentBlocks((prev) => {
+			newId = contentBlockIdRef.current++;
+			return [
+				...prev,
+				{
+					type: "budgetTable",
+					id: newId,
+					rows: BUDGET_DEFAULT_ROWS.map((r) => ({ ...r })),
+				},
+			];
+		});
 	}, []);
+
+	const prevBlocksLengthRef = useRef(contentBlocks.length);
+
+	useEffect(() => {
+		if (typeof window === "undefined" || typeof document === "undefined") {
+			return;
+		}
+
+		const prevLength = prevBlocksLengthRef.current;
+		const currentLength = contentBlocks.length;
+
+		if (currentLength <= prevLength) {
+			prevBlocksLengthRef.current = currentLength;
+			return;
+		}
+
+		prevBlocksLengthRef.current = currentLength;
+
+		const lastBlock = contentBlocks[currentLength - 1];
+		if (!lastBlock) return;
+
+		let attempts = 0;
+		const maxAttempts = 6;
+
+		const tryScroll = () => {
+			const blockEl = document.querySelector(`[data-block-id="${lastBlock.id}"]`);
+			if (!blockEl) {
+				if (attempts < maxAttempts) {
+					attempts += 1;
+					window.setTimeout(tryScroll, 50);
+				}
+				return;
+			}
+
+			const rect = blockEl.getBoundingClientRect();
+			const viewportHeight = window.innerHeight || 0;
+			const top = rect.top + window.scrollY - (viewportHeight / 2 - rect.height / 2);
+
+			window.scrollTo({
+				top: Math.max(top, 0),
+				behavior: "smooth",
+			});
+		};
+
+		tryScroll();
+	}, [contentBlocks]);
 
 	const addWhereToGoBlock = useCallback(() => {
 		setSuggestionLinksExiting((prev) => new Set(prev).add("whereToGo"));
@@ -3294,44 +4175,6 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 			.map((i) => (i?.text || "").trim())
 			.filter((t) => t.length > 0);
 
-	const hasWhereToGoContent = (block) => {
-		if (block.type !== "whereToGo" || !block.sections) return false;
-		for (const key of ["look", "eat", "buy"]) {
-			const rows = block.sections[key] ?? [];
-			for (const r of rows) {
-				if ((r.text ?? "").trim() !== "" || (r.link ?? "").trim() !== "") return true;
-			}
-		}
-		return false;
-	};
-
-	const hasUsefulContactsContent = (block) => {
-		if (block.type !== "usefulContacts" || !block.sections) return false;
-		for (const key of Object.keys(block.sections)) {
-			const rows = block.sections[key] ?? [];
-			for (const r of rows) {
-				if ((r.text ?? "").trim() !== "" || (r.link ?? "").trim() !== "") return true;
-			}
-		}
-		return false;
-	};
-
-	const hasBudgetTableContent = (block) => {
-		if (block.type !== "budgetTable" || !block.rows) return false;
-		for (const r of block.rows) {
-			if ((r.category ?? "").trim() !== "" || parseBudgetNumber(r.planned) !== 0 || parseBudgetNumber(r.spent) !== 0) return true;
-		}
-		return false;
-	};
-
-	const isEmptyContentBlock = (b) => {
-		if (b.type === "text") return !(b.title || "").trim() && !(b.description || "").trim();
-		if (b.type === "whereToGo") return !hasWhereToGoContent(b);
-		if (b.type === "usefulContacts") return !hasUsefulContactsContent(b);
-		if (b.type === "budgetTable") return !hasBudgetTableContent(b);
-		return true;
-	};
-
 	// Видимость блока «Совет платформы» не считается изменением чеклиста — только данные формы
 	// sortIndex не входит в сравнение: смена только «Ручная кладь»/«Ручная кладь и Багаж» не даёт права сохранять
 	// Пустые блоки участвуют в сравнении: добавление/удаление пустого блока даёт право сохранить (как и с другими блоками)
@@ -3350,8 +4193,19 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 			personalNotesItems: normalizeTextItems(personalNotesItems),
 			contentBlocks: contentBlocks.map((b) => {
 					if (b.type === "text") return { type: "text", title: (b.title || "").trim(), description: (b.description || "").trim() };
-					if (b.type === "whereToGo") return { type: "whereToGo", sections: b.sections };
-					if (b.type === "usefulContacts") return { type: "usefulContacts", sections: b.sections, addedSectionOrder: b.addedSectionOrder ?? [] };
+					if (b.type === "whereToGo")
+						return {
+							type: "whereToGo",
+							sections: b.sections,
+							removedWhereToGoSectionKeys: b.removedWhereToGoSectionKeys ?? [],
+						};
+					if (b.type === "usefulContacts")
+						return {
+							type: "usefulContacts",
+							sections: b.sections,
+							addedSectionOrder: b.addedSectionOrder ?? [],
+							removedInitialSectionKeys: b.removedInitialSectionKeys ?? [],
+						};
 					if (b.type === "budgetTable") return { type: "budgetTable", rows: b.rows };
 					return b;
 				}),
@@ -3438,15 +4292,6 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	const canAddBudgetTableBlock = useMemo(
 		() => !contentBlocks.some((b) => b.type === "budgetTable"),
 		[contentBlocks]
-	);
-	const whereToGoBlocks = useMemo(() => contentBlocks.filter((b) => b.type === "whereToGo"), [contentBlocks]);
-	const usefulContactsBlocks = useMemo(() => contentBlocks.filter((b) => b.type === "usefulContacts"), [contentBlocks]);
-	const canSave = useMemo(
-		() =>
-			hasChanges &&
-			(whereToGoBlocks.length === 0 || whereToGoBlocks.some(hasWhereToGoContent)) &&
-			(usefulContactsBlocks.length === 0 || usefulContactsBlocks.some(hasUsefulContactsContent)),
-		[hasChanges, whereToGoBlocks, usefulContactsBlocks]
 	);
 
 	useEffect(() => {
@@ -3577,9 +4422,13 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 	);
 
 	const currentVisibility = visibilityOverride ?? initialPlan?.visibility ?? "private";
-	const backHref = isPreview ? "/account" : (readOnly ? (fromAccount ? "/account" : "/check-plans") : "/account");
-	const backLabel = isPreview ? "Назад" : (readOnly ? (fromAccount ? "В личный кабинет" : "К чек-планам") : "Назад");
-	const backAriaLabel = isPreview ? "Назад" : (readOnly ? (fromAccount ? "Назад в личный кабинет" : "Назад к чек-планам") : "Назад в личный кабинет");
+	const backHref = isPreview
+		? (fromAccount ? "/account" : "/check-plans")
+		: (readOnly ? (fromAccount ? "/account" : "/check-plans") : "/account");
+	const backLabel = "Назад";
+	const backAriaLabel = isPreview
+		? (fromAccount ? "Назад в личный кабинет" : "Назад к чек-планам")
+		: (readOnly ? (fromAccount ? "Назад в личный кабинет" : "Назад к чек-планам") : "Назад в личный кабинет");
 
 	return (
 		<div className={`${styles.wrapper} ${isPreview ? styles.wrapperPreview : ""}`}>
@@ -3772,30 +4621,32 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 				</div>
 			</div>
 
-			<p className={styles.creationDate}>
-				Дата создания{" "}
-				{initialPlan?.creation_time
-					? (() => {
-							const d = new Date(initialPlan.creation_time);
-							return isNaN(d.getTime())
-								? "—"
-								: d.toLocaleDateString("ru-RU", {
-										day: "2-digit",
-										month: "2-digit",
-										year: "numeric",
-									});
-						})()
-					: "—"}
-			</p>
-			{saveError && (
-				<p className={`label ${styles.coverErrorText}`} style={{ marginTop: 8 }} role="alert">
-					{saveError}
+			<div>
+				<p className={styles.creationDate}>
+					Дата создания{" "}
+					{initialPlan?.creation_time
+						? (() => {
+								const d = new Date(initialPlan.creation_time);
+								return isNaN(d.getTime())
+									? "—"
+									: d.toLocaleDateString("ru-RU", {
+											day: "2-digit",
+											month: "2-digit",
+											year: "numeric",
+										});
+							})()
+						: "—"}
 				</p>
-			)}
+				{saveError && (
+					<p className={`label ${styles.coverErrorText}`} style={{ marginTop: 8 }} role="alert">
+						{saveError}
+					</p>
+				)}
+			</div>
 
 			{!readOnly && (
 			<BottomBarSection
-				hasChanges={canSave}
+				hasChanges={hasChanges}
 				onQuestionClick={openOnboardingPopup}
 				onAddTextBlock={addTextBlock}
 				canAddTextBlock={canAddTextBlock}
@@ -3807,7 +4658,6 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 				canAddBudgetTableBlock={canAddBudgetTableBlock}
 				onSave={planIdStr ? savePlan : undefined}
 				saveLoading={saveLoading}
-				hiddenAtBottom={toolbarHiddenAtBottom}
 				onDuplicatePlan={handleDuplicatePlan}
 				onDeletePlan={() => setShowDeleteCheckplanPopup(true)}
 				duplicateInProgress={duplicateInProgress}
@@ -3816,12 +4666,12 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 			{readOnly && planIdStr && isOwner && (
 				<ViewModeToolbar
 					planIdStr={planIdStr}
+					fromAccount={fromAccount}
 					visibility={currentVisibility}
 					onVisibilityChange={setVisibilityOverride}
 					onCopyLink={() => setShowCopyLinkToast(true)}
 					onDuplicatePlan={handleDuplicatePlan}
 					onDeletePlan={() => setShowDeleteCheckplanPopup(true)}
-					hiddenAtBottom={toolbarHiddenAtBottom}
 					duplicateInProgress={duplicateInProgress}
 				/>
 			)}
@@ -3831,7 +4681,6 @@ export default function CreateCheckplan({ planIdStr = null, initialPlan = null, 
 					isAuthenticated={!!getAuth()?.user?.id}
 					initialLikes={Number(initialPlan?.initial_likes) || 0}
 					onCopyLink={() => setShowCopyLinkToast(true)}
-					hiddenAtBottom={toolbarHiddenAtBottom}
 				/>
 			)}
 			<CopyLinkToast show={showCopyLinkToast} onExited={() => setShowCopyLinkToast(false)} />

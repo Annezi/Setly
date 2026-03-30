@@ -167,7 +167,7 @@ export default function Creating() {
       }
       const idStr = data?.id_str;
       if (idStr) {
-        router.push(`/create-checkplan/${encodeURIComponent(idStr)}`);
+        router.push(`/create-checkplan/${encodeURIComponent(idStr)}?onboarding=1`);
       } else {
         throw new Error("Сервер не вернул id плана");
       }

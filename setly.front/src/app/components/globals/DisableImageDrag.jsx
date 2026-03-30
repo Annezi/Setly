@@ -8,24 +8,15 @@ import { useEffect } from 'react';
  */
 export default function DisableImageDrag() {
     useEffect(() => {
-        const disableDrag = () => {
-            document.querySelectorAll('img, svg').forEach((el) => {
-                el.setAttribute('draggable', 'false');
-            });
+        const onDragStart = (event) => {
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.tagName === 'IMG' || target.tagName === 'SVG')) {
+                event.preventDefault();
+            }
         };
 
-        disableDrag();
-
-        const observer = new MutationObserver(() => {
-            disableDrag();
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
-
-        return () => observer.disconnect();
+        document.addEventListener('dragstart', onDragStart, { capture: true });
+        return () => document.removeEventListener('dragstart', onDragStart, { capture: true });
     }, []);
 
     return null;

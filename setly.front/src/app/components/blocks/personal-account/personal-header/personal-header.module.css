@@ -1,8 +1,9 @@
-/* Маска формы шапки. Для десктопа добавьте personal-account-bgMask-desktop.png (1008×200, белое = видимая область). Пока используется мобильная маска. */
+/* Высота от ширины по размеру маски: desktop personal-bg-default.png 1045×200, mobile 560×334 — иначе mask-size 100%×100% сплющивает форму */
 .wrapper {
   width: 100%;
   max-width: 1045px;
-  height: 200px;
+  aspect-ratio: 1045 / 200;
+  height: auto;
   margin: 0 auto;
   margin-top: -64px;
   position: relative;
@@ -118,6 +119,7 @@
 @media (max-width: 600px) {
   .wrapper {
     margin-top: -56px;
+    aspect-ratio: 560 / 334;
   }
 
   .bgLayer {

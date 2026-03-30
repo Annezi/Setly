@@ -60,15 +60,23 @@ export async function PATCH(request, { params }) {
       email,
       newPassword,
       currentPassword,
+      currentEmail,
     } = body;
 
     const users = await getUsers();
     const index = users.findIndex((u) => u.id === userId);
-    if (index === -1) {
+    let resolvedUserIndex = index;
+    if (resolvedUserIndex === -1) {
+      const currentEmailTrim = typeof currentEmail === 'string' ? currentEmail.trim().toLowerCase() : '';
+      if (currentEmailTrim) {
+        resolvedUserIndex = users.findIndex((u) => (u.email || '').toLowerCase() === currentEmailTrim);
+      }
+    }
+    if (resolvedUserIndex === -1) {
       return NextResponse.json({ message: 'Пользователь не найден' }, { status: 404 });
     }
 
-    const user = users[index];
+    const user = users[resolvedUserIndex];
 
     if (typeof headerImagePath === 'string') {
       user.headerImagePath = headerImagePath;
@@ -82,50 +90,80 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    if (nickname !== undefined) {
-      const trimmed = String(nickname).trim().replace(/\s+/g, ' ');
-      if (trimmed.length <= 40) {
-        user.nickname = trimmed;
+    const normalizeNickname = (v) => String(v ?? '').trim().replace(/\s+/g, ' ');
+
+    const nicknameTrimmed =
+      nickname !== undefined ? normalizeNickname(nickname) : null;
+    const nicknameChanged =
+      nickname !== undefined &&
+      nicknameTrimmed !== normalizeNickname(user.nickname ?? '');
+
+    const emailTrimmed =
+      email !== undefined ? String(email).trim().toLowerCase() : null;
+    const emailChanged =
+      email !== undefined &&
+      emailTrimmed &&
+      emailTrimmed !== (user.email || '').toLowerCase();
+
+    let passwordChangeRequested = false;
+    if (newPassword !== undefined) {
+      const pwd = String(newPassword).replace(/\s/g, '');
+      passwordChangeRequested = pwd.length > 0;
+    }
+
+    const needsCurrentPassword =
+      nicknameChanged || emailChanged || passwordChangeRequested;
+
+    if (needsCurrentPassword) {
+      if (currentPassword !== user.password) {
+        return NextResponse.json(
+          { message: 'Спокойно. Пароли не совпадают' },
+          { status: 400 }
+        );
       }
     }
 
-    if (email !== undefined || newPassword !== undefined) {
-      const needCurrentForEmail = email !== undefined;
-      const currentOk = currentPassword !== undefined && user.password === currentPassword;
-      if (email !== undefined) {
-        if (!currentOk) {
-          return NextResponse.json(
-            { message: 'Спокойно! Для изменения почты введите свой текущий пароль' },
-            { status: 400 }
-          );
-        }
-        const emailTrimmed = String(email).trim().toLowerCase();
-        if (emailTrimmed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(emailTrimmed)) {
-          const emailTaken = users.some(
-            (u) => u.id !== userId && (u.email || '').toLowerCase() === emailTrimmed
-          );
-          if (emailTaken) {
-            return NextResponse.json(
-              { message: 'Спокойно! Пользователь с данной почтой уже зарегистрирован' },
-              { status: 400 }
-            );
-          }
-          user.email = emailTrimmed;
-        }
+    if (nicknameChanged && nicknameTrimmed.length <= 40) {
+      user.nickname = nicknameTrimmed;
+    }
+
+    if (emailChanged) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(emailTrimmed)) {
+        return NextResponse.json(
+          { message: 'Некорректная почта' },
+          { status: 400 }
+        );
       }
-      if (newPassword !== undefined) {
-        const onlyPasswordChange = email === undefined;
-        if (!onlyPasswordChange && !currentOk) {
-          return NextResponse.json(
-            { message: 'Спокойно! Пароль не верный...' },
-            { status: 400 }
-          );
-        }
-        const pwd = String(newPassword).replace(/\s/g, '');
-        if (pwd.length >= 6 && /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{}|;':",./<>?`~\\]*$/.test(pwd)) {
-          user.password = pwd;
-        }
+      const emailTaken = users.some(
+        (u) => u.id !== user.id && (u.email || '').toLowerCase() === emailTrimmed
+      );
+      if (emailTaken) {
+        return NextResponse.json(
+          { message: 'Спокойно! Пользователь с данной почтой уже зарегистрирован' },
+          { status: 400 }
+        );
       }
+      user.email = emailTrimmed;
+    }
+
+    if (passwordChangeRequested) {
+      const pwd = String(newPassword).replace(/\s/g, '');
+      if (
+        pwd.length < 6 ||
+        !/^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{}|;':",./<>?`~\\]*$/.test(pwd)
+      ) {
+        return NextResponse.json(
+          { message: 'Некорректный пароль' },
+          { status: 400 }
+        );
+      }
+      if (pwd === user.password) {
+        return NextResponse.json(
+          { message: 'Новый пароль должен отличаться от текущего' },
+          { status: 400 }
+        );
+      }
+      user.password = pwd;
     }
 
     await fs.writeFile(USERS_JSON_PATH, JSON.stringify(users, null, 2), 'utf-8');

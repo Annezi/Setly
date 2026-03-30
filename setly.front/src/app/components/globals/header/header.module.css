@@ -46,6 +46,11 @@
   transform: translateX(-25px);
 }
 
+/* Сдвиг навигации вправо для неавторизованного пользователя (кнопка «Войти» уже по центру при авторизации) */
+.navWrapUnauth {
+  margin-right: -59px;
+}
+
 /* Десктопная навигация (инлайн, без HeaderNavMenu) — прозрачный размывающий фон как у dropdown-filter-menu */
 .headerNav {
   width: 467px;
@@ -224,7 +229,94 @@
   transform: scale(0.98);
 }
 
+/* Обёртка кнопки профиля на странице /account для выпадающего меню */
+.accountMenuWrap {
+  position: relative;
+  display: inline-flex;
+}
 
+/* Выпадающее меню аккаунта (как «Поделиться» на preview-checkplan): по центру кнопки */
+.accountDropdownMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--halftone-80-white);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.accountDropdownMenuPortal {
+  position: fixed;
+  z-index: 1000;
+  transform: translate(-50%, 0);
+}
+
+.accountDropdownMenuItem {
+  text-align: center;
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--grayscale-dark-gray);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.accountDropdownMenuItem:hover {
+  background: var(--halftone-80-white);
+}
+
+.accountDropdownMenuItem:active {
+  transform: scale(0.98);
+}
+
+/* Попап выхода из аккаунта (как на странице настроек) */
+.logoutPopupOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.logoutPopupBox {
+  background-color: var(--grayscale-white);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.logoutPopupText {
+  color: var(--grayscale-dark-gray);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.logoutPopupButtons {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.logoutPopupButtons button {
+  flex: 1;
+  min-width: 0;
+}
 
 /* Кнопка гамбургер/крестик в мобильном хедере */
 .mobileMenuTrigger {

@@ -1,6 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
+import { getAuth } from "@/app/lib/auth-storage";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./three-steps.module.css";
 
 const steps = [
@@ -31,11 +34,22 @@ const steps = [
 ];
 
 export default function ThreeSteps() {
+    const router = useRouter();
+
+    const handleCreateCheckplan = () => {
+        const auth = getAuth();
+        if (auth?.token) {
+            router.push("/creating");
+            return;
+        }
+        router.push("/login");
+    };
+
     return (
         <div className={styles.wrapper}>
         <section className={styles.block}>
             <h2 className={`${styles.title} title_1`}>
-                Три шага для идеального плана
+                {applyTypograf("Три шага для идеального плана")}
             </h2>
 
             <div className={styles.cards}>
@@ -54,13 +68,13 @@ export default function ThreeSteps() {
                             className={styles.cardImage}
                         />
                         <h3 className={`${styles.cardTitle} subtitle_1`}>
-                            {step.title}
+                            {applyTypograf(step.title)}
                         </h3>
                         <p className={`${styles.cardSubtitle} subtitle_1`}>
-                            {step.subtitle}
+                            {applyTypograf(step.subtitle)}
                         </p>
                         <p className={`${styles.cardDescription} subinfo`}>
-                            {step.description}
+                            {applyTypograf(step.description)}
                         </p>
                     </article>
                     );
@@ -68,7 +82,11 @@ export default function ThreeSteps() {
             </div>
 
             <div className={styles.buttonWrap}>
-                <Button Text="Создать чек-план" color="blue" />
+                <Button
+                    Text={applyTypograf("Создать чек-план")}
+                    color="blue"
+                    onClick={handleCreateCheckplan}
+                />
             </div>
         </section>
         </div>

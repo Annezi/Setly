@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Header } from "@/app/components/globals/header/Header";
@@ -53,7 +53,10 @@ function EditCheckplanPhantom() {
 export default function EditCheckplanPage() {
 	const params = useParams();
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const idStr = params?.id ? decodeURIComponent(String(params.id)) : null;
+	const fromAccount = searchParams?.get("from") === "account";
+	const showOnboardingInitially = searchParams?.get("onboarding") === "1";
 	const [plan, setPlan] = useState(null);
 	const [planData, setPlanData] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -138,11 +141,11 @@ export default function EditCheckplanPage() {
 					<p>{error || "План не найден"}</p>
 					<button
 						type="button"
-						onClick={() => router.push("/check-plans")}
+						onClick={() => router.push(fromAccount ? "/account" : "/check-plans")}
 						className="subinfo"
 						style={{ marginTop: "1rem", textDecoration: "underline" }}
 					>
-						Вернуться к чек-планам
+						{fromAccount ? "В личный кабинет" : "Вернуться к чек-планам"}
 					</button>
 				</div>
 				<div className="createCheckplanPageFooterWrap">
@@ -159,7 +162,8 @@ export default function EditCheckplanPage() {
 				planIdStr={idStr}
 				initialPlan={plan}
 				initialPlanData={planData}
-				fromAccount={true}
+				fromAccount={fromAccount}
+				showOnboardingInitially={showOnboardingInitially}
 			/>
 			<div className="createCheckplanPageFooterWrap">
 				<Footer />

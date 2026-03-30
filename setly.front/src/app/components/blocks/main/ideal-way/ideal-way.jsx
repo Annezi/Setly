@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./ideal-way.module.css";
 
 export default function OurCommunity() {
@@ -19,7 +20,7 @@ export default function OurCommunity() {
             <div className={styles.rightPart}>
                 <div className={styles.rightPartHeader}>
                     <h2 className={`${styles.title} title_1`}>
-                        С нами — те, кто уже знает, что взять
+                        {applyTypograf("С нами — те, кто уже знает, что взять")}
                     </h2>
                 </div>
                 <div className={styles.rightPartContent}>
@@ -42,15 +43,19 @@ export default function OurCommunity() {
                     </div>
                     <div className={styles.descriptionWrap}>
                         <p className={`${styles.description} paragraph`}>
-                            Мы уже прошли этот путь — и знаем, каково это: забыть адаптер, потерять билет, нервничать перед вылетом.
+                            {applyTypograf(
+                                "Мы уже прошли этот путь — и знаем, каково это: забыть адаптер, потерять билет, нервничать перед вылетом."
+                            )}
                         </p>
                         <p className={`${styles.description} paragraph`}>
-                            Присоединяйтесь — и создавайте чек-планы, которые работают именно для вас.
+                            {applyTypograf(
+                                "Присоединяйтесь — и создавайте чек-планы, которые работают именно для вас."
+                            )}
                         </p>
                     </div>
                     <div className={styles.buttonWrap}>
                         <Button
-                            Text="Зарегистрироваться"
+                            Text={applyTypograf("Зарегистрироваться")}
                             color="white"
                             onClick={() => router.push("/registration")}
                         />

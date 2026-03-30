@@ -1,0 +1,163 @@
+.main {
+  margin-top: 20px;
+}
+
+.welcomeSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.welcomeImageWrap {
+  width: 100%;
+  max-width: 1163px;
+}
+
+.welcomeImage {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.welcomeSubtitle {
+  color: #000;
+  text-align: center;
+}
+
+.welcomeDescription {
+  color: var(--grayscale-dark-gray);
+  text-align: center;
+  max-width: 538px;
+}
+
+.purposeSection {
+  margin-top: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.purposeCards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.purposeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 335px;
+  min-width: 280px;
+  min-height: 342px;
+  max-height: 359px;
+  padding: 20px;
+  background: var(--grayscale-white);
+  border-radius: 20px;
+  border: 1px solid var(--grayscale-primary-gray);
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.purposeCardImage {
+  width: 183px;
+  height: 186px;
+  object-fit: contain;
+}
+
+.purposeCardTitle {
+  color: var(--grayscale-dark-gray);
+}
+
+.purposeCardDescription {
+  color: var(--grayscale-dark-gray);
+}
+
+.authorsSection {
+  margin-top: 80px;
+  text-align: center;
+}
+
+.authorsTitle {
+  color: #000;
+}
+
+.authorsDescription {
+  margin-top: 20px;
+  color: var(--grayscale-dark-gray);
+}
+
+.authorsList {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.authorRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+}
+
+.authorRowReversed {
+  flex-direction: row-reverse;
+}
+
+.authorImageWrap {
+  flex-shrink: 0;
+}
+
+.authorImage {
+  width: 276px;
+  height: 278px;
+  border-radius: 500px;
+  object-fit: cover;
+  display: block;
+}
+
+.authorContent {
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.authorName {
+  color: var(--grayscale-dark-gray);
+}
+
+.authorText {
+  margin-top: 20px;
+  color: var(--grayscale-dark-gray);
+}
+
+@media (max-width: 800px) {
+  .main {
+    margin-top: 20px;
+  }
+
+  .welcomeDescription {
+    max-width: 100%;
+  }
+
+  .authorsList {
+    gap: 20px;
+  }
+
+  .authorRow,
+  .authorRowReversed {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .authorContent {
+    max-width: 100%;
+  }
+}

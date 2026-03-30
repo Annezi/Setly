@@ -1,0 +1,50 @@
+/* [project]/setly.front/src/app/technical-error-page.module.css [app-client] (css) */
+.technical-error-page-module__Ph6h-a__main {
+  margin-top: 60px;
+}
+
+.technical-error-page-module__Ph6h-a__content {
+  text-align: center;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  display: flex;
+}
+
+.technical-error-page-module__Ph6h-a__image {
+  width: 295px;
+  height: 299px;
+}
+
+.technical-error-page-module__Ph6h-a__title {
+  color: var(--grayscale-dark-gray);
+  max-width: 520px;
+}
+
+.technical-error-page-module__Ph6h-a__description {
+  color: var(--grayscale-dark-gray);
+  max-width: 480px;
+}
+
+.technical-error-page-module__Ph6h-a__buttonWrap {
+  justify-content: center;
+  display: flex;
+}
+
+@media (max-width: 800px) {
+  .technical-error-page-module__Ph6h-a__image {
+    width: 280px;
+    height: 283px;
+  }
+
+  .technical-error-page-module__Ph6h-a__title {
+    max-width: 420px;
+  }
+
+  .technical-error-page-module__Ph6h-a__description {
+    max-width: 360px;
+  }
+}
+
+/*# sourceMappingURL=setly_front_src_app_technical-error-page_module_css_bad6b30c._.single.css.map*/

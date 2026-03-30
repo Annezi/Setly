@@ -3,15 +3,23 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
+import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
+import { applyTypograf } from "@/app/lib/typograf";
+import articleCtaStyles from "@/app/components/blocks/articles/article/article.module.css";
 import styles from "../../create-checkplan/create-checkplan-edit-phantom.module.css";
 
 const CreateCheckplan = dynamic(
   () => import("../../create-checkplan/create-checkplan").then((m) => m.default),
   { ssr: false, loading: () => null }
+);
+const PopularCheckplansCarousel = dynamic(
+  () => import("@/app/components/blocks/preview-checkplan/popular-checkplans-carousel").then((m) => m.default),
+  { ssr: false, loading: () => <div style={{ minHeight: 240 }} aria-busy="true" aria-label="Загрузка рекомендаций" /> }
 );
 
 /** Фантомная прогрузка страницы просмотра чекплана. */
@@ -140,11 +148,11 @@ export default function PreviewCheckplanPage() {
 					<p>{error || "План не найден"}</p>
 					<button
 						type="button"
-						onClick={() => router.push("/check-plans")}
+						onClick={() => router.push(fromAccount ? "/account" : "/check-plans")}
 						className="subinfo"
 						style={{ marginTop: "1rem", textDecoration: "underline" }}
 					>
-						Вернуться к чек-планам
+						{fromAccount ? "В личный кабинет" : "Вернуться к чек-планам"}
 					</button>
 				</div>
 				<div className="createCheckplanPageFooterWrap">
@@ -171,6 +179,45 @@ export default function PreviewCheckplanPage() {
 				isOwner={isOwner}
 				isPreview
 			/>
+			{isOwner ? (
+				<section
+					className={articleCtaStyles.templatesBlock}
+					aria-labelledby="preview-traveler-test-heading"
+					id="preview-templates-boundary"
+				>
+					<div className={articleCtaStyles.templatesLeft}>
+						<Image
+							src="/img/main/travelertype.png"
+							alt=""
+							width={572}
+							height={572}
+							className={articleCtaStyles.templatesImage}
+						/>
+					</div>
+					<div className={articleCtaStyles.templatesRight}>
+						<h2
+							id="preview-traveler-test-heading"
+							className={`${articleCtaStyles.templatesTitle} title_1`}
+						>
+							{applyTypograf("Уже собрался? Пройди тест")}
+						</h2>
+						<div className={articleCtaStyles.templatesDescriptionWrap}>
+							<p className={`${articleCtaStyles.templatesDescription} paragraph`}>
+								{applyTypograf(
+									"Узнай какой ты путешественник из нашего маленького теста"
+								)}
+							</p>
+							<Button
+								Text="Пройти тест"
+								color="white"
+								onClick={() => router.push("/tests")}
+							/>
+						</div>
+					</div>
+				</section>
+			) : (
+				<PopularCheckplansCarousel excludeIdStr={idStr} />
+			)}
 			<div className="createCheckplanPageFooterWrap">
 				<Footer />
 			</div>

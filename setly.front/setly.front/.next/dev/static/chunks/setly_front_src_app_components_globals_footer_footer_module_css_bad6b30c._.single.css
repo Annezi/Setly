@@ -1,0 +1,189 @@
+/* [project]/setly.front/src/app/components/globals/footer/footer.module.css [app-client] (css) */
+.footer-module__lfvyAq__wrapper {
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  min-height: 790px;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-module__lfvyAq__bg {
+  background-image: url("/img/main/footer-bg.png");
+  background-position: 50% -70px;
+  background-repeat: no-repeat;
+  background-size: auto;
+  position: absolute;
+  inset: 0;
+}
+
+.footer-module__lfvyAq__content {
+  z-index: 1;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  padding-bottom: 48px;
+  padding-left: 24px;
+  padding-right: 24px;
+  display: flex;
+  position: relative;
+}
+
+.footer-module__lfvyAq__ctaBlock {
+  text-align: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 357px;
+  display: flex;
+}
+
+.footer-module__lfvyAq__title {
+  color: var(--grayscale-white);
+}
+
+.footer-module__lfvyAq__description {
+  color: var(--grayscale-white);
+  width: 269px;
+  margin: 0;
+}
+
+.footer-module__lfvyAq__bottomRow {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: 0;
+  display: flex;
+}
+
+.footer-module__lfvyAq__subinfoLeft, .footer-module__lfvyAq__subinfoRight {
+  color: var(--grayscale-dark-gray);
+  margin: 0;
+}
+
+.footer-module__lfvyAq__subinfoRight {
+  align-items: center;
+  gap: 20px;
+  display: flex;
+}
+
+.footer-module__lfvyAq__subinfoRight a {
+  color: var(--grayscale-dark-gray);
+  font-size: 14px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.footer-module__lfvyAq__subinfoRight a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1300px) {
+  .footer-module__lfvyAq__wrapper {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  .footer-module__lfvyAq__bg {
+    background-image: url("/img/main/footer-bg.png");
+    background-position: 50% -40px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+    inset: 0;
+  }
+}
+
+@media (max-width: 1200px) {
+  .footer-module__lfvyAq__wrapper {
+    width: 100vw;
+    min-height: 750px;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  .footer-module__lfvyAq__bg {
+    background-image: url("/img/main/footer-bg.png");
+    background-position: 50% 0;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+    inset: 0;
+  }
+}
+
+@media (max-width: 1000px) {
+  .footer-module__lfvyAq__wrapper {
+    justify-content: center;
+    align-items: flex-end;
+    width: 100vw;
+    min-height: 620px;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    display: flex;
+    overflow: hidden;
+  }
+
+  .footer-module__lfvyAq__bg {
+    background-image: url("/img/main/Footer-bg-mobile.png");
+    background-position: 50% -80px;
+    background-repeat: no-repeat;
+    background-size: auto;
+    position: absolute;
+    inset: 0;
+  }
+
+  .footer-module__lfvyAq__ctaBlock {
+    margin-bottom: 150px;
+  }
+
+  .footer-module__lfvyAq__description {
+    width: auto;
+    max-width: 269px;
+  }
+
+  .footer-module__lfvyAq__bottomRow {
+    text-align: center;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .footer-module__lfvyAq__subinfoRight {
+    flex-direction: column;
+    order: -1;
+  }
+
+  .footer-module__lfvyAq__subinfoLeft {
+    text-align: center;
+  }
+}
+
+@media (max-width: 800px) {
+  .footer-module__lfvyAq__wrapper {
+    min-height: 680px;
+  }
+
+  .footer-module__lfvyAq__bg {
+    background-position: 50% -20px;
+  }
+}
+
+@media (max-width: 500px) {
+  .footer-module__lfvyAq__wrapper {
+    min-height: 680px;
+  }
+
+  .footer-module__lfvyAq__bg {
+    background-position: 50% -50px;
+  }
+}
+
+/*# sourceMappingURL=setly_front_src_app_components_globals_footer_footer_module_css_bad6b30c._.single.css.map*/
