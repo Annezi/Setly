@@ -3,10 +3,6 @@
 	box-sizing: border-box;
 	border-radius: 20px;
 	overflow: hidden;
-	background-image: url("/img/main/welcome-banner.png");
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -16,7 +12,15 @@
 	color: var(--grayscale-white);
 }
 
+.backgroundImage {
+	object-fit: cover;
+	object-position: center;
+	z-index: 0;
+}
+
 .content {
+	position: relative;
+	z-index: 1;
 	display: flex;
 	flex-direction: column;
 	align-items: center;

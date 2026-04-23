@@ -13,7 +13,10 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background-image: url('/img/main/three-steps-bg.png');
+    background-image: image-set(
+        url('/img/main/three-steps-bg.webp') type('image/webp'),
+        url('/img/main/three-steps-bg.png') type('image/png')
+    );
     background-size: auto;
     background-position: center calc(50% + 10px);
     background-repeat: no-repeat;
@@ -108,7 +111,10 @@
 /* Мобильная версия: ширина < 800px */
 @media (max-width: 800px) {
     .wrapper::before {
-        background-image: url('/img/main/three-steps-bg-mobile.png');
+        background-image: image-set(
+            url('/img/main/three-steps-bg-mobile.webp') type('image/webp'),
+            url('/img/main/three-steps-bg-mobile.png') type('image/png')
+        );
     }
 
     .title {

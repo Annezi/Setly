@@ -643,7 +643,6 @@
 .sortDropdownWrap {
 	width: 100%;
 	height: 44px;
-	padding: 12px 20px;
 	border-radius: 100px;
 	background: var(--halftone-60-primary-gray);
 	display: flex;
@@ -1819,6 +1818,11 @@
 	transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
+.bottomBarMobileAnchor {
+	width: 100%;
+	height: 0;
+}
+
 .creationDate {
 	margin-top: 40px;
 	font-size: 14px;
@@ -2872,8 +2876,22 @@
 
 	/* Тулбар: 280×100px, внутренний отступ 4px, элементы управления упираются в края по ширине */
 	.bottomBar {
-		bottom: 16px;
+		bottom: 20px;
 		padding: 0 16px;
+	}
+
+	.bottomBarMobileFloating {
+		min-height: 108px;
+	}
+
+	.bottomBarMobileFloating .toolbar,
+	.bottomBarMobileFloating .viewModeToolbar,
+	.bottomBarMobileFloating .guestToolbar {
+		position: fixed;
+		bottom: 20px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 60;
 	}
 
 	.toolbar {

@@ -2,7 +2,10 @@
   height: calc(100vh - 64px);
   width: calc(100% + 40px);
   margin-left: -20px;
-  background-image: url("/img/main/login-bg.png");
+  background-image: image-set(
+    url("/img/main/login-bg.webp") type("image/webp"),
+    url("/img/main/login-bg.png") type("image/png")
+  );
   background-position: center bottom;
   background-size: auto 108%;
   background-repeat: no-repeat;

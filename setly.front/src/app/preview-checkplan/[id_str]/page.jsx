@@ -175,6 +175,7 @@ export default function PreviewCheckplanPage() {
 				initialPlan={plan}
 				initialPlanData={planData}
 				readOnly={readOnly}
+				allowChecklistToggleInPreview={isOwner}
 				fromAccount={fromAccount}
 				isOwner={isOwner}
 				isPreview

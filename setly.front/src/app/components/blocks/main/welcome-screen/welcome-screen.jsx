@@ -10,6 +10,15 @@ export default function WelcomeScreen() {
 
 	return (
 		<section className={styles.block} aria-label="Приветственный экран">
+			<Image
+				src="/img/main/welcome-banner.webp"
+				alt=""
+				fill
+				priority
+				fetchPriority="high"
+				sizes="(max-width: 800px) 100vw, 1400px"
+				className={styles.backgroundImage}
+			/>
 			<div className={styles.content}>
 				<h1 className={styles.title}>
 					<span className={styles.titleLine}>

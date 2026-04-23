@@ -56,7 +56,7 @@ export default function AboutPageClient() {
         <section className={styles.welcomeSection}>
           <div className={styles.welcomeImageWrap}>
             <Image
-              src="/img/main/aboutWelcome.png"
+              src="/img/main/aboutWelcome.webp"
               alt="О проекте Setly"
               width={1163}
               height={676}

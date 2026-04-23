@@ -19,6 +19,10 @@
 }
 
 .dropdownItem span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    line-height: 1;
     text-align: center !important;
 }
 

@@ -18,7 +18,10 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background-image: url("/img/main/our-community-bg.png");
+    background-image: image-set(
+        url("/img/main/our-community-bg.webp") type("image/webp"),
+        url("/img/main/our-community-bg.png") type("image/png")
+    );
     background-size: auto;
     background-position: center;
     background-repeat: no-repeat;

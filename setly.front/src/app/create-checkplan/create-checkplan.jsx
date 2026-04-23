@@ -186,9 +186,40 @@ const HAND_LUGGAGE_ITEMS = [];
 const LUGGAGE_ITEMS = [];
 const PERSONAL_NOTES = [];
 const SORT_ITEMS = ["Ручная кладь", "Ручная кладь и Багаж"];
+const MOBILE_TOOLBAR_BOTTOM_OFFSET = 20;
 
 const emptyCount = (items) => items.filter((i) => !(i.text || "").trim()).length;
 const canAddItem = (items) => emptyCount(items) < 3;
+
+function useMobileFloatingToolbar(anchorRef, toolbarRef) {
+	const [isFloating, setIsFloating] = useState(false);
+
+	useEffect(() => {
+		if (typeof window === "undefined") return undefined;
+		const updateFloating = () => {
+			const anchorEl = anchorRef.current;
+			const toolbarEl = toolbarRef.current;
+			if (!anchorEl || !toolbarEl) return;
+			if (window.innerWidth > 768) {
+				setIsFloating(false);
+				return;
+			}
+			const anchorRect = anchorEl.getBoundingClientRect();
+			const toolbarHeight = toolbarEl.offsetHeight || 100;
+			const threshold = window.innerHeight - toolbarHeight - MOBILE_TOOLBAR_BOTTOM_OFFSET;
+			setIsFloating(anchorRect.top > threshold);
+		};
+		updateFloating();
+		window.addEventListener("scroll", updateFloating, { passive: true });
+		window.addEventListener("resize", updateFloating);
+		return () => {
+			window.removeEventListener("scroll", updateFloating);
+			window.removeEventListener("resize", updateFloating);
+		};
+	}, [anchorRef, toolbarRef]);
+
+	return isFloating;
+}
 
 /** Контент дропдауна «Место»: поле поиска + список вариантов (страна/город), стиль как у Тип/Люди */
 const LocationDropdownContent = memo(function LocationDropdownContent({
@@ -256,12 +287,13 @@ const ChecklistSection = memo(function ChecklistSection({
 	setSortIndex,
 	readOnly = false,
 	isPreview = false,
+	allowToggleInReadOnly = false,
 }) {
 	const showSortDropdown = !readOnly && !isPreview;
 	const showSortDropdownArea = !isPreview;
 	const canShowDeleteHand = handLuggageItems.length >= 2;
 	const canShowDeleteLuggage = luggageItems.length >= 2;
-	const canToggleCheckboxesOnly = false; // не используется: в предпросмотре чекбоксы только для чтения
+	const canToggleCheckboxesOnly = readOnly && isPreview && allowToggleInReadOnly;
 
 	return (
 		<div className={styles.checklistCard}>
@@ -290,7 +322,7 @@ const ChecklistSection = memo(function ChecklistSection({
 						return (
 							<div key={i} className={styles.checklistItemWrap}>
 								<div className={styles.checklistItemRow}>
-									{readOnly ? (
+									{readOnly && !canToggleCheckboxesOnly ? (
 										<span className={`paragraph ${styles.checklistDecoratedInput}`} style={{ color: "var(--grayscale-dark-gray)" }}>
 											{item.text || "—"}
 										</span>
@@ -300,9 +332,10 @@ const ChecklistSection = memo(function ChecklistSection({
 											placeholder="Введите..."
 											className={`paragraph ${styles.checklistDecoratedInput}`}
 											value={item.text}
-											onChange={(e) => updateHandLuggageItem(i, { text: e.target.value })}
+											onChange={readOnly ? undefined : (e) => updateHandLuggageItem(i, { text: e.target.value })}
 											checkboxChecked={item.checked}
 											onCheckboxChange={() => updateHandLuggageItem(i, { checked: !item.checked })}
+											readOnly={readOnly}
 											multiline
 											maxLength={92}
 										/>
@@ -352,7 +385,7 @@ const ChecklistSection = memo(function ChecklistSection({
 						return (
 							<div key={i} className={styles.checklistItemWrap}>
 								<div className={styles.checklistItemRow}>
-									{readOnly ? (
+									{readOnly && !canToggleCheckboxesOnly ? (
 										<span className={`paragraph ${styles.checklistDecoratedInput}`} style={{ color: "var(--grayscale-dark-gray)" }}>
 											{item.text || "—"}
 										</span>
@@ -362,9 +395,10 @@ const ChecklistSection = memo(function ChecklistSection({
 											placeholder="Введите..."
 											className={`paragraph ${styles.checklistDecoratedInput}`}
 											value={item.text}
-											onChange={(e) => updateLuggageItem(i, { text: e.target.value })}
+											onChange={readOnly ? undefined : (e) => updateLuggageItem(i, { text: e.target.value })}
 											checkboxChecked={item.checked}
 											onCheckboxChange={() => updateLuggageItem(i, { checked: !item.checked })}
+											readOnly={readOnly}
 											multiline
 											maxLength={90}
 										/>
@@ -2528,6 +2562,8 @@ const BottomBarSection = memo(function BottomBarSection({
 	const moreMenuWrapRef = useRef(null);
 	const moreMenuTriggerRef = useRef(null);
 	const toolbarRef = useRef(null);
+	const anchorRef = useRef(null);
+	const isFloatingOnMobile = useMobileFloatingToolbar(anchorRef, toolbarRef);
 
 	const handleAddButtonClick = useCallback(() => {
 		if (!addBlockMenuOpen) {
@@ -2661,7 +2697,8 @@ const BottomBarSection = memo(function BottomBarSection({
 	);
 
 	return (
-		<div className={styles.bottomBar}>
+		<div className={`${styles.bottomBar} ${isFloatingOnMobile ? styles.bottomBarMobileFloating : ""}`}>
+			<div ref={anchorRef} className={styles.bottomBarMobileAnchor} aria-hidden />
 			<div className={styles.toolbar} ref={toolbarRef}>
 				<div className={styles.toolbarIconsRow}>
 					<button type="button" className={`${styles.toolbarButtonQuestion} `} aria-label="Помощь" onClick={onQuestionClick}>
@@ -2993,6 +3030,8 @@ const ViewModeToolbar = memo(function ViewModeToolbar({
 	const shareTriggerRef = useRef(null);
 	const moreTriggerRef = useRef(null);
 	const toolbarRef = useRef(null);
+	const anchorRef = useRef(null);
+	const isFloatingOnMobile = useMobileFloatingToolbar(anchorRef, toolbarRef);
 
 	const isNarrow = typeof window !== "undefined" && window.innerWidth <= 768;
 	const isPublic = visibility === "public";
@@ -3157,7 +3196,8 @@ const ViewModeToolbar = memo(function ViewModeToolbar({
 	);
 
 	return (
-		<div className={`${styles.bottomBar} ${styles.bottomBarViewMode}`}>
+		<div className={`${styles.bottomBar} ${styles.bottomBarViewMode} ${isFloatingOnMobile ? styles.bottomBarMobileFloating : ""}`}>
+			<div ref={anchorRef} className={styles.bottomBarMobileAnchor} aria-hidden />
 			<div className={styles.viewModeToolbar} ref={toolbarRef}>
 				<Link href={`/create-checkplan/${encodeURIComponent(planIdStr)}${fromAccount ? "?from=account" : ""}`} className={styles.viewModeEditWrap} aria-label="Редактировать чек-план">
 					<Button Text="Редактировать чек-план" color="blue" size="small" type="button" />
@@ -3269,6 +3309,8 @@ const GuestViewToolbar = memo(function GuestViewToolbar({
 	const alertWrapRef = useRef(null);
 	const alertTriggerRef = useRef(null);
 	const toolbarRef = useRef(null);
+	const anchorRef = useRef(null);
+	const isFloatingOnMobile = useMobileFloatingToolbar(anchorRef, toolbarRef);
 
 	const isNarrow = typeof window !== "undefined" && window.innerWidth <= 768;
 	const liked = isLiked(planIdStr);
@@ -3384,7 +3426,8 @@ const GuestViewToolbar = memo(function GuestViewToolbar({
 	const toolbarWidthClass = !isAuthenticated ? styles.guestToolbarWide : "";
 
 	return (
-		<div className={`${styles.bottomBar} ${styles.bottomBarGuest}`}>
+		<div className={`${styles.bottomBar} ${styles.bottomBarGuest} ${isFloatingOnMobile ? styles.bottomBarMobileFloating : ""}`}>
+			<div ref={anchorRef} className={styles.bottomBarMobileAnchor} aria-hidden />
 			<div className={`${styles.guestToolbar} ${toolbarWidthClass}`} ref={toolbarRef}>
 				<button
 					type="button"
@@ -3446,6 +3489,7 @@ export default function CreateCheckplan({
 	fromAccount = false,
 	isOwner = true,
 	isPreview = false,
+	allowChecklistToggleInPreview = false,
 	showOnboardingInitially = false,
 }) {
 	const { setInitialLikeCounts } = useLikedChecklists();
@@ -3637,12 +3681,6 @@ export default function CreateCheckplan({
 		setHandLuggageItems(defaults.handLuggage.map((text) => ({ text, checked: false })));
 		setLuggageItems(defaults.luggage.map((text) => ({ text, checked: false })));
 	}, [typeIndex]); // eslint-disable-line react-hooks/exhaustive-deps -- заполняем только при смене типа; текущие hand/luggage читаем на момент смены
-
-	/** Если в категории «Багаж» есть заполненные данные — переключаем дропдаун на «Ручная кладь и Багаж» */
-	useEffect(() => {
-		const hasLuggageFilled = luggageItems.some((i) => (i.text || "").trim().length > 0);
-		if (hasLuggageFilled && sortIndex !== 1) setSortIndex(1);
-	}, [luggageItems, sortIndex]);
 
 	/** Собирает полную структуру CheckPlanDataStaff из текущего состояния формы для PATCH checkplan-data */
 	const buildCheckPlanDataPayload = useCallback(() => {
@@ -3877,6 +3915,70 @@ export default function CreateCheckplan({
 			setSaveLoading(false);
 		}
 	}, [planIdStr, saveLoading, planTitle, description, coverImage, locationLabel, typeIndex, peopleIndex, router, initialPlan, buildCheckPlanDataPayload, datesRange, fromAccount]);
+
+	const previewChecklistSaveInFlightRef = useRef(false);
+	const previewChecklistSavedSnapshotRef = useRef("");
+	const previewChecklistTimerRef = useRef(null);
+
+	const savePreviewChecklistProgress = useCallback(async () => {
+		if (!planIdStr || previewChecklistSaveInFlightRef.current) return;
+		previewChecklistSaveInFlightRef.current = true;
+		try {
+			const base = getApiUrl();
+			const dataId = initialPlan?.check_plan_data_id;
+			const dataIdNum = Number.isInteger(dataId) ? dataId : 0;
+			const headers = { "Content-Type": "application/json" };
+			try {
+				const auth = getAuth();
+				if (auth?.token && typeof auth.token === "string") {
+					headers.Authorization = `Bearer ${auth.token.trim()}`;
+				}
+			} catch (_) {}
+			const dataPayload = buildCheckPlanDataPayload();
+			const dataUrl = `${base || ""}/api/checkplan-data/${dataIdNum}?check_plan_id_str=${encodeURIComponent(planIdStr)}`;
+			await fetch(dataUrl, {
+				method: "PATCH",
+				headers,
+				body: JSON.stringify({ data: dataPayload }),
+			});
+		} catch (_) {
+			// Фоновое сохранение в предпросмотре: не показываем ошибку пользователю
+		} finally {
+			previewChecklistSaveInFlightRef.current = false;
+		}
+	}, [planIdStr, initialPlan?.check_plan_data_id, buildCheckPlanDataPayload]);
+
+	useEffect(() => {
+		if (!(readOnly && isPreview && allowChecklistToggleInPreview)) return;
+		const normalizePreviewItems = (items) =>
+			(items || [])
+				.map((i) => ({ text: (i?.text || "").trim(), checked: Boolean(i?.checked) }))
+				.filter((i) => i.text.length > 0 || i.checked);
+		const nextSnapshot = JSON.stringify({
+			hand: normalizePreviewItems(handLuggageItems),
+			luggage: normalizePreviewItems(luggageItems),
+		});
+		if (!previewChecklistSavedSnapshotRef.current) {
+			previewChecklistSavedSnapshotRef.current = nextSnapshot;
+			return;
+		}
+		if (nextSnapshot === previewChecklistSavedSnapshotRef.current) return;
+		if (previewChecklistTimerRef.current) clearTimeout(previewChecklistTimerRef.current);
+		previewChecklistTimerRef.current = setTimeout(async () => {
+			await savePreviewChecklistProgress();
+			previewChecklistSavedSnapshotRef.current = nextSnapshot;
+		}, 350);
+		return () => {
+			if (previewChecklistTimerRef.current) clearTimeout(previewChecklistTimerRef.current);
+		};
+	}, [
+		readOnly,
+		isPreview,
+		allowChecklistToggleInPreview,
+		handLuggageItems,
+		luggageItems,
+		savePreviewChecklistProgress,
+	]);
 
 
 	const addTextBlock = useCallback(() => {
@@ -4592,6 +4694,7 @@ export default function CreateCheckplan({
 						setSortIndex={setSortIndex}
 						readOnly={readOnly}
 						isPreview={isPreview}
+						allowToggleInReadOnly={allowChecklistToggleInPreview}
 					/>
 					<RightColumnSection
 						showPlatformNote={showPlatformNote}

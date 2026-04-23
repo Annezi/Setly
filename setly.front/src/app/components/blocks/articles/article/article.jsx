@@ -216,7 +216,7 @@ export default function Article({ articleId }) {
         <section className={styles.templatesBlock} aria-labelledby="templates-heading">
           <div className={styles.templatesLeft}>
             <Image
-              src="/img/main/article3.png"
+              src="/img/main/article3.webp"
               alt="Шаблоны для поездок"
               width={572}
               height={572}

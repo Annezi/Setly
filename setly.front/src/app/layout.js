@@ -1,6 +1,7 @@
 import "./globals.css";
 import DisableImageDrag from "./components/globals/DisableImageDrag";
 import ScrollToTop from "./components/globals/ScrollToTop";
+import RoutePrefetcher from "./components/globals/RoutePrefetcher";
 import { LikedChecklistsProvider } from "./lib/liked-checklists-context";
 
 const siteDescription =
@@ -99,6 +100,7 @@ export default function RootLayout({ children }) {
                 <LikedChecklistsProvider>
                     <DisableImageDrag />
                     <ScrollToTop />
+                    <RoutePrefetcher />
                     {children}
                 </LikedChecklistsProvider>
             </body>
