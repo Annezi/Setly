@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import PublicImage from "@/app/components/globals/public-image";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import Input from "@/app/components/atomic/molecules/input/input";
@@ -445,7 +446,7 @@ export default function Settings() {
         <RoundButton
           variant="white"
           icon={
-            <img
+            <PublicImage
               src="/icons/system/ArrowLeft.svg"
               alt=""
               width={12}
@@ -675,7 +676,7 @@ export default function Settings() {
                 Text={isDeleting ? "Удаление..." : "Уверен, удалить"}
                 type="button"
                 icon={
-                  <img
+                  <PublicImage
                     src="/icons/system/Trash-red.svg"
                     alt=""
                     width={16}
@@ -683,7 +684,7 @@ export default function Settings() {
                   />
                 }
                 hoverIcon={
-                  <img
+                  <PublicImage
                     src="/icons/system/Trash-white.svg"
                     alt=""
                     width={16}

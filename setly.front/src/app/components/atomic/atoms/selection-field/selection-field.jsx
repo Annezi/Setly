@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./selection-field.module.css";
 import DropdownItem from "../dropdown-item/dropdown-item";
 
@@ -126,7 +127,7 @@ export function SelectionFieldDemo() {
             <SelectionField
                 title="Subtitle:"
                 icon={
-                    <img
+                    <PublicImage
                         src="/icons/images/Calender.svg"
                         alt=""
                         width={20}

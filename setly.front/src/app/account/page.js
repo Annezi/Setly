@@ -43,6 +43,7 @@ function refreshUser(token, setUser, router) {
 export default function PersonalAccountPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  /** Не читать localStorage в initial state — на SSR getAuth() всегда null, иначе ломается гидрация. */
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -51,9 +52,12 @@ export default function PersonalAccountPage() {
       router.replace('/login');
       return;
     }
-    setAuthChecked(true);
-    setUser(auth.user);
-    refreshUser(auth.token, setUser, router);
+    const rafId = requestAnimationFrame(() => {
+      setUser(auth.user);
+      setAuthChecked(true);
+      refreshUser(auth.token, setUser, router);
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [router]);
 
   if (!authChecked) return null;

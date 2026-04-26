@@ -1,9 +1,10 @@
 "use client";
 
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./items.module.css";
 
 function DefaultTextIcon() {
-    return <img src="/icons/images/Text.svg"/>;
+    return <PublicImage src="/icons/images/Text.svg" alt="" width={20} height={20} />;
 }
 
 /**

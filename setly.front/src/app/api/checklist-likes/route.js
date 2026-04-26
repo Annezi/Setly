@@ -25,7 +25,7 @@ export async function GET() {
     return NextResponse.json(counts);
   } catch (err) {
     console.error('[API GET checklist-likes]', err);
-    return NextResponse.json({ message: err.message || 'Ошибка' }, { status: 500 });
+    return NextResponse.json({ message: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
 
@@ -52,6 +52,6 @@ export async function POST(request) {
     return NextResponse.json({ [checklistId]: next });
   } catch (err) {
     console.error('[API POST checklist-likes]', err);
-    return NextResponse.json({ message: err.message || 'Ошибка обновления' }, { status: 500 });
+    return NextResponse.json({ message: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }

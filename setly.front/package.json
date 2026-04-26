@@ -8,7 +8,7 @@
     "dev:turbopack": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@svgr/webpack": "^8.1.0",
@@ -23,6 +23,7 @@
   "devDependencies": {
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6"
+    "eslint-config-next": "16.1.6",
+    "typescript": "^5.9.3"
   }
 }

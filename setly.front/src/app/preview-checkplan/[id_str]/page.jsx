@@ -15,7 +15,7 @@ import styles from "../../create-checkplan/create-checkplan-edit-phantom.module.
 
 const CreateCheckplan = dynamic(
   () => import("../../create-checkplan/create-checkplan").then((m) => m.default),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => <PreviewCheckplanPhantom /> }
 );
 const PopularCheckplansCarousel = dynamic(
   () => import("@/app/components/blocks/preview-checkplan/popular-checkplans-carousel").then((m) => m.default),
@@ -68,6 +68,17 @@ export default function PreviewCheckplanPage() {
 	const [planData, setPlanData] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
+	/** После загрузки API: один кадр только фантом без футера/блока «тест», чтобы не мигали ветки owner и не было пустоты до чанка. */
+	const [shellReady, setShellReady] = useState(false);
+
+	useEffect(() => {
+		if (loading || error || !plan) {
+			setShellReady(false);
+			return;
+		}
+		const id = requestAnimationFrame(() => setShellReady(true));
+		return () => cancelAnimationFrame(id);
+	}, [loading, error, plan, idStr]);
 
 	useEffect(() => {
 		if (!idStr) {
@@ -75,6 +86,10 @@ export default function PreviewCheckplanPage() {
 			setError("Не указан план");
 			return;
 		}
+		setPlan(null);
+		setPlanData(null);
+		setError(null);
+		setLoading(true);
 		let cancelled = false;
 		const base = getApiUrl();
 		const apiBase = base || "";
@@ -131,9 +146,7 @@ export default function PreviewCheckplanPage() {
 	if (loading) {
 		return (
 			<div className="container createCheckplanPage">
-				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-					<Header />
-				</div>
+				<Header />
 				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 					<PreviewCheckplanPhantom />
 				</div>
@@ -147,9 +160,7 @@ export default function PreviewCheckplanPage() {
 	if (error || !plan) {
 		return (
 			<div className="container createCheckplanPage">
-				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-					<Header />
-				</div>
+				<Header />
 				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms", padding: "2rem", textAlign: "center" }}>
 					<p>{error || "План не найден"}</p>
 					<button
@@ -168,16 +179,27 @@ export default function PreviewCheckplanPage() {
 		);
 	}
 
-		const currentUserId = getAuth()?.user?.id;
-		const isOwner = currentUserId != null && plan?.author_id === currentUserId;
-		// В режиме предпросмотра контент всегда только для чтения; тулбар зависит от isOwner (редактировать / добавить себе)
-		const readOnly = true;
-
+	if (!shellReady) {
 		return (
-		<div className="container createCheckplanPage">
-			<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+			<div className="container createCheckplanPage">
 				<Header />
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+					<PreviewCheckplanPhantom />
+				</div>
 			</div>
+		);
+	}
+
+	const authUserId = getAuth()?.user?.id;
+	const isOwner =
+		authUserId != null &&
+		plan?.author_id != null &&
+		String(plan.author_id) === String(authUserId);
+	const readOnly = true;
+
+	return (
+		<div className="container createCheckplanPage">
+			<Header />
 			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 				<CreateCheckplan
 					planIdStr={idStr}

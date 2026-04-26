@@ -34,9 +34,7 @@ export default function MainPage() {
 	return (
 		<>
 			<div className="container main-page-reveal">
-				<ScrollReveal delay={0}>
-					<Header />
-				</ScrollReveal>
+				<Header />
 				<ScrollReveal delay={40}>
 					<WelcomeScreen />
 				</ScrollReveal>

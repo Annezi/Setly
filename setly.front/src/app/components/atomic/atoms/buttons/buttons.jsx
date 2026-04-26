@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import PublicImage from '@/app/components/globals/public-image';
 import styles from './buttons.module.css';
 
 export default function Button({
@@ -52,7 +53,7 @@ export function ButtonsDemo() {
 				Text="Button"
 				color="white"
 				icon={
-					<img
+					<PublicImage
 						src="/icons/system/TG.svg"
 						alt=""
 						width={16}
@@ -64,7 +65,7 @@ export function ButtonsDemo() {
 				Text="Button"
 				color="blue"
 				icon={
-					<img
+					<PublicImage
 						src="/icons/system/Search.svg"
 						alt=""
 						width={16}
@@ -78,7 +79,7 @@ export function ButtonsDemo() {
 				Text="Button"
 				color="dangerFilled"
 				icon={
-					<img
+					<PublicImage
 						src="/icons/system/Trash-red.svg"
 						alt=""
 						width={16}
@@ -86,7 +87,7 @@ export function ButtonsDemo() {
 					/>
 				}
 				hoverIcon={
-					<img
+					<PublicImage
 						src="/icons/system/Trash-white.svg"
 						alt=""
 						width={16}
@@ -100,7 +101,7 @@ export function ButtonsDemo() {
 				Text="Button"
 				color="white"
 				icon={
-					<img
+					<PublicImage
 						src="/icons/system/TG.svg"
 						alt=""
 						width={16}
@@ -113,7 +114,7 @@ export function ButtonsDemo() {
 				Text="Button"
 				color="blue"
 				icon={
-					<img
+					<PublicImage
 						src="/icons/system/Search.svg"
 						alt=""
 						width={16}
@@ -128,7 +129,7 @@ export function ButtonsDemo() {
 				Text="Button"
 				color="dangerFilled"
 				icon={
-					<img
+					<PublicImage
 						src="/icons/system/Trash-red.svg"
 						alt=""
 						width={16}
@@ -136,7 +137,7 @@ export function ButtonsDemo() {
 					/>
 				}
 				hoverIcon={
-					<img
+					<PublicImage
 						src="/icons/system/Trash-white.svg"
 						alt=""
 						width={16}

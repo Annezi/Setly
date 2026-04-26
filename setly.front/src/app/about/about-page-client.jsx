@@ -51,9 +51,7 @@ const AUTHORS = [
 export default function AboutPageClient() {
   return (
     <div className="container main-page-reveal">
-      <ScrollReveal delay={0}>
-        <Header />
-      </ScrollReveal>
+      <Header />
 
       <main className={styles.main}>
         <ScrollReveal delay={60}>

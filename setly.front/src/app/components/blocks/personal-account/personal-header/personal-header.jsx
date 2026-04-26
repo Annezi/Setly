@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import styles from './personal-header.module.css';
+import { getApiUrl } from '@/app/lib/api';
 
 const DEFAULT_HEADER_IMAGE = '/img/main/personal-bg-default.png';
 const DEFAULT_HEADER_IMAGE_MOBILE = '/img/main/personal-bg-default-mobile.png';
 const MOBILE_BREAKPOINT = 601;
-import { getApiUrl } from '@/app/lib/api';
 /** Загрузка шапки через бэкенд POST /api/user/me/save-image/profile_bg, затем PATCH /api/user/me */
 const UPLOAD_HEADER_API = '/api/user/me/save-image/profile_bg/';
 const UPDATE_ME_API = '/api/user/me';
@@ -109,10 +110,13 @@ export default function PersonalHeader({ profileBgUrl, userId, token, onHeaderIm
   return (
     <div className={styles.wrapper} role="img" aria-label="Шапка профиля">
       <div className={styles.bgLayer} aria-hidden>
-        <img
+        <Image
           src={effectivePath}
           alt=""
+          fill
           className={styles.bgImage}
+          sizes="(max-width: 600px) 100vw, 1045px"
+          unoptimized
         />
       </div>
       {loading && (

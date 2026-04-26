@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./filter-tag.module.css";
 
 /**
@@ -44,9 +45,11 @@ export default function FilterTag({
                     }}
                     aria-label="Удалить тег"
                 >
-                    <img
+                    <PublicImage
                         src="/icons/system/Cross.svg"
                         alt=""
+                        width={12}
+                        height={12}
                     />
                 </button>
             )}

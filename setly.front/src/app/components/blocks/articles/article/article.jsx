@@ -64,9 +64,7 @@ export default function Article({ articleId }) {
   if (!article) {
     return (
       <>
-        <ScrollReveal delay={0}>
-          <Header />
-        </ScrollReveal>
+        <Header />
         <main className={styles.main}>
           <ScrollReveal delay={50}>
             <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
@@ -96,9 +94,7 @@ export default function Article({ articleId }) {
 
   return (
     <>
-      <ScrollReveal delay={0}>
-        <Header />
-      </ScrollReveal>
+      <Header />
       <main className={styles.main}>
         <ScrollReveal delay={50}>
           <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">

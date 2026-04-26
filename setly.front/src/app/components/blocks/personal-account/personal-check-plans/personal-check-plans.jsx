@@ -11,31 +11,23 @@ import Dropdown from "@/app/components/atomic/atoms/dropdown/dropdown";
 import { getPersonalCheckPlans } from "@/data/personal-check-plans";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import { apiFetch, getApiUrl } from "@/app/lib/api";
+import { normalizeMediaUrl, resolveStorageMediaUrl } from "@/app/lib/checkplan-media";
+import { CHECK_PLANS_SORT_ITEMS, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
 import styles from "./personal-check-plans.module.css";
 
 const API_PREFIX = "/api/user";
-const SORT_ITEMS = ["По популярности", "По новизне"];
-
-/** Нормализует URL/путь картинки (без лишних пробелов и запятых), чтобы Next/Image не ломал отображение */
-function sanitizeImageUrl(url) {
-  if (url == null || typeof url !== "string") return "";
-  return url.trim().replace(/,+$/, "").trim();
-}
 
 /** Преобразует ответ GET /api/check-plans/{id_str} в формат карточки для PersonalPlanCard */
-function planResponseToCard(apiPlan, baseUrl) {
+function planResponseToCard(apiPlan) {
   if (!apiPlan) return null;
   const id = apiPlan.id_str || apiPlan.id;
-  let imageSrc = sanitizeImageUrl(apiPlan.image_src || apiPlan.imageSrc || "");
-  if (imageSrc && !imageSrc.startsWith("http") && !imageSrc.startsWith("/")) {
-    imageSrc = (baseUrl ? `${baseUrl.replace(/\/$/, "")}/storage/` : "/storage/") + imageSrc;
-  }
+  const imageSrc = resolveStorageMediaUrl(apiPlan.image_src || apiPlan.imageSrc || "");
   const creationTime = apiPlan.creation_time ?? apiPlan.creationTime ?? null;
   return {
     id: String(id),
     imageSrc: imageSrc || "/img/main/create-folio.png",
-    imageAlt: sanitizeImageUrl(apiPlan.image_alt || apiPlan.imageAlt || "") || apiPlan.title || "",
+    imageAlt: normalizeMediaUrl(apiPlan.image_alt || apiPlan.imageAlt || "") || apiPlan.title || "",
     days: apiPlan.days || "",
     location: apiPlan.location || "",
     title: apiPlan.title || "",
@@ -142,9 +134,11 @@ export default function PersonalCheckPlans({ userId, token, router }) {
   // Загрузка «моих» чек-планов с бэкенда при наличии токена
   useEffect(() => {
     if (!token) {
-      setApiIdStrs(null);
-      setApiPlans([]);
-      return;
+      const id = requestAnimationFrame(() => {
+        setApiIdStrs(null);
+        setApiPlans([]);
+      });
+      return () => cancelAnimationFrame(id);
     }
     apiFetch(`${API_PREFIX}/me/checkplans`, { method: "GET", token })
       .then((r) => {
@@ -167,11 +161,15 @@ export default function PersonalCheckPlans({ userId, token, router }) {
   // Загрузка полных данных планов по каждому id_str (GET /api/check-plans/{id_str})
   useEffect(() => {
     if (!apiIdStrs?.length) {
-      setApiPlans([]);
-      return;
+      const id = requestAnimationFrame(() => {
+        setApiPlans([]);
+      });
+      return () => cancelAnimationFrame(id);
     }
     const base = getApiUrl() || "";
-    setPlansLoading(true);
+    const loadingRafId = requestAnimationFrame(() => {
+      setPlansLoading(true);
+    });
     Promise.all(
       apiIdStrs.map((idStr) =>
         fetch(`${base ? `${base}/api/check-plans/${encodeURIComponent(idStr)}` : `/api/check-plans/${encodeURIComponent(idStr)}`}`)
@@ -180,12 +178,13 @@ export default function PersonalCheckPlans({ userId, token, router }) {
     )
       .then((results) => {
         const cards = results
-          .map((p) => planResponseToCard(p, base))
+          .map((p) => planResponseToCard(p))
           .filter(Boolean);
         setApiPlans(cards);
       })
       .catch(() => setApiPlans([]))
       .finally(() => setPlansLoading(false));
+    return () => cancelAnimationFrame(loadingRafId);
   }, [apiIdStrs]);
 
   // Подгрузка счётчиков лайков для отображаемых планов (с /api/check-plans)
@@ -218,21 +217,10 @@ export default function PersonalCheckPlans({ userId, token, router }) {
     return getPersonalCheckPlans(userId);
   }, [apiIdStrs, apiPlans, userId]);
 
-  const plans = useMemo(() => {
-    if (sortIndex < 0) return rawPlans;
-    const sorted = [...rawPlans];
-    if (SORT_ITEMS[sortIndex] === "По новизне") {
-      return sorted.sort((a, b) => {
-        const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
-        const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
-        return timeB - timeA; // новее — раньше
-      });
-    }
-    if (SORT_ITEMS[sortIndex] === "По популярности") {
-      return sorted.sort((a, b) => (getLikeCount(b.id) ?? 0) - (getLikeCount(a.id) ?? 0));
-    }
-    return sorted;
-  }, [rawPlans, sortIndex, getLikeCount]);
+  const plans = useMemo(
+    () => sortCheckPlansByIndex(rawPlans, sortIndex, getLikeCount),
+    [rawPlans, sortIndex, getLikeCount]
+  );
 
   return (
     <section className={styles.wrapper} aria-labelledby="personal-check-plans-title">
@@ -262,7 +250,7 @@ export default function PersonalCheckPlans({ userId, token, router }) {
         <div className={styles.dropdownWrap}>
             <Dropdown
               text="Сортировать по"
-              items={SORT_ITEMS}
+              items={CHECK_PLANS_SORT_ITEMS}
               selectedIndex={sortIndex}
               defaultSelectedIndex={1}
               onSelect={(index) => setSortIndex(index)}

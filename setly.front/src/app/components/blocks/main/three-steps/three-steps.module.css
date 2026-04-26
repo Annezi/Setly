@@ -81,7 +81,6 @@
 .cardImage {
     width: 183px;
     height: 183px;
-    height: auto;
     border-radius: 12px;
     object-fit: cover;
     display: block;

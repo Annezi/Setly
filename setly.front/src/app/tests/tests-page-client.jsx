@@ -19,9 +19,7 @@ export default function TestsPageClient() {
 
   return (
     <>
-      <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-        <Header />
-      </div>
+      <Header />
       <main>
         <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", minHeight: 48 }} aria-hidden />
         <div className="main-page-reveal__item" style={{ "--reveal-delay": "80ms" }}>

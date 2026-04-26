@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useLayoutEffect, useEffect } from "react";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./decorated-input.module.css";
 import Checkbox from "@/app/components/atomic/atoms/checkbox/checkbox";
 
@@ -140,7 +141,7 @@ export default function DecoratedInput({
                         aria-label="Очистить"
                         tabIndex={-1}
                     >
-                        <img src="/icons/system/Cross.svg" alt="" width={16} height={16} />
+                        <PublicImage src="/icons/system/Cross.svg" alt="" width={16} height={16} />
                     </button>
                 )}
             </div>

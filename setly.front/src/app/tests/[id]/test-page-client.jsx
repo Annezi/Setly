@@ -7,9 +7,7 @@ import TestRunner from "@/app/components/blocks/tests/test-runner";
 export default function TestPageClient({ test }) {
   return (
     <>
-      <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-        <Header />
-      </div>
+      <Header />
       <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
         <TestRunner test={test} />
       </div>

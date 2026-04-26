@@ -34,10 +34,12 @@ function saveToStorage(userId, ids) {
 export function LikedChecklistsProvider({ children }) {
   const [likedSet, setLikedSet] = useState(() => new Set());
   const [likesCounts, setLikesCounts] = useState(() => ({}));
-  const [hydrated, setHydrated] = useState(false);
   const tokenRef = useRef(null);
   const likedSetRef = useRef(likedSet);
-  likedSetRef.current = likedSet;
+
+  useEffect(() => {
+    likedSetRef.current = likedSet;
+  }, [likedSet]);
 
   /** Загрузить лайки: с бэкенда для авторизованного пользователя, иначе из localStorage. */
   const loadLikes = useCallback(() => {
@@ -59,21 +61,21 @@ export function LikedChecklistsProvider({ children }) {
         })
         .catch(() => {
           setLikedSet(new Set(loadFromStorage(userId)));
-        })
-        .finally(() => setHydrated(true));
+        });
     } else {
       setLikedSet(new Set(loadFromStorage(null)));
-      setHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    loadLikes();
+    const id = requestAnimationFrame(() => {
+      loadLikes();
+    });
+    return () => cancelAnimationFrame(id);
   }, [loadLikes]);
 
   useEffect(() => {
     const onAuthUpdate = () => {
-      setHydrated(false);
       loadLikes();
     };
     if (typeof window === "undefined") return;
@@ -141,9 +143,7 @@ export function LikedChecklistsProvider({ children }) {
     [likesCounts]
   );
 
-  const value = hydrated
-    ? { isLiked, toggle, getLikeCount, setInitialLikeCounts }
-    : { isLiked, toggle, getLikeCount, setInitialLikeCounts };
+  const value = { isLiked, toggle, getLikeCount, setInitialLikeCounts };
 
   return (
     <LikedChecklistsContext.Provider value={value}>

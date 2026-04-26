@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import PublicImage from '@/app/components/globals/public-image';
 import ProfilePhoto from '@/app/components/atomic/atoms/profile-photo/profile-photo';
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import styles from './profile-info.module.css';
@@ -116,7 +117,7 @@ export default function ProfileInfo({ user, token, onUserChange }) {
       <div className={styles.settingsButton}>
         <RoundButton
           variant="white"
-          icon={<img src="/icons/system/Settings.svg" alt="" width={20} height={20} />}
+          icon={<PublicImage src="/icons/system/Settings.svg" alt="" width={20} height={20} />}
           aria-label="Настройки профиля"
           onClick={() => router.push('/settings')}
         />

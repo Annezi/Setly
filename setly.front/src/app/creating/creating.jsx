@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import PublicImage from "@/app/components/globals/public-image";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import ButtonsMini from "@/app/components/atomic/atoms/buttons-mini/buttons-mini";
 import Questions from "@/app/components/atomic/atoms/questions/questions";
@@ -318,7 +320,7 @@ export default function Creating() {
         <RoundButton
           variant="white"
           icon={
-            <img
+            <PublicImage
               src="/icons/system/ArrowLeft.svg"
               alt=""
               width={12}
@@ -432,10 +434,13 @@ export default function Creating() {
               </h2>
               <div className={styles.coverWrap}>
                 <div className={styles.coverImageLayer}>
-                  <img
+                  <Image
                     src={coverImage}
                     alt=""
+                    fill
                     className={styles.coverImage}
+                    sizes="(max-width: 640px) 100vw, 464px"
+                    unoptimized
                   />
                 </div>
                 {coverLoading && (

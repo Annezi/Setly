@@ -1,7 +1,7 @@
 import os
 import re
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlmodel import select
@@ -30,6 +30,21 @@ router = APIRouter(prefix="/user", tags=["user"])
 NICKNAME_MAX_LENGTH = 40
 PASSWORD_MIN_LENGTH = 6
 PASSWORD_ALLOWED = re.compile(r"^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;':\",./<>?`~\\]*$")
+
+
+def _is_safe_profile_media_url(value: Optional[str]) -> bool:
+    """Разрешены только https/http к локальному API и относительные /storage/* (без javascript:/data:)."""
+    if value is None:
+        return True
+    u = str(value).strip()
+    if not u:
+        return True
+    if len(u) > 2048 or "\n" in u or "\r" in u or ".." in u:
+        return False
+    low = u.lower()
+    if low.startswith("javascript:") or low.startswith("data:"):
+        return False
+    return low.startswith("https://") or low.startswith("http://localhost") or u.startswith("/storage/")
 
 
 def _normalize_nickname(value: str) -> str:
@@ -118,8 +133,18 @@ async def me_update(
 ):
     """Обновить профиль текущего пользователя (фото/фон/никнейм/почта/пароль)."""
     if data.profile_photo_url is not None:
+        if not _is_safe_profile_media_url(data.profile_photo_url):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Недопустимый URL фото профиля",
+            )
         current_user.profile_photo_url = data.profile_photo_url
     if data.profile_bg_url is not None:
+        if not _is_safe_profile_media_url(data.profile_bg_url):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Недопустимый URL фона профиля",
+            )
         current_user.profile_bg_url = data.profile_bg_url
 
     nickname_changed = False

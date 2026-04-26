@@ -87,13 +87,18 @@ export const metadata = {
   },
 };
 
+const websiteJsonLdHtml = JSON.stringify(websiteJsonLd)
+  .replace(/</g, "\\u003c")
+  .replace(/\u2028/g, "\\u2028")
+  .replace(/\u2029/g, "\\u2029");
+
 export default function RootLayout({ children }) {
     return (
         <html lang="ru">
             <head>
               <script
                 type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+                dangerouslySetInnerHTML={{ __html: websiteJsonLdHtml }}
               />
             </head>
             <body>

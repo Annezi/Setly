@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
 import { applyTypograf } from "@/app/lib/typograf";
@@ -11,10 +12,13 @@ export default function OurCommunity() {
     return (
         <section className={styles.block}>
             <div className={styles.leftPart}>
-                <img
+                <Image
                     src="/img/main/suit-case.png"
                     alt=""
+                    width={572}
+                    height={572}
                     className={styles.suitcaseImage}
+                    unoptimized
                 />
             </div>
             <div className={styles.rightPart}>
@@ -25,20 +29,29 @@ export default function OurCommunity() {
                 </div>
                 <div className={styles.rightPartContent}>
                     <div className={styles.avatars}>
-                        <img
+                        <Image
                             src="/img/main/our-exp-avatar-1.png"
                             alt=""
+                            width={64}
+                            height={64}
                             className={styles.avatar}
+                            unoptimized
                         />
-                        <img
+                        <Image
                             src="/img/main/our-exp-avatar-2.png"
                             alt=""
+                            width={64}
+                            height={64}
                             className={styles.avatar}
+                            unoptimized
                         />
-                        <img
+                        <Image
                             src="/img/main/our-exp-avatar-3.png"
                             alt=""
+                            width={64}
+                            height={64}
                             className={styles.avatar}
+                            unoptimized
                         />
                     </div>
                     <div className={styles.descriptionWrap}>

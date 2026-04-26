@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
+import PublicImage from "@/app/components/globals/public-image";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
@@ -152,7 +153,7 @@ export default function TestRunner({ test }) {
         >
           <RoundButton
             variant="white"
-            icon={<img src="/icons/system/ArrowLeft.svg" alt="" width={12} height={12} />}
+            icon={<PublicImage src="/icons/system/ArrowLeft.svg" alt="" width={12} height={12} />}
             aria-hidden
           />
           <span className="subinfo">Назад</span>

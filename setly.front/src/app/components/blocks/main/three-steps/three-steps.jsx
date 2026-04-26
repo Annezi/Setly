@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
 import { getAuth } from "@/app/lib/auth-storage";
@@ -62,10 +63,13 @@ export default function ThreeSteps() {
                         key={step.title}
                         className={cardClass}
                     >
-                        <img
+                        <Image
                             src={step.image}
                             alt=""
+                            width={183}
+                            height={183}
                             className={styles.cardImage}
+                            unoptimized
                         />
                         <h3 className={`${styles.cardTitle} subtitle_1`}>
                             {applyTypograf(step.title)}

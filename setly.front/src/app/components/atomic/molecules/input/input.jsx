@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useId, useEffect, useRef } from "react";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./input.module.css";
 
 const URL_PATTERN = /^https?:\/\/.+/i;
@@ -117,7 +118,7 @@ export default function Input({
                 />
                 {showLinkIcon && (
                     <span className={styles.iconRight} aria-hidden>
-                        <img
+                        <PublicImage
                             src={hasError ? "/icons/system/Link Arrow Red.svg" : "/icons/system/Link Arrow.svg"}
                             alt=""
                             width={14}
@@ -134,7 +135,7 @@ export default function Input({
                         aria-label={passwordVisible ? "Скрыть пароль" : "Показать пароль"}
                         tabIndex={-1}
                     >
-                        <img
+                        <PublicImage
                             key={passwordVisible ? "on" : "off"}
                             src={passwordVisible ? "/icons/system/Eye.svg" : "/icons/system/Eye-Closed.svg"}
                             alt=""
@@ -146,7 +147,7 @@ export default function Input({
                 )}
                 {isSearch && (
                     <button type="button" className={styles.searchButton} onClick={handleSearchSubmit} tabIndex={-1}>
-                        <img src="/icons/system/Search.svg" alt="" width={20} height={20} draggable={false} />
+                        <PublicImage src="/icons/system/Search.svg" alt="" width={20} height={20} draggable={false} />
                         <span>Найти</span>
                     </button>
                 )}

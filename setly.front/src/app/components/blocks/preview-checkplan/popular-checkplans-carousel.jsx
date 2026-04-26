@@ -15,55 +15,13 @@ import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-sk
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
+import { mapFlatCheckPlanCardFromApi } from "@/app/lib/checkplan-list-utils";
+import {
+  CAROUSEL_CARD_GAP_PX as CARD_GAP_PX,
+  computeCarouselLayout,
+} from "@/app/lib/carousel-layout";
 import experienceStyles from "@/app/components/blocks/main/our-experience/our-experience.module.css";
 
-const CARD_GAP_PX = 20;
-const MIN_CARD_WIDTH_PX = 280;
-const MAX_CARD_WIDTH_PX = 335;
-
-/** Нормализует URL картинки (как на странице чек-планов). */
-function resolveImageSrc(imageSrc) {
-  if (imageSrc == null || typeof imageSrc !== "string") return imageSrc;
-  const cleaned = imageSrc.trim().replace(/,+$/, "").trim();
-  if (!cleaned) return cleaned;
-  const base = getApiUrl();
-  if (cleaned.startsWith("/storage") && base) return base + cleaned;
-  return cleaned;
-}
-
-function computeCarouselLayout(viewportWidth) {
-  const W = viewportWidth;
-  if (W <= 0) {
-    return {
-      visibleCount: 1,
-      cardWidth: MIN_CARD_WIDTH_PX,
-      centerOffset: 0,
-    };
-  }
-
-  const raw3 = (W - 2 * CARD_GAP_PX) / 3;
-  if (raw3 >= MIN_CARD_WIDTH_PX) {
-    const cardWidth = Math.min(MAX_CARD_WIDTH_PX, raw3);
-    const rowWidth = 3 * cardWidth + 2 * CARD_GAP_PX;
-    const centerOffset = Math.max(0, (W - rowWidth) / 2);
-    return { visibleCount: 3, cardWidth, centerOffset };
-  }
-
-  const raw2 = (W - CARD_GAP_PX) / 2;
-  if (raw2 >= MIN_CARD_WIDTH_PX) {
-    const cardWidth = Math.min(MAX_CARD_WIDTH_PX, raw2);
-    const rowWidth = 2 * cardWidth + CARD_GAP_PX;
-    const centerOffset = Math.max(0, (W - rowWidth) / 2);
-    return { visibleCount: 2, cardWidth, centerOffset };
-  }
-
-  const cardWidth = Math.min(
-    MAX_CARD_WIDTH_PX,
-    Math.max(MIN_CARD_WIDTH_PX, W),
-  );
-  const centerOffset = Math.max(0, (W - cardWidth) / 2);
-  return { visibleCount: 1, cardWidth, centerOffset };
-}
 
 const SWIPE_MIN_PX = 50;
 const MOBILE_BREAKPOINT = 2561;
@@ -92,11 +50,7 @@ export default function PopularCheckplansCarousel({ excludeIdStr = null }) {
           if (!cancelled) setCards([]);
           return;
         }
-        const normalized = data.flatCards.map((c) => ({
-          ...c,
-          imageSrc: resolveImageSrc(c.imageSrc),
-          avatarSrc: resolveImageSrc(c.avatarSrc) || c.avatarSrc,
-        }));
+        const normalized = data.flatCards.map(mapFlatCheckPlanCardFromApi);
         const pool = excludeIdStr
           ? normalized.filter((c) => String(c.id) !== String(excludeIdStr))
           : normalized;
@@ -159,7 +113,10 @@ export default function PopularCheckplansCarousel({ excludeIdStr = null }) {
   }, []);
 
   useEffect(() => {
-    setCarouselIndex(0);
+    const id = requestAnimationFrame(() => {
+      setCarouselIndex(0);
+    });
+    return () => cancelAnimationFrame(id);
   }, [viewportWidth, cards.length]);
 
   const isMobileView = () =>

@@ -53,7 +53,6 @@ export default function Toggler({
                     disabled={disabled}
                     onClick={() => handleSelect(index)}
                     aria-pressed={index === activeIndex}
-                    role="radio"
                 >
                     <span className={`subinfo ${styles.segmentLabel}`}>{label}</span>
                 </button>

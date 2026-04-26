@@ -58,9 +58,7 @@ export default function CreateCheckplanPage() {
 	}, [router]);
 	return (
 		<div className="container createCheckplanPage">
-			<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-				<Header />
-			</div>
+			<Header />
 			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 				<CreateCheckplanPhantom />
 			</div>

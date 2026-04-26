@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import styles from "./user.module.css";
 
 export default function User({
@@ -12,7 +13,7 @@ export default function User({
         <div className={`${styles.user} ${className ?? ""}`} {...props}>
             <span className={styles.avatar} aria-hidden>
                 {avatarSrc ? (
-                    <img src={avatarSrc} alt="" width={24} height={24} />
+                    <Image src={avatarSrc} alt="" width={24} height={24} unoptimized />
                 ) : (
                     <span className={styles.avatarPlaceholder} />
                 )}

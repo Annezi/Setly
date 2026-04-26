@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import PublicImage from "@/app/components/globals/public-image";
 import Dropdown from "@/app/components/atomic/atoms/dropdown/dropdown";
 import DropdownFilterMenu from "@/app/components/atomic/molecules/dropdown-filter-menu/dropdown-filter-menu";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import FilterTag from "@/app/components/atomic/atoms/filter-tag/filter-tag";
 import styles from "./filters.module.css";
+import { CHECK_PLANS_SORT_ITEMS } from "@/app/lib/checkplan-list-utils";
 
 const FILTER_MENU_TRANSITION_MS = 350;
-
-const SORT_ITEMS = ["По популярности", "По новизне"];
 
 const FILTER_ICON_CLIP_ID = "filter-icon-clip";
 
@@ -46,20 +46,8 @@ export default function Filters({
   const [internalTags, setInternalTags] = useState([]);
   const isControlled = controlledTags != null && onApplyFiltersProp != null && onRemoveAppliedTagProp != null;
   const appliedFilterTags = isControlled ? controlledTags : internalTags;
-  const setAppliedFilterTags = isControlled
-    ? (updater) => {
-        if (typeof updater === "function") {
-          const next = updater(controlledTags);
-          onApplyFiltersProp(next);
-        }
-      }
-    : setInternalTags;
-
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!filterMenuOpen) return;
@@ -77,6 +65,7 @@ export default function Filters({
   }, [filterMenuOpen, filterMenuVisible]);
 
   const closeFilterMenu = useCallback(() => setFilterMenuVisible(false), []);
+  const openFilterMenu = useCallback(() => setFilterMenuOpen(true), []);
 
   const handleApplyFilters = useCallback(
     (tags) => {
@@ -94,31 +83,48 @@ export default function Filters({
     [isControlled, onRemoveAppliedTagProp]
   );
 
+  const handleApplyAndCloseDropdown = useCallback(
+    (tags, close) => {
+      handleApplyFilters(tags);
+      close();
+    },
+    [handleApplyFilters]
+  );
+
+  const handleApplyAndClosePanel = useCallback(
+    (tags) => {
+      handleApplyFilters(tags);
+      closeFilterMenu();
+    },
+    [handleApplyFilters, closeFilterMenu]
+  );
+
+  const renderFilterDropdownContent = useCallback(
+    (close) => (
+      <DropdownFilterMenu
+        appliedTags={appliedFilterTags}
+        onClose={close}
+        onApply={(tags) => handleApplyAndCloseDropdown(tags, close)}
+      />
+    ),
+    [appliedFilterTags, handleApplyAndCloseDropdown]
+  );
+
   return (
     <div className={styles.wrap}>
       <div className={styles.filtersLeft}>
         <div className={styles.filtersDropdownFilters}>
         <Dropdown
           text="Фильтры"
-          dropdownContent={(close) => (
-            <DropdownFilterMenu
-                appliedTags={appliedFilterTags}
-                onClose={close}
-                onApply={(tags) => {
-                  handleApplyFilters(tags);
-                  close();
-                }}
-              />
-          )}
+          dropdownContent={renderFilterDropdownContent}
           bgView={false}
           dropdownMenuClassName={styles.filtersDropdownPanel}
           icon={
-            <img
+            <PublicImage
               src="/icons/system/ArrowDown.svg"
               alt=""
               width={20}
               height={20}
-              aria-hidden
               draggable={false}
             />
           }
@@ -128,7 +134,7 @@ export default function Filters({
         <RoundButton
           variant="hover"
           icon={<FilterIcon />}
-          onClick={() => setFilterMenuOpen(true)}
+          onClick={openFilterMenu}
           aria-label="Открыть фильтры"
         />
       </div>
@@ -147,24 +153,23 @@ export default function Filters({
       <div className={styles.filtersDropdownSort}>
         <Dropdown
           text="Сортировать по"
-          items={SORT_ITEMS}
+          items={CHECK_PLANS_SORT_ITEMS}
           selectedIndex={sortIndex}
           defaultSelectedIndex={1}
           onSelect={onSortSelect}
           menuCentered
           icon={
-            <img
+            <PublicImage
               src="/icons/system/ArrowDown.svg"
               alt=""
               width={20}
               height={20}
-              aria-hidden
               draggable={false}
             />
           }
         />
       </div>
-      {mounted &&
+      {typeof document !== "undefined" &&
         filterMenuOpen &&
         createPortal(
           <>
@@ -183,10 +188,7 @@ export default function Filters({
                   className={styles.filterMenuInPanel}
                   appliedTags={appliedFilterTags}
                   onClose={closeFilterMenu}
-                  onApply={(tags) => {
-                    handleApplyFilters(tags);
-                    closeFilterMenu();
-                  }}
+                  onApply={handleApplyAndClosePanel}
                 />
               </div>
             </div>

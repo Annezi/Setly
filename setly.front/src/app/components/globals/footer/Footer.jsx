@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import PublicImage from '@/app/components/globals/public-image';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import styles from './footer.module.css';
 
@@ -20,7 +21,7 @@ export function Footer() {
                         color="white"
                         Text="Присоединиться"
                         icon={
-                            <img
+                            <PublicImage
                                 src="/icons/system/TG.svg"
                                 alt=""
                                 width={16}

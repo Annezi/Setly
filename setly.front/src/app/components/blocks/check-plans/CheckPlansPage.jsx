@@ -12,6 +12,7 @@ import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import { parseAppliedFilters } from "./utils/parseFilterTags";
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
+import { mapFlatCheckPlanCardFromApi, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 
 const Search = dynamic(() => import("./search/search").then((m) => m.default), {
@@ -82,8 +83,6 @@ const LoginToLikePopup = memo(function LoginToLikePopup({ isClosing, onClose, on
 	);
 });
 
-const SORT_ITEMS = ["По популярности", "По новизне"];
-
 /** Нормализует строку для поиска: нижний регистр, лишние пробелы убраны. */
 function normalizeForSearch(s) {
     if (s == null || typeof s !== "string") return "";
@@ -117,16 +116,6 @@ function filterCardsBySearch(cards, query) {
         const text = getSearchableText(card);
         return words.some((word) => text.includes(word));
     });
-}
-
-/** Нормализует URL картинки (без лишних пробелов/запятых) и подставляет базовый URL API для /storage. */
-function resolveImageSrc(imageSrc) {
-    if (imageSrc == null || typeof imageSrc !== "string") return imageSrc;
-    const cleaned = imageSrc.trim().replace(/,+$/, "").trim();
-    if (!cleaned) return cleaned;
-    const base = getApiUrl();
-    if (cleaned.startsWith("/storage") && base) return base + cleaned;
-    return cleaned;
 }
 
 export function CheckPlansPage() {
@@ -171,21 +160,13 @@ export function CheckPlansPage() {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 if (cancelled) return;
-                const cards = (data.flatCards || []).map((c) => ({
-                    ...c,
-                    imageSrc: resolveImageSrc(c.imageSrc),
-                    avatarSrc: resolveImageSrc(c.avatarSrc) || c.avatarSrc,
-                }));
+                const cards = (data.flatCards || []).map(mapFlatCheckPlanCardFromApi);
                 setFlatCards(cards);
                 setInitialLikeCounts(Object.fromEntries((data.flatCards || []).map((c) => [c.id, c.initialLikes ?? 0])));
                 setBlocks(
                     (data.blocks || []).map((block) => ({
                         ...block,
-                        cards: (block.cards || []).map((c) => ({
-                            ...c,
-                            imageSrc: resolveImageSrc(c.imageSrc),
-                            avatarSrc: resolveImageSrc(c.avatarSrc) || c.avatarSrc,
-                        })),
+                        cards: (block.cards || []).map(mapFlatCheckPlanCardFromApi),
                     }))
                 );
             } catch (e) {
@@ -196,25 +177,14 @@ export function CheckPlansPage() {
         }
         fetchCheckPlans();
         return () => { cancelled = true; };
-    }, []);
+    }, [setInitialLikeCounts]);
 
     const allCardsWithTags = flatCards;
 
-    const sortedAllCards = useMemo(() => {
-        const list = [...allCardsWithTags];
-        if (sortIndex < 0) return list;
-        if (SORT_ITEMS[sortIndex] === "По популярности") {
-            return list.sort((a, b) => (getLikeCount(b.id) ?? b.initialLikes ?? b.likes ?? 0) - (getLikeCount(a.id) ?? a.initialLikes ?? a.likes ?? 0));
-        }
-        if (SORT_ITEMS[sortIndex] === "По новизне") {
-            return list.sort((a, b) => {
-                const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
-                const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
-                return timeB - timeA; // новее — раньше
-            });
-        }
-        return list;
-    }, [allCardsWithTags, sortIndex, getLikeCount]);
+    const sortedAllCards = useMemo(
+        () => sortCheckPlansByIndex(allCardsWithTags, sortIndex, getLikeCount),
+        [allCardsWithTags, sortIndex, getLikeCount]
+    );
 
     const sortedBlocks = useMemo(
         () =>
@@ -260,37 +230,15 @@ export function CheckPlansPage() {
         [baseForSearch, appliedSearchQuery]
     );
 
-    const sortedFilteredPlans = useMemo(() => {
-        const list = [...filteredPlans];
-        if (sortIndex < 0) return list;
-        if (SORT_ITEMS[sortIndex] === "По популярности") {
-            return list.sort((a, b) => (getLikeCount(b.id) ?? b.initialLikes ?? b.likes ?? 0) - (getLikeCount(a.id) ?? a.initialLikes ?? a.likes ?? 0));
-        }
-        if (SORT_ITEMS[sortIndex] === "По новизне") {
-            return list.sort((a, b) => {
-                const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
-                const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
-                return timeB - timeA; // новее — раньше
-            });
-        }
-        return list;
-    }, [filteredPlans, sortIndex, getLikeCount]);
+    const sortedFilteredPlans = useMemo(
+        () => sortCheckPlansByIndex(filteredPlans, sortIndex, getLikeCount),
+        [filteredPlans, sortIndex, getLikeCount]
+    );
 
-    const sortedSearchFilteredPlans = useMemo(() => {
-        const list = [...searchFilteredPlans];
-        if (sortIndex < 0) return list;
-        if (SORT_ITEMS[sortIndex] === "По популярности") {
-            return list.sort((a, b) => (getLikeCount(b.id) ?? b.initialLikes ?? b.likes ?? 0) - (getLikeCount(a.id) ?? a.initialLikes ?? a.likes ?? 0));
-        }
-        if (SORT_ITEMS[sortIndex] === "По новизне") {
-            return list.sort((a, b) => {
-                const timeA = a.creationTime ? new Date(a.creationTime).getTime() : 0;
-                const timeB = b.creationTime ? new Date(b.creationTime).getTime() : 0;
-                return timeB - timeA; // новее — раньше
-            });
-        }
-        return list;
-    }, [searchFilteredPlans, sortIndex, getLikeCount]);
+    const sortedSearchFilteredPlans = useMemo(
+        () => sortCheckPlansByIndex(searchFilteredPlans, sortIndex, getLikeCount),
+        [searchFilteredPlans, sortIndex, getLikeCount]
+    );
 
     const hasNoMatchingCards = sortedFilteredPlans.length === 0;
     const showNotFound = hasActiveFilters && hasNoMatchingCards;
@@ -300,9 +248,7 @@ export function CheckPlansPage() {
     if (loading) {
         return (
             <>
-                <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-                    <Header />
-                </div>
+                <Header />
                 <main>
                     <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", position: "relative", zIndex: 20 }}>
                         <Search
@@ -348,9 +294,7 @@ export function CheckPlansPage() {
 
     return (
         <>
-            <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-                <Header />
-            </div>
+            <Header />
             <main>
                 <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", position: "relative", zIndex: 20 }}>
                     <Search

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./checkbox.module.css";
 
 /**
@@ -27,7 +28,7 @@ export default function Checkbox({
             {...props}
         >
             <span className={styles.checkbox__icon} aria-hidden>
-                <img
+                <PublicImage
                     src="/icons/system/Correct.svg"
                     alt=""
                     width={10}

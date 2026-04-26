@@ -12,11 +12,11 @@ import Image from "next/image";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import { ARTICLES_LIST } from "@/data/articles-data";
 import { applyTypograf } from "@/app/lib/typograf";
+import {
+    CAROUSEL_CARD_GAP_PX as CARD_GAP_PX,
+    computeCarouselLayout,
+} from "@/app/lib/carousel-layout";
 import styles from "./our-experience.module.css";
-
-const CARD_GAP_PX = 20;
-const MIN_CARD_WIDTH_PX = 280;
-const MAX_CARD_WIDTH_PX = 335;
 
 const EXPERIENCE_CARDS = ARTICLES_LIST.map((article) => ({
     id: article.id,
@@ -27,44 +27,6 @@ const EXPERIENCE_CARDS = ARTICLES_LIST.map((article) => ({
     readTime: article.readTime,
 }));
 
-/**
- * Сначала подбираем ширину карточки в [280, 335], затем число колонок:
- * 3 колонки, если в слоте ≥ 280px; иначе 2 при ≥ 280; иначе 1.
- * Между карточками всегда ровно CARD_GAP_PX. Ряд короче viewport — центрируем через centerOffset.
- */
-function computeCarouselLayout(viewportWidth) {
-    const W = viewportWidth;
-    if (W <= 0) {
-        return {
-            visibleCount: 1,
-            cardWidth: MIN_CARD_WIDTH_PX,
-            centerOffset: 0,
-        };
-    }
-
-    const raw3 = (W - 2 * CARD_GAP_PX) / 3;
-    if (raw3 >= MIN_CARD_WIDTH_PX) {
-        const cardWidth = Math.min(MAX_CARD_WIDTH_PX, raw3);
-        const rowWidth = 3 * cardWidth + 2 * CARD_GAP_PX;
-        const centerOffset = Math.max(0, (W - rowWidth) / 2);
-        return { visibleCount: 3, cardWidth, centerOffset };
-    }
-
-    const raw2 = (W - CARD_GAP_PX) / 2;
-    if (raw2 >= MIN_CARD_WIDTH_PX) {
-        const cardWidth = Math.min(MAX_CARD_WIDTH_PX, raw2);
-        const rowWidth = 2 * cardWidth + CARD_GAP_PX;
-        const centerOffset = Math.max(0, (W - rowWidth) / 2);
-        return { visibleCount: 2, cardWidth, centerOffset };
-    }
-
-    const cardWidth = Math.min(
-        MAX_CARD_WIDTH_PX,
-        Math.max(MIN_CARD_WIDTH_PX, W),
-    );
-    const centerOffset = Math.max(0, (W - cardWidth) / 2);
-    return { visibleCount: 1, cardWidth, centerOffset };
-}
 
 /* Дубликат трека для бесконечной прокрутки */
 const trackCards = [...EXPERIENCE_CARDS, ...EXPERIENCE_CARDS];
@@ -151,7 +113,10 @@ export default function OurExperience() {
     }, []);
 
     useEffect(() => {
-        setCarouselIndex(0);
+        const id = requestAnimationFrame(() => {
+            setCarouselIndex(0);
+        });
+        return () => cancelAnimationFrame(id);
     }, [viewportWidth]);
 
     const isMobileView = () =>

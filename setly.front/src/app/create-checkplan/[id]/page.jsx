@@ -11,7 +11,7 @@ import styles from "../create-checkplan-edit-phantom.module.css";
 
 const CreateCheckplan = dynamic(
   () => import("@/app/create-checkplan/create-checkplan").then((m) => m.default),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => <EditCheckplanPhantom /> }
 );
 
 /** Фантомная прогрузка страницы редактирования чекплана — раскладка как у CreateCheckplan. */
@@ -68,6 +68,10 @@ export default function EditCheckplanPage() {
 			setError("Не указан план");
 			return;
 		}
+		setPlan(null);
+		setPlanData(null);
+		setError(null);
+		setLoading(true);
 		let cancelled = false;
 		const base = getApiUrl();
 		const apiBase = base || "";
@@ -124,9 +128,7 @@ export default function EditCheckplanPage() {
 	if (loading) {
 		return (
 			<div className="container createCheckplanPage">
-				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-					<Header />
-				</div>
+				<Header />
 				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 					<EditCheckplanPhantom />
 				</div>
@@ -140,9 +142,7 @@ export default function EditCheckplanPage() {
 	if (error || !plan) {
 		return (
 			<div className="container createCheckplanPage">
-				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-					<Header />
-				</div>
+				<Header />
 				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms", padding: "2rem", textAlign: "center" }}>
 					<p>{error || "План не найден"}</p>
 					<button
@@ -163,9 +163,7 @@ export default function EditCheckplanPage() {
 
 	return (
 		<div className="container createCheckplanPage">
-			<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-				<Header />
-			</div>
+			<Header />
 			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 				<CreateCheckplan
 					planIdStr={idStr}

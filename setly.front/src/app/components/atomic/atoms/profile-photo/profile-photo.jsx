@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./profile-photo.module.css";
 
 export default function ProfilePhoto({
@@ -14,27 +16,28 @@ export default function ProfilePhoto({
   ...props
 }) {
   const showImage = Boolean(src && src.trim());
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    setImageError(false);
-  }, [src]);
+  const [brokenSrc, setBrokenSrc] = useState(null);
+  const imageFailed = Boolean(showImage && brokenSrc === src);
 
   const sizeStyle = size != null ? { width: size, height: size, minWidth: size, minHeight: size } : undefined;
   /* В хедере кнопка 44×44, иконка внутри — 22×22; в остальных случаях иконка до 40px */
   const iconSize = size === 44 ? 22 : (size != null ? Math.min(size, 40) : 40);
+  const avatarDim = size != null ? Math.max(1, size) : 80;
 
   const content = (
     <>
       <span className={styles.iconUser} aria-hidden>
-        <img src="/icons/images/User.svg" alt="" width={iconSize} height={iconSize} />
+        <PublicImage src="/icons/images/User.svg" alt="" width={iconSize} height={iconSize} />
       </span>
       {showImage && (
-        <img
+        <Image
           src={src}
           alt=""
-          className={`${styles.avatarImage} ${imageError ? styles.avatarImageError : ""}`}
-          onError={() => setImageError(true)}
+          width={avatarDim}
+          height={avatarDim}
+          className={`${styles.avatarImage} ${imageFailed ? styles.avatarImageError : ""}`}
+          onError={() => setBrokenSrc(src)}
+          unoptimized
         />
       )}
       <span
@@ -43,7 +46,7 @@ export default function ProfilePhoto({
       >
         {hideUploadOnHover ? null : (
           <span className={styles.hoverCircle}>
-            <img src="/icons/system/Download.svg" alt="" width={20} height={20} />
+            <PublicImage src="/icons/system/Download.svg" alt="" width={20} height={20} />
           </span>
         )}
       </span>
@@ -79,7 +82,7 @@ export default function ProfilePhoto({
 export function ProfilePhotoDemo() {
     return (
         <div className={styles.demo}>
-            <ProfilePhoto onClick={() => console.log("Profile photo click")} />
+            <ProfilePhoto onClick={() => {}} />
         </div>
     );
 }

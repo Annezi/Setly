@@ -56,9 +56,6 @@ export async function POST(request) {
     return NextResponse.json({ path: publicPath, coverImagePath: publicPath });
   } catch (err) {
     console.error("[API upload/cover]", err);
-    return NextResponse.json(
-      { message: err.message || "Ошибка загрузки" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Внутренняя ошибка сервера" }, { status: 500 });
   }
 }

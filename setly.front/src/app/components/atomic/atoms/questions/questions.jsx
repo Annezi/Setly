@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import styles from "./questions.module.css";
 
 export default function Questions({
@@ -27,7 +28,14 @@ export default function Questions({
         >
             {hasImage && (
                 <span className={styles.imageWrap} aria-hidden>
-                    <img src={imageSrc} alt="" className={styles.image} />
+                    <Image
+                        src={imageSrc}
+                        alt=""
+                        width={183}
+                        height={186}
+                        className={styles.image}
+                        unoptimized
+                    />
                 </span>
             )}
             {hasTitle ? (

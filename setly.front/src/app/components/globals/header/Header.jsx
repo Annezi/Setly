@@ -21,33 +21,53 @@ const isAccountPage = (path) => path === '/account';
 
 export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigation = false }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [storageAuth, setStorageAuth] = useState(null);
+  const [authResolved, setAuthResolved] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [logoutPopupOpen, setLogoutPopupOpen] = useState(false);
   const [accountMenuPosition, setAccountMenuPosition] = useState({ top: 0, left: 0 });
   const accountMenuWrapRef = useRef(null);
+  const mobileMenuTriggerRef = useRef(null);
+  const sidePanelRef = useRef(null);
+  const [portalsReady, setPortalsReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const onAccountPage = isAccountPage(pathname);
 
-  useEffect(() => setMounted(true), []);
   useEffect(() => {
-    setStorageAuth(getAuth());
-  }, [pathname]);
-  useEffect(() => {
-    const onAuthUpdate = () => setStorageAuth(getAuth());
-    window.addEventListener('setly:auth-update', onAuthUpdate);
-    return () => window.removeEventListener('setly:auth-update', onAuthUpdate);
+    const id = requestAnimationFrame(() => setPortalsReady(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
-  const isLoggedIn = isLoggedInProp ?? Boolean(storageAuth?.user);
-  const user = userProp ?? storageAuth?.user ?? null;
+  useEffect(() => {
+    let rafId = 0;
+    const syncAuth = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setStorageAuth(getAuth());
+        setAuthResolved(true);
+      });
+    };
+    syncAuth();
+    window.addEventListener('setly:auth-update', syncAuth);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('setly:auth-update', syncAuth);
+    };
+  }, []);
+
+  const isLoggedIn = isLoggedInProp ?? (authResolved ? Boolean(storageAuth?.user) : false);
+  const user = userProp ?? (authResolved ? (storageAuth?.user ?? null) : null);
 
   const activeNavId =
     NAV_ITEMS.find((item) => item.href && (pathname === item.href || pathname.startsWith(item.href + '/')))?.id ?? null;
 
-  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+  const closeMobileMenu = useCallback(() => {
+    if (sidePanelRef.current?.contains(document.activeElement)) {
+      mobileMenuTriggerRef.current?.focus({ preventScroll: true });
+    }
+    setMobileMenuOpen(false);
+  }, []);
   const toggleMobileMenu = useCallback(() => setMobileMenuOpen((v) => !v), []);
 
   const handleLoginClick = useCallback(() => {
@@ -201,6 +221,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
           </span>
 
           <button
+            ref={mobileMenuTriggerRef}
             type="button"
             className={styles.mobileMenuTrigger}
             onClick={toggleMobileMenu}
@@ -231,7 +252,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
       </div>
 
       {/* Выпадающее меню аккаунта (только на /account) */}
-      {mounted && onAccountPage && isLoggedIn && accountMenuOpen &&
+      {portalsReady && onAccountPage && isLoggedIn && accountMenuOpen &&
         createPortal(
           <div
             className={`component-blur ${styles.accountDropdownMenu} ${styles.accountDropdownMenuPortal}`}
@@ -251,7 +272,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
         )}
 
       {/* Попап выхода из аккаунта (как на странице настроек) */}
-      {mounted && logoutPopupOpen &&
+      {portalsReady && logoutPopupOpen &&
         createPortal(
           <div className={styles.logoutPopupOverlay} onClick={() => setLogoutPopupOpen(false)}>
             <div
@@ -284,7 +305,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
         )}
 
       {/* Оверлей и боковое меню — рендер в body, чтобы перекрывать весь viewport без зазоров */}
-      {mounted &&
+      {portalsReady &&
         createPortal(
           <>
             <div
@@ -293,9 +314,11 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
               aria-hidden
             />
             <aside
+              ref={sidePanelRef}
               className={`${styles.sidePanel} ${mobileMenuOpen ? styles.isOpen : ''}`}
               aria-label="Боковое меню"
               aria-hidden={!mobileMenuOpen}
+              inert={!mobileMenuOpen}
             >
               <div className={`${styles.sidePanelContent} ${mobileMenuOpen ? styles.isOpen : ''}`}>
                 <div className={styles.sidePanelHeader}>

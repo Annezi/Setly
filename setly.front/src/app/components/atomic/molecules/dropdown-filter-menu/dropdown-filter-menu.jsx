@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./dropdown-filter-menu.module.css";
 import FilterTag from "@/app/components/atomic/atoms/filter-tag/filter-tag";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import Toggler from "@/app/components/atomic/atoms/toggler/toggler";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import { CHECK_PLANS_SORT_ITEMS } from "@/app/lib/checkplan-list-utils";
 
 const DURATION_MAX_INDEX = 29; // 0..29 => 1..30+
 
@@ -37,6 +39,25 @@ function formatDurationTag(minIndex, maxIndex) {
     const maxStr = maxIndex === DURATION_MAX_INDEX ? "30+" : String(maxIndex + 1);
     return `${minDays}-${maxStr} дней`;
 }
+
+const FILTER_CATEGORY_TAGS = [
+    "В горы",
+    "По городам",
+    "На пляж",
+    "С семьёй или детьми",
+    "Долго / Кочёвка",
+];
+const FILTER_REGION_TAGS = [
+    "Европа",
+    "Азия",
+    "Кавказ",
+    "Россия и СНГ",
+    "Ближнее Зарубежье (Турция, Египет, ОАЭ)",
+    "Америка",
+    "Африка и Океания",
+];
+const FILTER_TRAVELER_TAGS = ["Один", "Вдвоём", "Компания", "С детьми"];
+const FILTER_SEASON_TAGS = ["Зима", "Весна", "Лето", "Осень"];
 
 function DurationSlider({ minIndex = 0, maxIndex = DURATION_MAX_INDEX, onChange }) {
     const trackRef = useRef(null);
@@ -167,25 +188,6 @@ export default function DropdownFilterMenu({
         });
     };
 
-    const categoryTags = [
-        "В горы",
-        "По городам",
-        "На пляж",
-        "С семьёй или детьми",
-        "Долго / Кочёвка",
-    ];
-    const regionTags = [
-        "Европа",
-        "Азия",
-        "Кавказ",
-        "Россия и СНГ",
-        "Ближнее Зарубежье (Турция, Египет, ОАЭ)",
-        "Америка",
-        "Африка и Океания",
-    ];
-    const travelerTags = ["Один", "Вдвоём", "Компания", "С детьми"];
-    const seasonTags = ["Зима", "Весна", "Лето", "Осень"];
-
     const applyTagsToState = useCallback((tags) => {
         if (!tags || tags.length === 0) {
             setCategorySelected(new Set());
@@ -205,10 +207,10 @@ export default function DropdownFilterMenu({
         let durationMaxVal = DEFAULT_DURATION_MAX;
 
         for (const tag of tags) {
-            if (categoryTags.includes(tag)) categorySet.add(tag);
-            else if (regionTags.includes(tag)) regionSet.add(tag);
-            else if (travelerTags.includes(tag)) travelerSet.add(tag);
-            else if (seasonTags.includes(tag)) seasonSet.add(tag);
+            if (FILTER_CATEGORY_TAGS.includes(tag)) categorySet.add(tag);
+            else if (FILTER_REGION_TAGS.includes(tag)) regionSet.add(tag);
+            else if (FILTER_TRAVELER_TAGS.includes(tag)) travelerSet.add(tag);
+            else if (FILTER_SEASON_TAGS.includes(tag)) seasonSet.add(tag);
             else {
                 const rangeMatch = tag.match(/^(\d+)-(\d+|\d+\+) дней$/);
                 const singleMatch = tag.match(/^(\d+) (день|дня|дней)$/);
@@ -238,9 +240,11 @@ export default function DropdownFilterMenu({
     }, []);
 
     useEffect(() => {
-        if (appliedTags !== undefined) {
+        if (appliedTags === undefined) return;
+        const rafId = window.requestAnimationFrame(() => {
             applyTagsToState(appliedTags);
-        }
+        });
+        return () => window.cancelAnimationFrame(rafId);
     }, [appliedTags, applyTagsToState]);
 
     const handleReset = useCallback(() => {
@@ -277,12 +281,11 @@ export default function DropdownFilterMenu({
                 <RoundButton
                     variant="white"
                     icon={
-                        <img
+                        <PublicImage
                             src="/icons/system/Cross.svg"
                             alt=""
                             width={20}
                             height={20}
-                            aria-hidden
                             draggable={false}
                         />
                     }
@@ -294,14 +297,14 @@ export default function DropdownFilterMenu({
             <section className={styles.togglerSection}>
                 <h3 className={`subtitle_1 ${styles.sectionTitle}`}>Сортировать по</h3>
                 <div className={styles.togglerFullWidth}>
-                    <Toggler key={`sort-${resetKey}`} options={["По популярности", "По новизне"]} defaultValue={1} />
+                    <Toggler key={`sort-${resetKey}`} options={CHECK_PLANS_SORT_ITEMS} defaultValue={1} />
                 </div>
             </section>
             <div className={`${styles.sectionSpacer} ${styles.spacerAfterToggler}`} aria-hidden />
             <section className={styles.section}>
                 <h3 className={`subtitle_1 ${styles.sectionTitle}`}>Категория поездки</h3>
                 <div className={styles.tagsRow}>
-                    {categoryTags.map((label) => (
+                    {FILTER_CATEGORY_TAGS.map((label) => (
                         <FilterTag
                             key={label}
                             selected={categorySelected.has(label)}
@@ -319,7 +322,7 @@ export default function DropdownFilterMenu({
             <section className={styles.section}>
                 <h3 className={`subtitle_1 ${styles.sectionTitle}`}>Регион / Направление</h3>
                 <div className={styles.tagsRow}>
-                    {regionTags.map((label) => (
+                    {FILTER_REGION_TAGS.map((label) => (
                         <FilterTag
                             key={label}
                             selected={regionSelected.has(label)}
@@ -352,7 +355,7 @@ export default function DropdownFilterMenu({
             <section className={styles.section}>
                 <h3 className={`subtitle_1 ${styles.sectionTitle}`}>Тип путешественника</h3>
                 <div className={styles.tagsRow}>
-                    {travelerTags.map((label) => (
+                    {FILTER_TRAVELER_TAGS.map((label) => (
                         <FilterTag
                             key={label}
                             selected={travelerSelected.has(label)}
@@ -370,7 +373,7 @@ export default function DropdownFilterMenu({
             <section className={styles.section}>
                 <h3 className={`subtitle_1 ${styles.sectionTitle}`}>Сезонность</h3>
                 <div className={styles.tagsRow}>
-                    {seasonTags.map((label) => (
+                    {FILTER_SEASON_TAGS.map((label) => (
                         <FilterTag
                             key={label}
                             selected={seasonSelected.has(label)}
@@ -390,7 +393,7 @@ export default function DropdownFilterMenu({
                     color="dangerFilled"
                     onClick={handleReset}
                     icon={
-                        <img
+                        <PublicImage
                             src="/icons/system/Trash-red.svg"
                             alt=""
                             width={16}
@@ -399,7 +402,7 @@ export default function DropdownFilterMenu({
                         />
                     }
                     hoverIcon={
-                        <img
+                        <PublicImage
                             src="/icons/system/Trash-white.svg"
                             alt=""
                             width={16}

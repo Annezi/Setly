@@ -971,7 +971,8 @@
 	transition: opacity 0.2s ease;
 }
 
-.textBlockWrap:hover .textBlockToolbar {
+/* Маркер на обёртке блока: один селектор вместо дублей .textBlockWrap / .whereToGoBlockWrap / .budgetTableWrap */
+.contentBlockToolbarHost:hover .textBlockToolbar {
 	opacity: 1;
 }
 
@@ -1056,10 +1057,6 @@
 .whereToGoBlockWrap {
 	position: relative;
 	width: 100%;
-}
-
-.whereToGoBlockWrap:hover .textBlockToolbar {
-	opacity: 1;
 }
 
 .whereToGoBlock {
@@ -1167,10 +1164,6 @@
 .budgetTableWrap {
 	position: relative;
 	width: 100%;
-}
-
-.budgetTableWrap:hover .textBlockToolbar {
-	opacity: 1;
 }
 
 .budgetTable {

@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 
+const USER_AVATAR_PREFIX = '/img/users/avatars/';
+const USER_HEADER_PREFIX = '/img/users/headers/';
+
+/** Разрешённые пути картинок профиля (защита от path traversal и посторонних URL). */
+function isSafeUserImagePath(p) {
+  if (p === '' || p === undefined) return true;
+  if (typeof p !== 'string' || p.length > 512) return false;
+  const t = p.trim();
+  if (!t.startsWith('/') || t.includes('..') || t.includes('\\')) return false;
+  return t.startsWith(USER_AVATAR_PREFIX) || t.startsWith(USER_HEADER_PREFIX);
+}
+
 const USERS_JSON_PATH = path.join(process.cwd(), 'src', 'data', 'users.json');
 const LIKES_JSON_PATH = path.join(process.cwd(), 'src', 'data', 'checklist-likes.json');
 
@@ -36,10 +48,7 @@ export async function GET(request, { params }) {
     return NextResponse.json(publicUser);
   } catch (err) {
     console.error('[API GET users]', err);
-    return NextResponse.json(
-      { message: err.message || 'Ошибка' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
 
@@ -79,10 +88,24 @@ export async function PATCH(request, { params }) {
     const user = users[resolvedUserIndex];
 
     if (typeof headerImagePath === 'string') {
-      user.headerImagePath = headerImagePath;
+      const t = headerImagePath.trim();
+      if (!isSafeUserImagePath(t)) {
+        return NextResponse.json(
+          { message: 'Недопустимый путь к изображению шапки' },
+          { status: 400 }
+        );
+      }
+      user.headerImagePath = t;
     }
     if (typeof avatarPath === 'string') {
-      user.avatarPath = avatarPath;
+      const t = avatarPath.trim();
+      if (!isSafeUserImagePath(t)) {
+        return NextResponse.json(
+          { message: 'Недопустимый путь к аватару' },
+          { status: 400 }
+        );
+      }
+      user.avatarPath = t;
     }
     if (Array.isArray(likedChecklistIds)) {
       user.likedChecklistIds = likedChecklistIds.filter(
@@ -172,10 +195,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json(publicUser);
   } catch (err) {
     console.error('[API PATCH users]', err);
-    return NextResponse.json(
-      { message: err.message || 'Ошибка обновления' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
 
@@ -235,9 +255,6 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[API DELETE users]', err);
-    return NextResponse.json(
-      { message: err.message || 'Ошибка удаления' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }

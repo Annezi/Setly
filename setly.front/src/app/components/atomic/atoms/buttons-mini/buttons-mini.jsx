@@ -1,5 +1,6 @@
 "use client";
 
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./buttons-mini.module.css";
 
 export default function ButtonsMini({
@@ -22,7 +23,7 @@ export default function ButtonsMini({
         >
             {isCompleted ? (
                 <span className={styles.icon} aria-hidden>
-                    <img
+                    <PublicImage
                         src="/icons/system/Correct.svg"
                         alt=""
                         width={20}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import styles from "./dropdown.module.css";
 import DropdownItem from "../dropdown-item/dropdown-item";
 
@@ -58,7 +58,7 @@ export default function Dropdown({
     const hasItems = items.length > 0;
     const isPanelVisible = hasCustomContent || hasItems;
 
-    const close = () => setIsOpen(false);
+    const close = useCallback(() => setIsOpen(false), []);
 
     useEffect(() => {
         if (!isOpen) {
@@ -66,13 +66,13 @@ export default function Dropdown({
         }
     }, [isOpen]);
 
-    const handleToggle = () => {
+    const handleToggle = useCallback(() => {
         if (!disabled && isPanelVisible) {
-            setIsOpen(!isOpen);
+            setIsOpen((prev) => !prev);
         }
-    };
+    }, [disabled, isPanelVisible]);
 
-    const handleSelect = (index) => {
+    const handleSelect = useCallback((index) => {
         if (!isControlled) {
             setInternalSelectedIndex(index);
         }
@@ -80,15 +80,23 @@ export default function Dropdown({
         if (onSelect) {
             onSelect(index, items[index]);
         }
-    };
+    }, [isControlled, items, onSelect]);
 
-    const resolvedIcon = icon != null
-        ? <span className={`${styles.dropdownIcon} ${isOpen ? styles["dropdownIcon--open"] : ""}`}>{icon}</span>
-        : <ChevronDownIcon className={`${styles.dropdownIcon} ${isOpen ? styles["dropdownIcon--open"] : ""}`} />;
+    const resolvedIcon = useMemo(() => (
+        icon != null
+            ? <span className={`${styles.dropdownIcon} ${isOpen ? styles["dropdownIcon--open"] : ""}`}>{icon}</span>
+            : <ChevronDownIcon className={`${styles.dropdownIcon} ${isOpen ? styles["dropdownIcon--open"] : ""}`} />
+    ), [icon, isOpen]);
 
-    const resolvedDropdownContent = typeof dropdownContent === "function"
-        ? dropdownContent(close)
-        : dropdownContent;
+    const resolvedDropdownContent = useMemo(() => (
+        typeof dropdownContent === "function"
+            ? dropdownContent(close)
+            : dropdownContent
+    ), [dropdownContent, close]);
+
+    const menuClassName = useMemo(() => (
+        `component-blur ${styles.dropdownMenu} ${bgView ? "" : styles["dropdownMenuTransperent"]} ${menuCentered ? (bgView ? styles["dropdownMenu--centered"] : styles["dropdownMenuTransperent--centered"]) : ""} ${isOpen ? styles["dropdownMenu--open"] : ""} ${dropdownMenuClassName ?? ""}`
+    ), [bgView, menuCentered, isOpen, dropdownMenuClassName]);
 
     return (
         <div className={styles.dropdown}>
@@ -108,7 +116,7 @@ export default function Dropdown({
             </button>
             {isPanelVisible && (
                 <div 
-                    className={`component-blur ${styles.dropdownMenu} ${bgView ? "" : styles["dropdownMenuTransperent"]} ${menuCentered ? (bgView ? styles["dropdownMenu--centered"] : styles["dropdownMenuTransperent--centered"]) : ""} ${isOpen ? styles["dropdownMenu--open"] : ""} ${dropdownMenuClassName ?? ""}`}
+                    className={menuClassName}
                     role={hasCustomContent ? null : "listbox"}
                 >
                     {hasCustomContent

@@ -127,13 +127,6 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
   const visibleTrackCards = getTrackCards(visibleCards);
   const visibleTrackCardsTwo = getTrackCardsTwo(visibleCards);
 
-  useEffect(() => {
-    setCarouselIndex(0);
-    setTransitionTo(null);
-    setEntered(false);
-    setSkipTransition(false);
-  }, [block.id]);
-
   /* В слайдере при ширине >= TWO_CARDS_MIN_WIDTH показываем 2 карточки, иначе 1 */
   const TWO_CARDS_MIN_WIDTH = 580; /* 280*2 + 20: если меньше — показываем одну карточку */
   useEffect(() => {

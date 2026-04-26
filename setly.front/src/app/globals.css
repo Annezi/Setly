@@ -162,6 +162,13 @@ body {
     cursor: default;
 }
 
+/* clip не создаёт scroll-container как hidden — лучше для position: sticky у хедера */
+@supports (overflow: clip) {
+    body {
+        overflow-x: clip;
+    }
+}
+
 /* Текст по умолчанию — обычный курсор, не I-beam */
 * {
     cursor: inherit;

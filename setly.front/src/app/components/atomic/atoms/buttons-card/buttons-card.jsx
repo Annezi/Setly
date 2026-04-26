@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import PublicImage from "@/app/components/globals/public-image";
 import styles from "./buttons-card.module.css";
 
 export default function ButtonCard({
@@ -52,7 +53,7 @@ export function ButtonCardDemo(){
             <ButtonCard 
                 text="Добавить пункт..."
                 icon={
-                    <img
+                    <PublicImage
                         src="/icons/system/CrossMini.svg"
                         alt=""
                         width={9}
@@ -60,7 +61,7 @@ export function ButtonCardDemo(){
                     />
                 }
                 hoverIcon={
-                    <img
+                    <PublicImage
                         src="/icons/system/CrossMiniDark.svg"
                         alt=""
                         width={9}

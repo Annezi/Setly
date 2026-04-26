@@ -15,9 +15,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <div className={styles.page}>
-      <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
-        <Header />
-      </div>
+      <Header />
       <main className={styles.main}>
         <div className={`container ${styles.container}`}>
           <article className={`${styles.card} main-page-reveal__item`} style={{ "--reveal-delay": "70ms" }}>

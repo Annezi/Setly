@@ -58,9 +58,6 @@ export async function POST(request) {
     return NextResponse.json({ path: publicPath, headerImagePath: publicPath });
   } catch (err) {
     console.error('[API upload/header]', err);
-    return NextResponse.json(
-      { message: err.message || 'Ошибка загрузки' },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Внутренняя ошибка сервера' }, { status: 500 });
   }
 }
