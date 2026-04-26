@@ -11,9 +11,13 @@ const Settings = dynamic(() => import("./settings").then((m) => m.default), {
 export default function SettingsPage() {
   return (
     <>
-      <Header />
+      <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+        <Header />
+      </div>
       <main>
-        <Settings />
+        <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+          <Settings />
+        </div>
       </main>
     </>
   );

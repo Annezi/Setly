@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useId } from "react";
+import { useState, useId, useEffect, useRef } from "react";
 import styles from "./input.module.css";
 
 const URL_PATTERN = /^https?:\/\/.+/i;
@@ -28,6 +28,8 @@ export default function Input({
     disabled = false,
     className,
     onKeyDown,
+    autoSearch = true,
+    searchDebounceMs = 400,
     ...props
 }) {
     const [internalValue, setInternalValue] = useState(defaultValue ?? "");
@@ -37,6 +39,7 @@ export default function Input({
 
     const isControlled = valueProp !== undefined;
     const value = isControlled ? valueProp : internalValue;
+    const searchDebounceRef = useRef(null);
 
     const isLinkInvalid = typeOfInput === "link" && value.length > 0 && !isValidLink(value);
     const isEmailInvalid = typeOfInput === "email" && value.length > 0 && !isValidEmail(value);
@@ -57,6 +60,17 @@ export default function Input({
     const handleSearchSubmit = () => {
         if (typeOfInput === "search" && onSearchSubmit) onSearchSubmit(value.trim());
     };
+
+    useEffect(() => {
+        if (typeOfInput !== "search" || !onSearchSubmit || !autoSearch) return;
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => {
+            onSearchSubmit(value.trim());
+        }, searchDebounceMs);
+        return () => {
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        };
+    }, [value, typeOfInput, onSearchSubmit, autoSearch, searchDebounceMs]);
 
     const handleKeyDown = (e) => {
         if (typeOfInput === "search" && e.key === "Enter") {
@@ -98,6 +112,7 @@ export default function Input({
                     disabled={disabled}
                     aria-invalid={hasError}
                     aria-describedby={hasError ? errorId : undefined}
+                    suppressHydrationWarning
                     {...props}
                 />
                 {showLinkIcon && (

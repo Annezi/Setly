@@ -150,8 +150,20 @@ async def list_check_plans(
     return CheckPlansResponse(blocks=blocks_list, flatCards=cards)
 
 
-def _plan_to_response(plan: CheckPlan) -> CheckPlanResponse:
+def _author_avatar_to_src(author: User | None) -> str:
+    """Нормализует аватар автора для фронта."""
+    if author is None:
+        return ""
+    avatar = _sanitize_image_url(author.profile_photo_url or "")
+    if avatar and not avatar.startswith(("http", "/")):
+        avatar = f"/storage/{avatar}"
+    return avatar
+
+
+def _plan_to_response(plan: CheckPlan, author: User | None = None) -> CheckPlanResponse:
     """Преобразует модель CheckPlan в схему ответа."""
+    author_name = (author.nickname or "Автор") if author is not None else "Автор"
+    author_avatar_src = _author_avatar_to_src(author)
     return CheckPlanResponse(
         id=plan.id,
         id_str=plan.id_str,
@@ -171,6 +183,9 @@ def _plan_to_response(plan: CheckPlan) -> CheckPlanResponse:
         traveler_tags=plan.traveler_tags or [],
         season_tags=plan.season_tags or [],
         creation_time=plan.creation_time,
+        author_name=author_name,
+        author_username=author_name,
+        author_avatar_src=author_avatar_src,
     )
 
 
@@ -180,18 +195,23 @@ async def get_check_plan(
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Один чек-план по id_str. Количество лайков считается по таблице UserLikes (как в списке планов)."""
-    result = await session.execute(select(CheckPlan).where(CheckPlan.id_str == id_str))
-    plan = result.scalar_one_or_none()
-    if plan is None:
+    result = await session.execute(
+        select(CheckPlan, User)
+        .join(User, CheckPlan.author_id == User.id)
+        .where(CheckPlan.id_str == id_str)
+    )
+    row = result.first()
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",
         )
+    plan, author = row
     likes_result = await session.execute(
         select(func.count()).select_from(UserLikes).where(UserLikes.checklist_id == id_str)
     )
     likes_count = likes_result.scalar() or 0
-    base = _plan_to_response(plan)
+    base = _plan_to_response(plan, author=author)
     return CheckPlanResponse(
         id=base.id,
         id_str=base.id_str,
@@ -211,6 +231,9 @@ async def get_check_plan(
         traveler_tags=base.traveler_tags,
         season_tags=base.season_tags,
         creation_time=base.creation_time,
+        author_name=base.author_name,
+        author_username=base.author_username,
+        author_avatar_src=base.author_avatar_src,
     )
 
 
@@ -241,7 +264,9 @@ async def create_check_plan(
     session.add(plan)
     await session.commit()
     await session.refresh(plan)
-    return _plan_to_response(plan)
+    author_result = await session.execute(select(User).where(User.id == plan.author_id))
+    author = author_result.scalar_one_or_none()
+    return _plan_to_response(plan, author=author)
 
 
 @router.patch("/{id_str}", response_model=CheckPlanResponse)
@@ -289,7 +314,9 @@ async def update_check_plan(
     session.add(plan)
     await session.commit()
     await session.refresh(plan)
-    return _plan_to_response(plan)
+    author_result = await session.execute(select(User).where(User.id == plan.author_id))
+    author = author_result.scalar_one_or_none()
+    return _plan_to_response(plan, author=author)
 
 
 @router.delete("/{id_str}", status_code=status.HTTP_204_NO_CONTENT)
@@ -377,7 +404,7 @@ async def copy_check_plan(
     session.add(new_plan)
     await session.commit()
     await session.refresh(new_plan)
-    return _plan_to_response(new_plan)
+    return _plan_to_response(new_plan, author=current_user)
 
 
 @router.post("/custom/create", status_code=status.HTTP_201_CREATED)
@@ -477,4 +504,4 @@ async def create_checkplan_custom(
     session.add(plan)
     await session.commit()
     await session.refresh(plan)
-    return _plan_to_response(plan)
+    return _plan_to_response(plan, author=current_user)

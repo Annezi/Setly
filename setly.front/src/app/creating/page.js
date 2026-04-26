@@ -11,8 +11,12 @@ const Creating = dynamic(() => import('./creating').then((m) => m.default), {
 export default function CreatingPage() {
   return (
     <>
-      <Header hideNavigation />
-      <Creating />
+      <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+        <Header hideNavigation />
+      </div>
+      <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+        <Creating />
+      </div>
     </>
   );
 }

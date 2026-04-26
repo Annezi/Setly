@@ -6,5 +6,10 @@ import Article from '@/app/components/blocks/articles/article/article';
 export default function ArticlePage() {
   const params = useParams();
   const id = params?.id ?? null;
-  return <Article articleId={id} />;
+
+  return (
+    <div className="main-page-reveal">
+      <Article articleId={id} />
+    </div>
+  );
 }

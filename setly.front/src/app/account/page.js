@@ -65,15 +65,19 @@ export default function PersonalAccountPage() {
     <>
       <Header />
       <main>
-        <PersonalHeaderWrapper
-          user={user}
-          userId={userId}
-          token={token}
-          router={router}
-          onUserChange={() => refreshUser(token, setUser, router)}
-        />
+        <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+          <PersonalHeaderWrapper
+            user={user}
+            userId={userId}
+            token={token}
+            router={router}
+            onUserChange={() => refreshUser(token, setUser, router)}
+          />
+        </div>
       </main>
-      <Footer />
+      <div className="main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
+        <Footer />
+      </div>
     </>
   );
 }

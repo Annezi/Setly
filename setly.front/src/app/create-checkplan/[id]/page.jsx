@@ -124,9 +124,13 @@ export default function EditCheckplanPage() {
 	if (loading) {
 		return (
 			<div className="container createCheckplanPage">
-				<Header />
-				<EditCheckplanPhantom />
-				<div className="createCheckplanPageFooterWrap">
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+					<Header />
+				</div>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+					<EditCheckplanPhantom />
+				</div>
+				<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
 					<Footer />
 				</div>
 			</div>
@@ -136,8 +140,10 @@ export default function EditCheckplanPage() {
 	if (error || !plan) {
 		return (
 			<div className="container createCheckplanPage">
-				<Header />
-				<div style={{ padding: "2rem", textAlign: "center" }}>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+					<Header />
+				</div>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms", padding: "2rem", textAlign: "center" }}>
 					<p>{error || "План не найден"}</p>
 					<button
 						type="button"
@@ -148,7 +154,7 @@ export default function EditCheckplanPage() {
 						{fromAccount ? "В личный кабинет" : "Вернуться к чек-планам"}
 					</button>
 				</div>
-				<div className="createCheckplanPageFooterWrap">
+				<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
 					<Footer />
 				</div>
 			</div>
@@ -157,15 +163,19 @@ export default function EditCheckplanPage() {
 
 	return (
 		<div className="container createCheckplanPage">
-			<Header />
-			<CreateCheckplan
-				planIdStr={idStr}
-				initialPlan={plan}
-				initialPlanData={planData}
-				fromAccount={fromAccount}
-				showOnboardingInitially={showOnboardingInitially}
-			/>
-			<div className="createCheckplanPageFooterWrap">
+			<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+				<Header />
+			</div>
+			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+				<CreateCheckplan
+					planIdStr={idStr}
+					initialPlan={plan}
+					initialPlanData={planData}
+					fromAccount={fromAccount}
+					showOnboardingInitially={showOnboardingInitially}
+				/>
+			</div>
+			<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
 				<Footer />
 			</div>
 		</div>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Button from "../../../atomic/atoms/buttons/buttons";
 import Input from "../../../atomic/molecules/input/input";
 import Checkbox from "../../../atomic/atoms/checkbox/checkbox";
@@ -173,7 +174,7 @@ export default function Registration() {
   }, []);
 
   return (
-    <div className={styles.wrapper}>
+    <div className={`${styles.wrapper} main-page-reveal__item`} style={{ "--reveal-delay": "60ms" }}>
       <div className={styles.content}>
         <h1 className={`${styles.title} title_1`}>Регистрация</h1>
         <p className={`${styles.description} paragraph`}>
@@ -258,13 +259,13 @@ export default function Registration() {
           />
           <span className={`${styles.policyText} label`}>
             Я соглашаюсь с{" "}
-            <span className="subtitle_2 linkStub label" role="button" tabIndex={0}>
+            <Link href="/terms" className={`subtitle_2 linkStub label ${styles.policyLink}`}>
               [Пользовательским соглашением]
-            </span>{" "}
+            </Link>{" "}
             и даю согласие на обработку персональных данных в соответствии с{" "}
-            <span className="subtitle_2 linkStub label" role="button" tabIndex={0}>
+            <Link href="/privacy" className={`subtitle_2 linkStub label ${styles.policyLink}`}>
               [Политикой конфиденциальности]
-            </span>
+            </Link>
             .
           </span>
         </div>

@@ -300,23 +300,29 @@ export function CheckPlansPage() {
     if (loading) {
         return (
             <>
-                <Header />
+                <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+                    <Header />
+                </div>
                 <main>
-                    <Search
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onSearchSubmit={() => setAppliedSearchQuery(searchQuery.trim())}
-                    />
-                    <Filters
-                        appliedFilterTags={appliedFilterTags}
-                        onApplyFilters={setAppliedFilterTags}
-                        onRemoveAppliedTag={(index) =>
-                            setAppliedFilterTags((prev) => prev.filter((_, i) => i !== index))
-                        }
-                        sortIndex={sortIndex}
-                        onSortSelect={setSortIndex}
-                    />
-                    <div className={`${planStyles.filteredContainer} ${planStyles.filteredContainerLoading}`} aria-busy="true" aria-label="Загрузка чек-планов">
+                    <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", position: "relative", zIndex: 20 }}>
+                        <Search
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onSearchSubmit={() => setAppliedSearchQuery(searchQuery.trim())}
+                        />
+                    </div>
+                    <div className="main-page-reveal__item" style={{ "--reveal-delay": "80ms", position: "relative", zIndex: 30 }}>
+                        <Filters
+                            appliedFilterTags={appliedFilterTags}
+                            onApplyFilters={setAppliedFilterTags}
+                            onRemoveAppliedTag={(index) =>
+                                setAppliedFilterTags((prev) => prev.filter((_, i) => i !== index))
+                            }
+                            sortIndex={sortIndex}
+                            onSortSelect={setSortIndex}
+                        />
+                    </div>
+                    <div className={`${planStyles.filteredContainer} ${planStyles.filteredContainerLoading} main-page-reveal__item`} style={{ "--reveal-delay": "120ms", position: "relative", zIndex: 1 }} aria-busy="true" aria-label="Загрузка чек-планов">
                         <div className={planStyles.cards}>
                             {[1, 2, 3, 4, 5, 6].map((i) => (
                                 <PlanCardSkeleton key={i} />
@@ -324,7 +330,9 @@ export function CheckPlansPage() {
                         </div>
                     </div>
                 </main>
-                <Footer />
+                <div className="main-page-reveal__item" style={{ "--reveal-delay": "170ms" }}>
+                    <Footer />
+                </div>
             </>
         );
     }
@@ -340,52 +348,62 @@ export function CheckPlansPage() {
 
     return (
         <>
-            <Header />
+            <div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+                <Header />
+            </div>
             <main>
-                <Search
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onSearchSubmit={() => setAppliedSearchQuery(searchQuery.trim())}
-                />
-                <Filters
-                    appliedFilterTags={appliedFilterTags}
-                    onApplyFilters={setAppliedFilterTags}
-                    onRemoveAppliedTag={(index) =>
-                        setAppliedFilterTags((prev) => prev.filter((_, i) => i !== index))
-                    }
-                    sortIndex={sortIndex}
-                    onSortSelect={setSortIndex}
-                />
-                {!hasActiveFilters && !hasSearchQuery && (
-                    <UnfilteredPlans
-                        blocks={sortedBlocks}
-                        onAddFilterTag={(tag) =>
-                            setAppliedFilterTags((prev) =>
-                                prev.includes(tag) ? prev : [...prev, tag]
-                            )
+                <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", position: "relative", zIndex: 20 }}>
+                    <Search
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onSearchSubmit={() => setAppliedSearchQuery(searchQuery.trim())}
+                    />
+                </div>
+                <div className="main-page-reveal__item" style={{ "--reveal-delay": "80ms", position: "relative", zIndex: 30 }}>
+                    <Filters
+                        appliedFilterTags={appliedFilterTags}
+                        onApplyFilters={setAppliedFilterTags}
+                        onRemoveAppliedTag={(index) =>
+                            setAppliedFilterTags((prev) => prev.filter((_, i) => i !== index))
                         }
-                        isAuthenticated={isAuthenticated}
-                        onRequestLogin={() => setShowLoginToLikePopup(true)}
+                        sortIndex={sortIndex}
+                        onSortSelect={setSortIndex}
                     />
-                )}
-                {hasSearchQuery && !showSearchNotFound && (
-                    <FilteredPlans
-                        plans={sortedSearchFilteredPlans}
-                        isAuthenticated={isAuthenticated}
-                        onRequestLogin={() => setShowLoginToLikePopup(true)}
-                    />
-                )}
-                {hasSearchQuery && showSearchNotFound && <NotFound />}
-                {!hasSearchQuery && hasActiveFilters && !showNotFound && (
-                    <FilteredPlans
-                        plans={sortedFilteredPlans}
-                        isAuthenticated={isAuthenticated}
-                        onRequestLogin={() => setShowLoginToLikePopup(true)}
-                    />
-                )}
-                {!hasSearchQuery && showNotFound && <NotFound />}
+                </div>
+                <div className="main-page-reveal__item" style={{ "--reveal-delay": "120ms", position: "relative", zIndex: 1 }}>
+                    {!hasActiveFilters && !hasSearchQuery && (
+                        <UnfilteredPlans
+                            blocks={sortedBlocks}
+                            onAddFilterTag={(tag) =>
+                                setAppliedFilterTags((prev) =>
+                                    prev.includes(tag) ? prev : [...prev, tag]
+                                )
+                            }
+                            isAuthenticated={isAuthenticated}
+                            onRequestLogin={() => setShowLoginToLikePopup(true)}
+                        />
+                    )}
+                    {hasSearchQuery && !showSearchNotFound && (
+                        <FilteredPlans
+                            plans={sortedSearchFilteredPlans}
+                            isAuthenticated={isAuthenticated}
+                            onRequestLogin={() => setShowLoginToLikePopup(true)}
+                        />
+                    )}
+                    {hasSearchQuery && showSearchNotFound && <NotFound />}
+                    {!hasSearchQuery && hasActiveFilters && !showNotFound && (
+                        <FilteredPlans
+                            plans={sortedFilteredPlans}
+                            isAuthenticated={isAuthenticated}
+                            onRequestLogin={() => setShowLoginToLikePopup(true)}
+                        />
+                    )}
+                    {!hasSearchQuery && showNotFound && <NotFound />}
+                </div>
             </main>
-            <Footer />
+            <div className="main-page-reveal__item" style={{ "--reveal-delay": "170ms" }}>
+                <Footer />
+            </div>
             {typeof document !== "undefined" &&
                 showLoginToLikePopup &&
                 createPortal(

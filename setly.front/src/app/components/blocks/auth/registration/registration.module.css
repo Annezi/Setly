@@ -74,6 +74,17 @@
   cursor: pointer;
 }
 
+.policyLink {
+  color: var(--grayscale-white);
+}
+
+.policyLink:visited,
+.policyLink:hover,
+.policyLink:active,
+.policyLink:focus-visible {
+  color: var(--grayscale-white);
+}
+
 .policyError {
   display: block;
   width: 100%;

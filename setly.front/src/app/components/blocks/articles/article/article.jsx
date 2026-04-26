@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
 import OurExperience from '@/app/components/blocks/main/our-experience/our-experience';
+import ScrollReveal from '@/app/components/globals/scroll-reveal/scroll-reveal';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import { getAuth } from '@/app/lib/auth-storage';
@@ -63,22 +64,30 @@ export default function Article({ articleId }) {
   if (!article) {
     return (
       <>
-        <Header />
+        <ScrollReveal delay={0}>
+          <Header />
+        </ScrollReveal>
         <main className={styles.main}>
-          <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
-            <span className={styles.breadcrumbIcon} aria-hidden>
-              <Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />
-            </span>
-            <span className={`${styles.breadcrumbText} subinfo`}>Назад</span>
-          </Link>
-          <div className={styles.notFound}>
-            <p className={`${styles.notFoundText} title_2`}>Статья не найдена</p>
-            <Link href="/articles" className={`${styles.notFoundLink} subinfo`}>
-              Вернуться к списку статей
+          <ScrollReveal delay={50}>
+            <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
+              <span className={styles.breadcrumbIcon} aria-hidden>
+                <Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />
+              </span>
+              <span className={`${styles.breadcrumbText} subinfo`}>Назад</span>
             </Link>
-          </div>
+          </ScrollReveal>
+          <ScrollReveal delay={90}>
+            <div className={styles.notFound}>
+              <p className={`${styles.notFoundText} title_2`}>Статья не найдена</p>
+              <Link href="/articles" className={`${styles.notFoundLink} subinfo`}>
+                Вернуться к списку статей
+              </Link>
+            </div>
+          </ScrollReveal>
         </main>
-        <Footer />
+        <ScrollReveal delay={130}>
+          <Footer />
+        </ScrollReveal>
       </>
     );
   }
@@ -87,46 +96,53 @@ export default function Article({ articleId }) {
 
   return (
     <>
-      <Header />
+      <ScrollReveal delay={0}>
+        <Header />
+      </ScrollReveal>
       <main className={styles.main}>
-        <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
-          <span className={styles.breadcrumbIcon} aria-hidden>
-            <Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />
-          </span>
-          <span className={`${styles.breadcrumbText} subinfo`}>Назад</span>
-        </Link>
+        <ScrollReveal delay={50}>
+          <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
+            <span className={styles.breadcrumbIcon} aria-hidden>
+              <Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />
+            </span>
+            <span className={`${styles.breadcrumbText} subinfo`}>Назад</span>
+          </Link>
+        </ScrollReveal>
 
-        <section className={styles.hero} aria-label="Заголовок статьи">
-          <div className={styles.heroImageWrap}>
-            <Image
-              src={article.heroImage}
-              alt=""
-              width={335}
-              height={338}
-              className={styles.heroImage}
-            />
-          </div>
-          <div className={styles.heroInfo}>
-            <div className={styles.tags}>
-              <span className={styles.tag}>
-                <Image src="/icons/images/Lightbulb.svg" alt="" width={20} height={20} className={styles.tagIcon} />
-                Статья
-              </span>
-              <span className={styles.tag}>
-                <Image src="/icons/images/Clock.svg" alt="" width={20} height={20} className={styles.tagIcon} />
-                {article.readTime}
-              </span>
+        <ScrollReveal delay={90}>
+          <section className={styles.hero} aria-label="Заголовок статьи">
+            <div className={styles.heroImageWrap}>
+              <Image
+                src={article.heroImage}
+                alt=""
+                width={335}
+                height={338}
+                className={styles.heroImage}
+              />
             </div>
-            <h1 className={`${styles.heroTitle} title_1`}>{applyTypograf(article.title)}</h1>
-            <p className={`${styles.heroDescription} subinfo`}>{applyTypograf(article.description)}</p>
-          </div>
-        </section>
+            <div className={styles.heroInfo}>
+              <div className={styles.tags}>
+                <span className={styles.tag}>
+                  <Image src="/icons/images/Lightbulb.svg" alt="" width={20} height={20} className={styles.tagIcon} />
+                  Статья
+                </span>
+                <span className={styles.tag}>
+                  <Image src="/icons/images/Clock.svg" alt="" width={20} height={20} className={styles.tagIcon} />
+                  {article.readTime}
+                </span>
+              </div>
+              <h1 className={`${styles.heroTitle} title_1`}>{applyTypograf(article.title)}</h1>
+              <p className={`${styles.heroDescription} subinfo`}>{applyTypograf(article.description)}</p>
+            </div>
+          </section>
+        </ScrollReveal>
 
-        <article className={styles.articleBody}>
-          <div className={styles.block}>
+        <ScrollReveal delay={120}>
+          <article className={styles.articleBody}>
+            <div className={styles.block}>
             <h2 className={`${styles.blockTitle} title_2`}>Предисловие</h2>
             <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.preamble)}</p>
-          </div>
+            </div>
 
           <figure className={styles.figure}>
             <div className={styles.figureImageWrap}>
@@ -198,51 +214,58 @@ export default function Article({ articleId }) {
             <p className={`${styles.paragraph} paragraph`}>{applyTypograf(article.keyPrinciple)}</p>
           </div>
 
-          <div className={styles.articleFooter}>
-            <RoundButton
-              variant="white"
-              icon={
-                <Image src="/icons/images/Link.svg" alt="" width={20} height={20} aria-hidden />
-              }
-              onClick={handleCopyLink}
-              aria-label="Скопировать ссылку на статью"
-            />
-            <time className={`${styles.articleDate} subinfo`} dateTime={article.publishedDate?.replace(/(\d{2})\.(\d{2})\.(\d{4})/, '$3-$2-$1')}>
-              {article.publishedDate}
-            </time>
-          </div>
-        </article>
+            <div className={styles.articleFooter}>
+              <RoundButton
+                variant="white"
+                icon={
+                  <Image src="/icons/images/Link.svg" alt="" width={20} height={20} aria-hidden />
+                }
+                onClick={handleCopyLink}
+                aria-label="Скопировать ссылку на статью"
+              />
+              <time className={`${styles.articleDate} subinfo`} dateTime={article.publishedDate?.replace(/(\d{2})\.(\d{2})\.(\d{4})/, '$3-$2-$1')}>
+                {article.publishedDate}
+              </time>
+            </div>
+          </article>
+        </ScrollReveal>
 
-        <section className={styles.templatesBlock} aria-labelledby="templates-heading">
-          <div className={styles.templatesLeft}>
-            <Image
-              src="/img/main/article3.webp"
-              alt="Шаблоны для поездок"
-              width={572}
-              height={572}
-              className={styles.templatesImage}
-            />
-          </div>
-          <div className={styles.templatesRight}>
-            <h2 id="templates-heading" className={`${styles.templatesTitle} title_1`}>
-              {applyTypograf('Попробуй наши шаблоны для поездок')}
-            </h2>
-            <div className={styles.templatesDescriptionWrap}>
-              <p className={`${styles.templatesDescription} paragraph`}>
-                {applyTypograf('Практично, удобно, а ещё мы предусмотрели все важные пункты, тебе осталось только скопировать и настроить под себя')}
-              </p>
-              <Button
-                Text="Использовать"
-                color="white"
-                onClick={handleUseTemplate}
+        <ScrollReveal delay={150}>
+          <section className={styles.templatesBlock} aria-labelledby="templates-heading">
+            <div className={styles.templatesLeft}>
+              <Image
+                src="/img/main/article3.webp"
+                alt="Шаблоны для поездок"
+                width={572}
+                height={572}
+                className={styles.templatesImage}
               />
             </div>
-          </div>
-        </section>
+            <div className={styles.templatesRight}>
+              <h2 id="templates-heading" className={`${styles.templatesTitle} title_1`}>
+                {applyTypograf('Попробуй наши шаблоны для поездок')}
+              </h2>
+              <div className={styles.templatesDescriptionWrap}>
+                <p className={`${styles.templatesDescription} paragraph`}>
+                  {applyTypograf('Практично, удобно, а ещё мы предусмотрели все важные пункты, тебе осталось только скопировать и настроить под себя')}
+                </p>
+                <Button
+                  Text="Использовать"
+                  color="white"
+                  onClick={handleUseTemplate}
+                />
+              </div>
+            </div>
+          </section>
+        </ScrollReveal>
 
-        <OurExperience />
+        <ScrollReveal delay={180}>
+          <OurExperience />
+        </ScrollReveal>
       </main>
-      <Footer />
+      <ScrollReveal delay={220}>
+        <Footer />
+      </ScrollReveal>
       <CopyLinkToast show={showCopyLinkToast} onExited={() => setShowCopyLinkToast(false)} />
     </>
   );

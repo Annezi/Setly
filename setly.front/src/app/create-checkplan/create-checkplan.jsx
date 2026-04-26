@@ -15,11 +15,13 @@ import DecoratedInput from "@/app/components/atomic/molecules/decorated-input/de
 import { getButtonLabel, CalendarContent, getDaysCountFromRange, getDaysLabelForApi } from "@/app/components/atomic/molecules/calendar/calendar";
 import { filterLocations } from "@/app/data/locations-by-region";
 import styles from "./create-checkplan.module.css";
+import checkPlansStyles from "@/app/components/blocks/check-plans/plans/check-plans/check-plans.module.css";
 import { getApiUrl, apiFetch } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 
 const DEFAULT_COVER_IMAGE = "/img/main/japan2025.png";
+const DEFAULT_AVATAR = "/img/main/setlypic.png?v=2";
 
 /** Загрузка обложки через бэкенд POST /api/user/me/save-image/checklist-covers/ */
 const UPLOAD_COVER_API = "/api/user/me/save-image/checklist-covers/";
@@ -40,6 +42,17 @@ function formatDateToYYYYMMDD(date) {
 	const m = String(date.getMonth() + 1).padStart(2, "0");
 	const d = String(date.getDate()).padStart(2, "0");
 	return `${y}-${m}-${d}`;
+}
+
+function formatLikesCompact(n) {
+	if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+	return String(n);
+}
+
+function resolveAvatarSrc(src) {
+	if (!src || typeof src !== "string") return DEFAULT_AVATAR;
+	if (src.startsWith("http") || src.startsWith("/")) return src;
+	return `/storage/${src}`;
 }
 
 /* Типы отдыха и люди — из dropdown-filter-menu */
@@ -3492,7 +3505,14 @@ export default function CreateCheckplan({
 	allowChecklistToggleInPreview = false,
 	showOnboardingInitially = false,
 }) {
-	const { setInitialLikeCounts } = useLikedChecklists();
+	const { isLiked, toggle, getLikeCount, setInitialLikeCounts } = useLikedChecklists();
+	const authData = useMemo(() => {
+		try {
+			return getAuth();
+		} catch (_) {
+			return null;
+		}
+	}, []);
 	const [planTitle, setPlanTitle] = useState(() => initialPlan?.title ?? "Китай 2026");
 	const [description, setDescription] = useState(() => initialPlan?.description ?? "");
 	const [coverImage, setCoverImage] = useState(() => {
@@ -4043,9 +4063,25 @@ export default function CreateCheckplan({
 	}, []);
 
 	const prevBlocksLengthRef = useRef(contentBlocks.length);
+	const autoScrollInitializedRef = useRef(false);
 
 	useEffect(() => {
 		if (typeof window === "undefined" || typeof document === "undefined") {
+			return;
+		}
+
+		// На первом рендере и в режиме просмотра не автоскроллим контент,
+		// чтобы страница всегда открывалась с начала без "прыжка" вниз.
+		if (!autoScrollInitializedRef.current || readOnly || isPreview) {
+			autoScrollInitializedRef.current = true;
+			prevBlocksLengthRef.current = contentBlocks.length;
+			return;
+		}
+
+		// При первичной гидратации данных редактируемого чек-плана
+		// пропускаем автоскролл, чтобы не перескакивать вниз после загрузки.
+		if (initialPlanData && !hydrationDone) {
+			prevBlocksLengthRef.current = contentBlocks.length;
 			return;
 		}
 
@@ -4086,7 +4122,7 @@ export default function CreateCheckplan({
 		};
 
 		tryScroll();
-	}, [contentBlocks]);
+	}, [contentBlocks, readOnly, isPreview, initialPlanData, hydrationDone]);
 
 	const addWhereToGoBlock = useCallback(() => {
 		setSuggestionLinksExiting((prev) => new Set(prev).add("whereToGo"));
@@ -4424,15 +4460,15 @@ export default function CreateCheckplan({
 		};
 	}, [readOnly, isOwner]);
 
-	// Передать количество лайков чекплана в контекст для гостевого тулбара
+	// Передать количество лайков чекплана в контекст для тулбара и блока в карточке
 	useEffect(() => {
-		if (readOnly && !isOwner && planIdStr && initialPlan != null) {
+		if (planIdStr && initialPlan != null) {
 			const count = Number(initialPlan.initial_likes);
 			if (!Number.isNaN(count)) {
 				setInitialLikeCounts({ [planIdStr]: count });
 			}
 		}
-	}, [readOnly, isOwner, planIdStr, initialPlan, setInitialLikeCounts]);
+	}, [planIdStr, initialPlan, setInitialLikeCounts]);
 
 	useEffect(() => {
 		if (!initialSnapshotRef.current) return;
@@ -4524,6 +4560,48 @@ export default function CreateCheckplan({
 	);
 
 	const currentVisibility = visibilityOverride ?? initialPlan?.visibility ?? "private";
+	const isAuthenticated = !!authData?.user?.id;
+	const creatorNameRaw =
+		initialPlan?.author?.name ??
+		initialPlan?.author?.username ??
+		initialPlan?.author_username ??
+		initialPlan?.author_name ??
+		initialPlan?.user_name ??
+		initialPlan?.username ??
+		((!initialPlan || initialPlan?.author_id === authData?.user?.id)
+			? (authData?.user?.name ?? authData?.user?.username)
+			: null) ??
+		"User";
+	const creatorName =
+		typeof creatorNameRaw === "string" && creatorNameRaw.trim()
+			? creatorNameRaw.trim()
+			: "User";
+	const creatorAvatar = resolveAvatarSrc(
+		initialPlan?.author?.avatar_src ??
+			initialPlan?.author?.avatar ??
+			initialPlan?.author_avatar_src ??
+			initialPlan?.author_avatar ??
+			initialPlan?.avatar_src ??
+			initialPlan?.avatar ??
+			authData?.user?.avatar_src ??
+			authData?.user?.avatar
+	);
+	const canLikeFromHeader = !!planIdStr;
+	const headerLiked = canLikeFromHeader ? isLiked(planIdStr) : false;
+	const headerLikesCount = canLikeFromHeader
+		? getLikeCount(planIdStr)
+		: (Number.isFinite(Number(initialPlan?.initial_likes)) ? Number(initialPlan?.initial_likes) : 0);
+	const likesLabel = formatLikesCompact(headerLikesCount);
+	const handleHeaderLikeClick = useCallback(() => {
+		if (!canLikeFromHeader || !planIdStr) return;
+		if (isAuthenticated) {
+			toggle(planIdStr);
+			return;
+		}
+		if (typeof window !== "undefined" && window.dispatchEvent) {
+			window.dispatchEvent(new CustomEvent("setly:guest-show-login-to-like"));
+		}
+	}, [canLikeFromHeader, isAuthenticated, planIdStr, toggle]);
 	const backHref = isPreview
 		? (fromAccount ? "/account" : "/check-plans")
 		: (readOnly ? (fromAccount ? "/account" : "/check-plans") : "/account");
@@ -4591,6 +4669,35 @@ export default function CreateCheckplan({
 							<p className="subinfo" style={{ color: "var(--grayscale-gray)" }}>
 								{currentVisibility === "public" ? "Публичный чек-план" : "Приватный чек-план"}
 							</p>
+							<div className={styles.cardAuthorLikesRow}>
+								<div className={styles.cardAuthorRow}>
+									<Image
+										src={creatorAvatar}
+										alt={creatorName}
+										width={24}
+										height={24}
+										className={styles.cardAuthorAvatar}
+										unoptimized={typeof creatorAvatar === "string" && creatorAvatar.startsWith("http")}
+									/>
+									<span className={`paragraph ${styles.cardAuthorName}`}>{creatorName}</span>
+								</div>
+								<button
+									type="button"
+									className={checkPlansStyles.likesRow}
+									onClick={handleHeaderLikeClick}
+									aria-pressed={canLikeFromHeader ? headerLiked : undefined}
+									aria-disabled={!canLikeFromHeader}
+								>
+									<Image
+										src={headerLiked ? "/icons/images/HeartFull.svg" : "/icons/images/Heart.svg"}
+										alt=""
+										width={20}
+										height={20}
+										className={checkPlansStyles.likesIcon}
+									/>
+									<span className={checkPlansStyles.likesCount}>{likesLabel}</span>
+								</button>
+							</div>
 							<div className={styles.datesBlock}>
 								<div className={styles.cardDropdownRow}>
 									<div className={styles.cardDropdownLabel}>

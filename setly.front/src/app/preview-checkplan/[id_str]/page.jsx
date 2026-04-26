@@ -131,9 +131,13 @@ export default function PreviewCheckplanPage() {
 	if (loading) {
 		return (
 			<div className="container createCheckplanPage">
-				<Header />
-				<PreviewCheckplanPhantom />
-				<div className="createCheckplanPageFooterWrap">
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+					<Header />
+				</div>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+					<PreviewCheckplanPhantom />
+				</div>
+				<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
 					<Footer />
 				</div>
 			</div>
@@ -143,8 +147,10 @@ export default function PreviewCheckplanPage() {
 	if (error || !plan) {
 		return (
 			<div className="container createCheckplanPage">
-				<Header />
-				<div style={{ padding: "2rem", textAlign: "center" }}>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+					<Header />
+				</div>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms", padding: "2rem", textAlign: "center" }}>
 					<p>{error || "План не найден"}</p>
 					<button
 						type="button"
@@ -155,7 +161,7 @@ export default function PreviewCheckplanPage() {
 						{fromAccount ? "В личный кабинет" : "Вернуться к чек-планам"}
 					</button>
 				</div>
-				<div className="createCheckplanPageFooterWrap">
+				<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
 					<Footer />
 				</div>
 			</div>
@@ -169,20 +175,25 @@ export default function PreviewCheckplanPage() {
 
 		return (
 		<div className="container createCheckplanPage">
-			<Header />
-			<CreateCheckplan
-				planIdStr={idStr}
-				initialPlan={plan}
-				initialPlanData={planData}
-				readOnly={readOnly}
-				allowChecklistToggleInPreview={isOwner}
-				fromAccount={fromAccount}
-				isOwner={isOwner}
-				isPreview
-			/>
+			<div className="main-page-reveal__item" style={{ "--reveal-delay": "0ms" }}>
+				<Header />
+			</div>
+			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+				<CreateCheckplan
+					planIdStr={idStr}
+					initialPlan={plan}
+					initialPlanData={planData}
+					readOnly={readOnly}
+					allowChecklistToggleInPreview={isOwner}
+					fromAccount={fromAccount}
+					isOwner={isOwner}
+					isPreview
+				/>
+			</div>
 			{isOwner ? (
 				<section
-					className={articleCtaStyles.templatesBlock}
+					className={`${articleCtaStyles.templatesBlock} main-page-reveal__item`}
+					style={{ "--reveal-delay": "100ms" }}
 					aria-labelledby="preview-traveler-test-heading"
 					id="preview-templates-boundary"
 				>
@@ -217,9 +228,11 @@ export default function PreviewCheckplanPage() {
 					</div>
 				</section>
 			) : (
-				<PopularCheckplansCarousel excludeIdStr={idStr} />
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "100ms" }}>
+					<PopularCheckplansCarousel excludeIdStr={idStr} />
+				</div>
 			)}
-			<div className="createCheckplanPageFooterWrap">
+			<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "140ms" }}>
 				<Footer />
 			</div>
 		</div>

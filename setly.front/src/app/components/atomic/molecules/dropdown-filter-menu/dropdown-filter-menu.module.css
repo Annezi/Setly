@@ -17,7 +17,9 @@
 }
 
 .menu {
-    background: var(--halftone-50-white);
+    background: var(--halftone-98-white);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     border-radius: 20px;
     padding: 20px;
     width: 600px;
@@ -170,7 +172,7 @@
     box-sizing: border-box;
 }
 
-.togglerFullWidth > * {
+.togglerFullWidth>* {
     width: 100%;
 }
 
@@ -211,7 +213,7 @@
         display: flex;
     }
 
-    .togglerFullWidth > * {
+    .togglerFullWidth>* {
         width: 100% !important;
         min-width: 0;
     }
@@ -231,7 +233,7 @@
     width: 100%;
 }
 
-.actionsRow > * {
+.actionsRow>* {
     flex: 1;
     min-width: 0;
 }

@@ -11,6 +11,7 @@ import styles from "./check-plans.module.css";
 const SLIDER_BREAKPOINT = 1024;
 const SLIDER_MAX_WIDTH = 950; /* совпадает с CSS: слайдер виден при max-width: 950px */
 const SWIPE_MIN_PX = 50;
+const MAX_VISIBLE_CARDS = 3;
 
 /** Аватар по умолчанию, если бэкенд не вернул avatarSrc */
 const DEFAULT_AVATAR = "/img/main/setlypic.png?v=2";
@@ -95,6 +96,7 @@ export function PlanCard({ id: cardId, imageSrc, imageAlt, days, location, title
 
 /* Трек с дубликатом первой карточки для бесшовного цикла (режим 1 карточка) */
 function getTrackCards(cards) {
+  if (cards.length === 0) return [];
   return [...cards, cards[0]];
 }
 
@@ -106,10 +108,9 @@ function getTrackCardsTwo(cards) {
 }
 
 function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }) {
-  const cards = block.cards;
-  const trackCards = getTrackCards(cards);
-  const trackCardsTwo = getTrackCardsTwo(cards);
-  const totalPositions = cards.length + 1;
+  const cards = block.cards ?? [];
+  const visibleCards = cards.slice(0, MAX_VISIBLE_CARDS);
+  const totalPositions = visibleCards.length + 1;
 
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [transitionTo, setTransitionTo] = useState(null);
@@ -123,6 +124,15 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
   const touchStartX = useRef(null);
   const sliderRef = useRef(null);
   const sliderWrapperRef = useRef(null);
+  const visibleTrackCards = getTrackCards(visibleCards);
+  const visibleTrackCardsTwo = getTrackCardsTwo(visibleCards);
+
+  useEffect(() => {
+    setCarouselIndex(0);
+    setTransitionTo(null);
+    setEntered(false);
+    setSkipTransition(false);
+  }, [block.id]);
 
   /* В слайдере при ширине >= TWO_CARDS_MIN_WIDTH показываем 2 карточки, иначе 1 */
   const TWO_CARDS_MIN_WIDTH = 580; /* 280*2 + 20: если меньше — показываем одну карточку */
@@ -183,7 +193,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
       if (slidesPerView === 2) {
         if (pendingPrevFromZeroRef.current) {
           pendingPrevFromZeroRef.current = false;
-          setCarouselIndex(cards.length - 1);
+          setCarouselIndex(visibleCards.length - 1);
         }
         return;
       }
@@ -193,7 +203,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
       }
     });
     return () => cancelAnimationFrame(id);
-  }, [skipTransition, totalPositions, slidesPerView, cards.length]);
+  }, [skipTransition, totalPositions, slidesPerView, visibleCards.length]);
 
   const handleTransitionEnd = (e) => {
     if (e.propertyName !== "transform" || toIndex === null) return;
@@ -229,7 +239,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
   const goNext = () => {
     if (isTransitioning) return;
     if (slidesPerView === 2) {
-      if (carouselIndex < cards.length) {
+      if (carouselIndex < visibleCards.length) {
         setCarouselIndex(carouselIndex + 1);
       } else {
         /* carouselIndex === cards.length не должно достигаться через goNext без анимации */
@@ -244,7 +254,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
 
   /* После анимации вперёд на позицию cards.length сбрасываем в 0 без перерисовки */
   const handleStackTwoTransitionEnd = () => {
-    if (carouselIndex === cards.length) {
+    if (carouselIndex === visibleCards.length) {
       setSkipTransition(true);
       setCarouselIndex(0);
     }
@@ -303,7 +313,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
 
       {/* Десктоп (≥1024px): сетка из 3 карточек */}
       <div className={styles.cards}>
-        {cards.map((card, i) => (
+        {visibleCards.map((card, i) => (
           <PlanCard key={`${block.id}-${i}`} id={card.id} {...card} avatarSrc={card.avatarSrc || DEFAULT_AVATAR} filterTag={block.filterTag} isAuthenticated={isAuthenticated} onRequestLogin={onRequestLogin} />
         ))}
       </div>
@@ -334,7 +344,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
               }}
               onTransitionEnd={handleStackTwoTransitionEnd}
             >
-              {trackCardsTwo.map((card, i) => (
+              {visibleTrackCardsTwo.map((card, i) => (
                 <div
                   key={`${block.id}-slide-${i}`}
                   className={styles.cardSlideTwo}
@@ -352,7 +362,7 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
             <div
               className={`${styles.cardsStack} ${skipTransition ? styles.cardsStackNoTransition : ""}`}
             >
-              {trackCards.map((card, i) => (
+              {visibleTrackCards.map((card, i) => (
                 <div
                   key={`${block.id}-slide-${i}`}
                   className={styles.cardSlide}
@@ -370,22 +380,24 @@ function BlockSection({ block, onAddFilterTag, isAuthenticated, onRequestLogin }
             </div>
           )}
         </div>
-        <div className={styles.carouselNav}>
-          <RoundButton
-            variant="white"
-            icon={<Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />}
-            onClick={goPrev}
-            aria-label="Предыдущая карточка"
-            disabled={slidesPerView === 2 ? false : isTransitioning}
-          />
-          <RoundButton
-            variant="white"
-            icon={<Image src="/icons/system/ArrowRight.svg" alt="" width={20} height={20} />}
-            onClick={goNext}
-            aria-label="Следующая карточка"
-            disabled={slidesPerView === 2 ? false : isTransitioning}
-          />
-        </div>
+        {visibleCards.length > 1 && (
+          <div className={styles.carouselNav}>
+            <RoundButton
+              variant="white"
+              icon={<Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />}
+              onClick={goPrev}
+              aria-label="Предыдущая карточка"
+              disabled={slidesPerView === 2 ? false : isTransitioning}
+            />
+            <RoundButton
+              variant="white"
+              icon={<Image src="/icons/system/ArrowRight.svg" alt="" width={20} height={20} />}
+              onClick={goNext}
+              aria-label="Следующая карточка"
+              disabled={slidesPerView === 2 ? false : isTransitioning}
+            />
+          </div>
+        )}
       </div>
     </section>
   );

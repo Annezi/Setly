@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import WelcomeScreen from "@/app/components/blocks/main/welcome-screen/welcome-screen";
+import ScrollReveal from "@/app/components/globals/scroll-reveal/scroll-reveal";
 
 export const metadata = {
   title: "Setly - чекпланы для планирования путешествий",
@@ -32,14 +33,28 @@ const OurExperience = dynamic(
 export default function MainPage() {
 	return (
 		<>
-			<div className="container">
-				<Header />
-				<WelcomeScreen />
-				<ThreeSteps />
-				<IdealWay />
-				<OurCommunity />
-				<OurExperience />
-				<Footer />
+			<div className="container main-page-reveal">
+				<ScrollReveal delay={0}>
+					<Header />
+				</ScrollReveal>
+				<ScrollReveal delay={40}>
+					<WelcomeScreen />
+				</ScrollReveal>
+				<ScrollReveal delay={90}>
+					<ThreeSteps />
+				</ScrollReveal>
+				<ScrollReveal delay={140}>
+					<IdealWay />
+				</ScrollReveal>
+				<ScrollReveal delay={190}>
+					<OurCommunity />
+				</ScrollReveal>
+				<ScrollReveal delay={240}>
+					<OurExperience />
+				</ScrollReveal>
+				<ScrollReveal delay={280}>
+					<Footer />
+				</ScrollReveal>
 			</div>
 		</>
 	);

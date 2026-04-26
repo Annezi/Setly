@@ -62,6 +62,9 @@ class CheckPlanResponse(BaseModel):
     traveler_tags: list[str]
     season_tags: list[str]
     creation_time: datetime
+    author_name: str = "Автор"
+    author_username: str = "Автор"
+    author_avatar_src: str = ""
 
 
 class CheckPlanCard(BaseModel):

@@ -111,6 +111,7 @@ export default function Filters({
               />
           )}
           bgView={false}
+          dropdownMenuClassName={styles.filtersDropdownPanel}
           icon={
             <img
               src="/icons/system/ArrowDown.svg"

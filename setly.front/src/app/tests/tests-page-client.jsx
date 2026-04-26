@@ -4,9 +4,9 @@ import { useState, useCallback } from "react";
 import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import Search from "@/app/components/blocks/check-plans/search/search";
-import Articles from "@/app/components/blocks/articles/articles";
+import Tests from "@/app/components/blocks/tests/tests";
 
-export default function ArticlesPageClient() {
+export default function TestsPageClient() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearchChange = useCallback((e) => {
@@ -32,7 +32,7 @@ export default function ArticlesPageClient() {
           />
         </div>
         <div className="main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
-          <Articles searchQuery={searchQuery} />
+          <Tests searchQuery={searchQuery} />
         </div>
       </main>
       <div className="main-page-reveal__item" style={{ "--reveal-delay": "170ms" }}>
