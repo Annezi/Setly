@@ -4,6 +4,7 @@ import { Footer } from "@/app/components/globals/footer/Footer";
 import WelcomeScreen from "@/app/components/blocks/main/welcome-screen/welcome-screen";
 import ScrollReveal from "@/app/components/globals/scroll-reveal/scroll-reveal";
 
+
 export const metadata = {
   title: "Setly - чекпланы для планирования путешествий",
   description:
