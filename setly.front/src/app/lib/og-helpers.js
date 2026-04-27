@@ -73,11 +73,15 @@ export function shareMetadataBundle({ segmentTitle, description, path, fullTitle
 
 const METADATA_FETCH_MS = 6000;
 
+/** HEAD для og:image — короче, чтобы generateMetadata не подходил к лимитам краулера Telegram. */
+const OG_IMAGE_HEAD_TIMEOUT_MS = 3000;
+
 /**
- * Telegram часто не показывает превью, если og:image слишком тяжёлый (ВК обычно отображает).
- * По HEAD Content-Length подменяем на лёгкий snippet (рекомендации ~до 2–2.5 MB).
+ * Telegram часто «висит» на предпросмотре (бесконечная загрузка), если og:image тяжёлый или
+ * очень высокий по пикселям; ВК обычно отображает. Держим размер заметно ниже ~2 MB.
+ * По HEAD Content-Length подменяем на лёгкий snippet (~1.1 MB, известные размеры в meta).
  */
-const MAX_OG_IMAGE_BYTES = 2_500_000;
+const MAX_OG_IMAGE_BYTES = 2_000_000;
 
 export async function capOgImageForTelegram(absoluteUrl) {
   const u = typeof absoluteUrl === "string" ? absoluteUrl.trim() : "";
@@ -86,7 +90,11 @@ export async function capOgImageForTelegram(absoluteUrl) {
   const snippetAbs = `${getSiteOrigin()}${snippetImagePath()}`;
   if (u === snippetAbs || u.endsWith(snippetImagePath())) return u;
   try {
-    const r = await fetchWithMetadataTimeout(u, { method: "HEAD" });
+    const r = await fetchWithMetadataTimeout(
+      u,
+      { method: "HEAD" },
+      OG_IMAGE_HEAD_TIMEOUT_MS
+    );
     if (!r.ok) return u;
     const cl = r.headers.get("content-length");
     if (!cl) return u;
@@ -98,9 +106,13 @@ export async function capOgImageForTelegram(absoluteUrl) {
   }
 }
 
-function fetchWithMetadataTimeout(url, init = {}) {
+function fetchWithMetadataTimeout(
+  url,
+  init = {},
+  timeoutMs = METADATA_FETCH_MS
+) {
   const controller = new AbortController();
-  const tid = setTimeout(() => controller.abort(), METADATA_FETCH_MS);
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
   const nextInit = { ...init, signal: controller.signal };
   return fetch(url, nextInit).finally(() => clearTimeout(tid));
 }
