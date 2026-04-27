@@ -36,6 +36,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 	readOnly = false,
 	isOwner = true,
 	isPreview = false,
+	fullWidth = false,
 }) {
 	const canShowDeleteOnEmpty =
 		personalNotesItems.length >= 2 ||
@@ -58,7 +59,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 	const showSuggestionsBlock = hasAnySuggestionLink;
 
 	return (
-		<div className={styles.rightColumn}>
+		<div className={`${styles.rightColumn} ${fullWidth ? styles.rightColumnFullWidth : ""}`}>
 			{!isPreview && (
 			<div className={`${styles.platformNote} ${!showPlatformNote ? styles.platformNoteHidden : ""}`}>
 				<div className={styles.platformNoteHeader}>

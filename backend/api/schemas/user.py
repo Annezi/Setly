@@ -80,3 +80,10 @@ class LikeCreate(BaseModel):
 
 class CheckplanCreate(BaseModel):
     id_str: str
+
+
+class UserOgPreview(BaseModel):
+    """Публичные данные профиля для OG-превью ссылок (ник и фото)."""
+
+    nickname: str = ""
+    profile_photo_url: str = ""

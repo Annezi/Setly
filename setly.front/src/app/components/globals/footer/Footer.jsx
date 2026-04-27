@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import PublicImage from '@/app/components/globals/public-image';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import styles from './footer.module.css';
@@ -17,6 +16,7 @@ export function Footer() {
                         Советы и чек-планы, только то, что поможет собраться
                     </p>
                     <div className={styles.ctaButtonWrap}>
+                        <Link href="https://t.me/setly_space" target="_blank" rel="noopener noreferrer">
                         <Button
                         color="white"
                         Text="Присоединиться"
@@ -29,6 +29,7 @@ export function Footer() {
                             />
                         }
                     />
+                        </Link>
                     </div>
                 </div>
                 <div className={styles.bottomRow}>

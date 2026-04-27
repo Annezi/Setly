@@ -60,6 +60,7 @@ export default function CreateCheckplan({
 	isOwner = true,
 	isPreview = false,
 	allowChecklistToggleInPreview = false,
+	hideChecklistSection = false,
 	showOnboardingInitially = false,
 }) {
 	const { isLiked, toggle, getLikeCount, setInitialLikeCounts } = useLikedChecklists();
@@ -141,6 +142,7 @@ export default function CreateCheckplan({
 	const [suggestionLinksExiting, setSuggestionLinksExiting] = useState(() => new Set()); // 'whereToGo' | 'usefulContacts' | 'budgetTable'
 	const [saveLoading, setSaveLoading] = useState(false);
 	const [saveError, setSaveError] = useState(null);
+	const userChangedTypeRef = useRef(false);
 	const descriptionRef = useRef(null);
 	const titleRef = useRef(null);
 	const contentBlockIdRef = useRef(0);
@@ -258,6 +260,7 @@ export default function CreateCheckplan({
 	/** Если чеклист пустой и выбран тип — переключаем на «Ручная кладь и Багаж» и подставляем дефолтные пункты по типу. Только для шаблонного плана; для чистого блок «что взять» остаётся пустым с вариантом «Ручная кладь». */
 	useEffect(() => {
 		if (!wasCreatedWithTemplateRef.current) return;
+		if (!userChangedTypeRef.current) return;
 		if (typeIndex < 0 || typeIndex >= TYPE_OPTIONS.length) return;
 		const typeLabel = TYPE_OPTIONS[typeIndex];
 		const defaults = DEFAULT_CHECKLIST_BY_TYPE[typeLabel];
@@ -874,6 +877,10 @@ export default function CreateCheckplan({
 		setRegion(selectedRegion);
 		setLocationSearch("");
 	}, []);
+	const handleTypeIndexChange = useCallback((nextTypeIndex) => {
+		userChangedTypeRef.current = true;
+		setTypeIndex(nextTypeIndex);
+	}, []);
 
 	const locationDropdownContent = useMemo(() => {
 		function LocationDropdownPanel({ close }) {
@@ -963,7 +970,7 @@ export default function CreateCheckplan({
 					locationLabel={locationLabel}
 					locationDropdownContent={locationDropdownContent}
 					typeIndex={typeIndex}
-					setTypeIndex={setTypeIndex}
+					setTypeIndex={handleTypeIndexChange}
 					peopleIndex={peopleIndex}
 					setPeopleIndex={setPeopleIndex}
 					coverImage={coverImage}
@@ -975,22 +982,25 @@ export default function CreateCheckplan({
 				/>
 
 				<div className={styles.secondRow}>
-					<ChecklistSection
-						handLuggageItems={handLuggageItems}
-						updateHandLuggageItem={updateHandLuggageItem}
-						addHandLuggageItem={addHandLuggageItem}
-						removeHandLuggageItem={removeHandLuggageItem}
-						luggageItems={luggageItems}
-						updateLuggageItem={updateLuggageItem}
-						addLuggageItem={addLuggageItem}
-						removeLuggageItem={removeLuggageItem}
-						sortIndex={sortIndex}
-						setSortIndex={setSortIndex}
-						readOnly={readOnly}
-						isPreview={isPreview}
-						allowToggleInReadOnly={allowChecklistToggleInPreview}
-					/>
+					{!hideChecklistSection && (
+						<ChecklistSection
+							handLuggageItems={handLuggageItems}
+							updateHandLuggageItem={updateHandLuggageItem}
+							addHandLuggageItem={addHandLuggageItem}
+							removeHandLuggageItem={removeHandLuggageItem}
+							luggageItems={luggageItems}
+							updateLuggageItem={updateLuggageItem}
+							addLuggageItem={addLuggageItem}
+							removeLuggageItem={removeLuggageItem}
+							sortIndex={sortIndex}
+							setSortIndex={setSortIndex}
+							readOnly={readOnly}
+							isPreview={isPreview}
+							allowToggleInReadOnly={allowChecklistToggleInPreview}
+						/>
+					)}
 					<RightColumnSection
+						fullWidth={hideChecklistSection}
 						showPlatformNote={showPlatformNote}
 						setShowPlatformNote={setShowPlatformNote}
 						platformNoteText={platformNoteText}

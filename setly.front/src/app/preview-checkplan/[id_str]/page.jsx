@@ -196,6 +196,11 @@ export default function PreviewCheckplanPage() {
 		plan?.author_id != null &&
 		String(plan.author_id) === String(authUserId);
 	const readOnly = true;
+	const isChecklistSectionEmpty =
+		Array.isArray(planData?.luggage_hand_block) &&
+		planData.luggage_hand_block.length === 0 &&
+		Array.isArray(planData?.luggage_block) &&
+		planData.luggage_block.length === 0;
 
 	return (
 		<div className="container createCheckplanPage">
@@ -209,6 +214,7 @@ export default function PreviewCheckplanPage() {
 					allowChecklistToggleInPreview={isOwner}
 					fromAccount={fromAccount}
 					isOwner={isOwner}
+					hideChecklistSection={isChecklistSectionEmpty}
 					isPreview
 				/>
 			</div>

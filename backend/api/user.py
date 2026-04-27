@@ -23,11 +23,33 @@ from api.schemas.user import (
     MeCheckplansResponse,
     LikeCreate,
     CheckplanCreate,
+    UserOgPreview,
 )
 
 router = APIRouter(prefix="/user", tags=["user"])
 
 NICKNAME_MAX_LENGTH = 40
+
+
+def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
+    """Нормализует URL фото профиля для OG (абсолютный https к API/storage)."""
+    if not raw or not isinstance(raw, str):
+        return ""
+    u = raw.strip().rstrip(",").strip()
+    if not u:
+        return ""
+    if u.startswith(("http://", "https://")):
+        return u
+    api_public_url = (
+        os.getenv("API_PUBLIC_URL") or os.getenv("PUBLIC_API_URL") or "https://api.setly.space"
+    ).rstrip("/")
+    if u.startswith("/storage/"):
+        return f"{api_public_url}{u}"
+    if ".." in u or "\n" in u:
+        return ""
+    if u.startswith("/"):
+        return f"{api_public_url}{u}"
+    return f"{api_public_url}/storage/{u}"
 PASSWORD_MIN_LENGTH = 6
 PASSWORD_ALLOWED = re.compile(r"^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;':\",./<>?`~\\]*$")
 
@@ -114,6 +136,28 @@ async def login(
         user=user,
         access_token=access_token,
         expires_in=expires_in,
+    )
+
+
+@router.get("/public-profile/{user_id}", response_model=UserOgPreview)
+async def public_profile_for_og(
+    user_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """
+    Публичный ник и фото для превью ссылок (мессенджеры / соцсети).
+    Не раскрывает email и прочие приватные поля.
+    """
+    result = await session.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return UserOgPreview(
+        nickname=_normalize_nickname(user.nickname or ""),
+        profile_photo_url=_sanitize_profile_photo_url(user.profile_photo_url),
     )
 
 

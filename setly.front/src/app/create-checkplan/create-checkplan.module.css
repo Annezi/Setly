@@ -703,6 +703,11 @@
 	max-width: 690px;
 }
 
+.rightColumnFullWidth {
+	max-width: 100%;
+	width: 100%;
+}
+
 /* Platform note: сворачивание при скрытии с анимацией */
 .platformNote {
 	background: var(--grayscale-primary-gray);

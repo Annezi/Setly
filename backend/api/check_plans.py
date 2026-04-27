@@ -11,7 +11,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.database import get_session
-from database.models import CheckPlan, User, UserLikes, CheckPlanData, CheckPlanDataStaff
+from database.models import CheckPlan, User, UserLikes, CheckPlanData
 from api.schemas.check_plan import (
     CheckPlanCard,
     CheckPlanBlock,
@@ -274,14 +274,20 @@ async def update_check_plan(
     id_str: str,
     data: CheckPlanUpdate,
     session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
-    """Обновить чек-план (частично) по id_str."""
+    """Обновить чек-план (частично) по id_str. Только автор."""
     result = await session.execute(select(CheckPlan).where(CheckPlan.id_str == id_str))
     plan = result.scalar_one_or_none()
     if plan is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",
+        )
+    if plan.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the author can update this check plan",
         )
     if data.image_src is not None:
         plan.image_src = _sanitize_image_url(data.image_src)

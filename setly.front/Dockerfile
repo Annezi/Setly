@@ -20,8 +20,11 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# URL бэкенда для запросов из браузера. При сборке для прода: https://api.setly.space
-ARG NEXT_PUBLIC_API_URL
+# Публичные URL — зашиваются при сборке (NEXT_PUBLIC_*).
+ARG NEXT_PUBLIC_SITE_URL=https://setly.space
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+
+ARG NEXT_PUBLIC_API_URL=https://api.setly.space
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 RUN npm run build

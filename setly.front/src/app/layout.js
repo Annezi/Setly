@@ -3,12 +3,22 @@ import DisableImageDrag from "./components/globals/DisableImageDrag";
 import ScrollToTop from "./components/globals/ScrollToTop";
 import RoutePrefetcher from "./components/globals/RoutePrefetcher";
 import { LikedChecklistsProvider } from "./lib/liked-checklists-context";
+import {
+  SNIPPET_IMAGE_PIXELS,
+  ogImageDescriptors,
+} from "@/app/lib/og-helpers";
 
 const siteDescription =
   "Мы разработали чек-планы, которые позволяют быстро спланировать путешествие и сосредоточиться на том, что действительно важно. Скажи «пока» тревоге при планировании путешествий.";
 const siteTitle = "Setly - чекпланы для планирования путешествий";
 const siteUrl = "https://setly.space";
-const previewImageUrl = `${siteUrl}/img/main/setlyPreview.png`;
+const previewImageUrl = `${siteUrl}/img/main/snippet.jpg`;
+
+const rootOgImages = ogImageDescriptors(
+  previewImageUrl,
+  "Setly — чекпланы для планирования путешествий",
+  SNIPPET_IMAGE_PIXELS
+);
 
 const websiteJsonLd = {
   "@context": "https://schema.org",
@@ -67,12 +77,7 @@ export const metadata = {
     siteName: "Setly",
     title: siteTitle,
     description: siteDescription,
-    images: [
-      {
-        url: previewImageUrl,
-        alt: "Setly — чекпланы для планирования путешествий",
-      },
-    ],
+    images: rootOgImages,
   },
   twitter: {
     card: "summary_large_image",

@@ -7,8 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from auth import get_current_user
 from database.database import get_session
-from database.models import CheckPlan, CheckPlanData, CheckPlanDataStaff
+from database.models import CheckPlan, CheckPlanData, CheckPlanDataStaff, User
 from api.schemas.check_plan_data import (
     CheckPlanDataCreate,
     CheckPlanDataUpdate,
@@ -16,6 +17,29 @@ from api.schemas.check_plan_data import (
 )
 
 router = APIRouter(prefix="/checkplan-data", tags=["checkplan-data"])
+
+
+async def _require_current_user_is_author_of_plan_data(
+    session: AsyncSession,
+    check_plan_data_id: int,
+    user_id: int,
+) -> None:
+    """Все чек-планы, ссылающиеся на эту запись данных, должны принадлежать пользователю."""
+    plans_result = await session.execute(
+        select(CheckPlan).where(CheckPlan.check_plan_data_id == check_plan_data_id)
+    )
+    plans = plans_result.scalars().all()
+    if not plans:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No check plan references this data",
+        )
+    for plan in plans:
+        if plan.author_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the author can update this check plan data",
+            )
 
 # Значения по умолчанию для данных из custom/create, где нет полной структуры CheckPlanDataStaff
 _CHECKPLAN_DATA_DEFAULTS = {
@@ -136,6 +160,7 @@ async def update_check_plan_data(
     item_id: int,
     data: CheckPlanDataUpdate,
     session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
     check_plan_id_str: str | None = None,
 ):
     """
@@ -167,6 +192,11 @@ async def update_check_plan_data(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="CheckPlan not found",
             )
+        if plan.author_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the author can update this check plan data",
+            )
         if plan.check_plan_data_id != 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -189,6 +219,7 @@ async def update_check_plan_data(
         await session.refresh(item)
         return _row_to_response(item)
     # Запись есть — обычное обновление
+    await _require_current_user_is_author_of_plan_data(session, item_id, current_user.id)
     if data.data is not None:
         item.data = data.data.model_dump()
     session.add(item)

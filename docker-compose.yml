@@ -86,8 +86,14 @@ services:
       context: ./setly.front
       dockerfile: Dockerfile
       args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://setly.space}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.setly.space}
     container_name: setly-front
+    depends_on:
+      - setly-api
+    environment:
+      # Серверные запросы generateMetadata → API по внутренней сети (не зависит от DNS).
+      API_INTERNAL_URL: http://setly-api:8000
     # ports:
     #   - "3000:3000"
     # Не монтировать исходники в /app — иначе перезаписывается собранный server.js из standalone
@@ -102,7 +108,7 @@ services:
       - "traefik.http.routers.setly-front-https.service=setly-front-svc"
       - "traefik.http.routers.setly-front-http.rule=Host(`setly.space`)"
       - "traefik.http.routers.setly-front-http.entrypoints=web"
-      - "traefik.http.routers.setly-apfronti-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.setly-front-http.middlewares=redirect-to-https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       - "traefik.http.services.setly-front-svc.loadbalancer.server.port=3000"

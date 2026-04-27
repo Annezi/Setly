@@ -7,6 +7,15 @@ import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
+
+/** Редактировать план может только автор (совпадение author_id и id в сессии). */
+function isCheckplanOwner(plan, authUserId) {
+	return (
+		authUserId != null &&
+		plan?.author_id != null &&
+		String(plan.author_id) === String(authUserId)
+	);
+}
 import styles from "../create-checkplan-edit-phantom.module.css";
 
 const CreateCheckplan = dynamic(
@@ -77,6 +86,7 @@ export default function EditCheckplanPage() {
 		const apiBase = base || "";
 
 		async function load() {
+			let redirectedToPreview = false;
 			try {
 				const headers = {};
 				try {
@@ -100,6 +110,15 @@ export default function EditCheckplanPage() {
 					return;
 				}
 				const planJson = await planRes.json();
+				const authAfter = getAuth();
+				const authUserId = authAfter?.user?.id;
+				if (!isCheckplanOwner(planJson, authUserId)) {
+					redirectedToPreview = true;
+					const qs = searchParams?.toString?.() ?? "";
+					const previewPath = `/preview-checkplan/${encodeURIComponent(idStr)}${qs ? `?${qs}` : ""}`;
+					router.replace(previewPath);
+					return;
+				}
 				setPlan(planJson);
 
 				const dataId = planJson?.check_plan_data_id;
@@ -118,12 +137,12 @@ export default function EditCheckplanPage() {
 					setError("Ошибка загрузки");
 				}
 			} finally {
-				if (!cancelled) setLoading(false);
+				if (!cancelled && !redirectedToPreview) setLoading(false);
 			}
 		}
 		load();
 		return () => { cancelled = true; };
-	}, [idStr]);
+	}, [idStr, router, searchParams]);
 
 	if (loading) {
 		return (
