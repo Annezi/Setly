@@ -108,7 +108,7 @@ ym(108769675, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLa
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ru">
+    <html lang="ru" prefix="og: http://ogp.me/ns#">
       <head>
         <script
           type="application/ld+json"

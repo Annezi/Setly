@@ -4,6 +4,7 @@ import { getTestByIdOrSlug } from "@/data/tests-data";
 import {
   absoluteDocumentTitle,
   absoluteUrl,
+  capOgImageForTelegram,
   getSiteOrigin,
   ogImageDescriptors,
   shareMetadataBundle,
@@ -34,7 +35,8 @@ export async function generateMetadata({ params }) {
     typeof test.imageSrc === "string" && test.imageSrc.trim()
       ? test.imageSrc.trim()
       : snippetImagePath();
-  const imageUrl = absoluteUrl(imageSrc);
+  let imageUrl = absoluteUrl(imageSrc);
+  imageUrl = await capOgImageForTelegram(imageUrl);
   const ogImages = ogImageDescriptors(
     imageUrl,
     test.title,

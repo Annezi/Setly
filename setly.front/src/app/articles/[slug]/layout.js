@@ -1,5 +1,6 @@
 import {
   absoluteDocumentTitle,
+  capOgImageForTelegram,
   getArticleOgImagePaths,
   getSiteOrigin,
   ogImageDescriptors,
@@ -63,7 +64,8 @@ export async function generateMetadata({ params }) {
         : "Статья о путешествиях в Setly";
 
   const imgPaths = getArticleOgImagePaths(article);
-  const imageUrl = imgPaths.length ? absoluteUrl(imgPaths[0]) : `${origin}${fallbackImg}`;
+  let imageUrl = imgPaths.length ? absoluteUrl(imgPaths[0]) : `${origin}${fallbackImg}`;
+  imageUrl = await capOgImageForTelegram(imageUrl);
   const articleOgImages = ogImageDescriptors(
     imageUrl,
     articleTitle,

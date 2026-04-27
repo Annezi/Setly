@@ -73,6 +73,31 @@ export function shareMetadataBundle({ segmentTitle, description, path, fullTitle
 
 const METADATA_FETCH_MS = 6000;
 
+/**
+ * Telegram часто не показывает превью, если og:image слишком тяжёлый (ВК обычно отображает).
+ * По HEAD Content-Length подменяем на лёгкий snippet (рекомендации ~до 2–2.5 MB).
+ */
+const MAX_OG_IMAGE_BYTES = 2_500_000;
+
+export async function capOgImageForTelegram(absoluteUrl) {
+  const u = typeof absoluteUrl === "string" ? absoluteUrl.trim() : "";
+  if (!u) return `${getSiteOrigin()}${snippetImagePath()}`;
+  if (!u.startsWith("http")) return `${getSiteOrigin()}${snippetImagePath()}`;
+  const snippetAbs = `${getSiteOrigin()}${snippetImagePath()}`;
+  if (u === snippetAbs || u.endsWith(snippetImagePath())) return u;
+  try {
+    const r = await fetchWithMetadataTimeout(u, { method: "HEAD" });
+    if (!r.ok) return u;
+    const cl = r.headers.get("content-length");
+    if (!cl) return u;
+    const n = Number(cl);
+    if (!Number.isFinite(n) || n <= MAX_OG_IMAGE_BYTES) return u;
+    return snippetAbs;
+  } catch {
+    return u;
+  }
+}
+
 function fetchWithMetadataTimeout(url, init = {}) {
   const controller = new AbortController();
   const tid = setTimeout(() => controller.abort(), METADATA_FETCH_MS);
@@ -235,7 +260,8 @@ export async function fetchCheckplanOg(urlSegment) {
       typeof plan.description === "string" && plan.description.trim()
         ? plan.description.trim()
         : undefined;
-    const image = absoluteCheckplanImage(plan.image_src || "");
+    let image = absoluteCheckplanImage(plan.image_src || "");
+    image = await capOgImageForTelegram(image);
     return {
       title: title || "Чек-план",
       description,
@@ -300,7 +326,8 @@ export async function generateProfileShareMetadata(userIdRaw) {
     typeof preview?.profile_photo_url === "string"
       ? preview.profile_photo_url.trim()
       : "";
-  const imageUrl = rawPhoto !== "" ? absoluteUrl(rawPhoto) : snippetAbs;
+  let imageUrl = rawPhoto !== "" ? absoluteUrl(rawPhoto) : snippetAbs;
+  imageUrl = await capOgImageForTelegram(imageUrl);
   const profileOg = ogImageDescriptors(
     imageUrl,
     nickname,
