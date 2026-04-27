@@ -10,6 +10,10 @@ import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { applyTypograf } from "@/app/lib/typograf";
+import {
+	buildCheckplanPublicSegment,
+	parseCheckplanUrlSegment,
+} from "@/app/lib/slug";
 import articleCtaStyles from "@/app/components/blocks/articles/article/article.module.css";
 import styles from "../../create-checkplan/create-checkplan-edit-phantom.module.css";
 
@@ -62,7 +66,8 @@ export default function PreviewCheckplanPage() {
 	const params = useParams();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const idStr = params?.id_str ? decodeURIComponent(String(params.id_str)) : null;
+	const urlSegment = params?.ref ? decodeURIComponent(String(params.ref)) : null;
+	const apiRef = urlSegment ? parseCheckplanUrlSegment(urlSegment) : "";
 	const fromAccount = searchParams?.get("from") === "account";
 	const [plan, setPlan] = useState(null);
 	const [planData, setPlanData] = useState(null);
@@ -78,10 +83,10 @@ export default function PreviewCheckplanPage() {
 		}
 		const id = requestAnimationFrame(() => setShellReady(true));
 		return () => cancelAnimationFrame(id);
-	}, [loading, error, plan, idStr]);
+	}, [loading, error, plan, urlSegment]);
 
 	useEffect(() => {
-		if (!idStr) {
+		if (!apiRef) {
 			setLoading(false);
 			setError("Не указан план");
 			return;
@@ -104,7 +109,7 @@ export default function PreviewCheckplanPage() {
 					}
 				} catch (_) {}
 				const planRes = await fetch(
-					`${apiBase}/api/check-plans/${encodeURIComponent(idStr)}`,
+					`${apiBase}/api/check-plans/${encodeURIComponent(apiRef)}`,
 					{ headers }
 				);
 				if (cancelled) return;
@@ -141,7 +146,19 @@ export default function PreviewCheckplanPage() {
 		}
 		load();
 		return () => { cancelled = true; };
-	}, [idStr]);
+	}, [apiRef]);
+
+	useEffect(() => {
+		if (!plan?.id_str || typeof window === "undefined") return;
+		try {
+			const seg = buildCheckplanPublicSegment(plan);
+			const pathSeg = window.location.pathname.replace(/^\/+|\/+$/g, "").split("/").pop();
+			const curSeg = pathSeg ? decodeURIComponent(pathSeg) : "";
+			if (!seg || curSeg === seg) return;
+			const qs = window.location.search || "";
+			window.history.replaceState({}, "", `/preview-checkplan/${encodeURIComponent(seg)}${qs}`);
+		} catch (_) {}
+	}, [plan]);
 
 	if (loading) {
 		return (
@@ -207,7 +224,7 @@ export default function PreviewCheckplanPage() {
 			<Header />
 			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 				<CreateCheckplan
-					planIdStr={idStr}
+					planIdStr={plan.id_str}
 					initialPlan={plan}
 					initialPlanData={planData}
 					readOnly={readOnly}
@@ -257,7 +274,7 @@ export default function PreviewCheckplanPage() {
 				</section>
 			) : (
 				<div className="main-page-reveal__item" style={{ "--reveal-delay": "100ms" }}>
-					<PopularCheckplansCarousel excludeIdStr={idStr} />
+					<PopularCheckplansCarousel excludeIdStr={plan.id_str} />
 				</div>
 			)}
 			<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "140ms" }}>

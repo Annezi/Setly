@@ -23,8 +23,8 @@ function filterTestsBySearch(tests, query) {
   });
 }
 
-function TestCard({ id, imageSrc, imageAlt, title, description, readTime }) {
-  const href = `/tests/${encodeURIComponent(String(id))}`;
+function TestCard({ id, slug, imageSrc, imageAlt, title, description, readTime }) {
+  const href = `/tests/${encodeURIComponent(slug || String(id))}`;
   const card = (
     <>
       <div className={styles.tags}>

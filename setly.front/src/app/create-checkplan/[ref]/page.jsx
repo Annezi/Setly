@@ -7,6 +7,11 @@ import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import { getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
+import {
+	buildCheckplanPublicSegment,
+	parseCheckplanUrlSegment,
+} from "@/app/lib/slug";
+import styles from "../create-checkplan-edit-phantom.module.css";
 
 /** Редактировать план может только автор (совпадение author_id и id в сессии). */
 function isCheckplanOwner(plan, authUserId) {
@@ -16,7 +21,6 @@ function isCheckplanOwner(plan, authUserId) {
 		String(plan.author_id) === String(authUserId)
 	);
 }
-import styles from "../create-checkplan-edit-phantom.module.css";
 
 const CreateCheckplan = dynamic(
   () => import("@/app/create-checkplan/create-checkplan").then((m) => m.default),
@@ -63,7 +67,8 @@ export default function EditCheckplanPage() {
 	const params = useParams();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const idStr = params?.id ? decodeURIComponent(String(params.id)) : null;
+	const urlSegment = params?.ref ? decodeURIComponent(String(params.ref)) : null;
+	const apiRef = urlSegment ? parseCheckplanUrlSegment(urlSegment) : "";
 	const fromAccount = searchParams?.get("from") === "account";
 	const showOnboardingInitially = searchParams?.get("onboarding") === "1";
 	const [plan, setPlan] = useState(null);
@@ -72,7 +77,7 @@ export default function EditCheckplanPage() {
 	const [error, setError] = useState(null);
 
 	useEffect(() => {
-		if (!idStr) {
+		if (!apiRef) {
 			setLoading(false);
 			setError("Не указан план");
 			return;
@@ -96,7 +101,7 @@ export default function EditCheckplanPage() {
 					}
 				} catch (_) {}
 				const planRes = await fetch(
-					`${apiBase}/api/check-plans/${encodeURIComponent(idStr)}`,
+					`${apiBase}/api/check-plans/${encodeURIComponent(apiRef)}`,
 					{ headers }
 				);
 				if (cancelled) return;
@@ -115,7 +120,8 @@ export default function EditCheckplanPage() {
 				if (!isCheckplanOwner(planJson, authUserId)) {
 					redirectedToPreview = true;
 					const qs = searchParams?.toString?.() ?? "";
-					const previewPath = `/preview-checkplan/${encodeURIComponent(idStr)}${qs ? `?${qs}` : ""}`;
+					const previewSeg = buildCheckplanPublicSegment(planJson);
+					const previewPath = `/preview-checkplan/${encodeURIComponent(previewSeg)}${qs ? `?${qs}` : ""}`;
 					router.replace(previewPath);
 					return;
 				}
@@ -142,7 +148,19 @@ export default function EditCheckplanPage() {
 		}
 		load();
 		return () => { cancelled = true; };
-	}, [idStr, router, searchParams]);
+	}, [apiRef, router, searchParams]);
+
+	useEffect(() => {
+		if (!plan?.id_str || typeof window === "undefined") return;
+		try {
+			const seg = buildCheckplanPublicSegment(plan);
+			const pathSeg = window.location.pathname.replace(/^\/+|\/+$/g, "").split("/").pop();
+			const curSeg = pathSeg ? decodeURIComponent(pathSeg) : "";
+			if (!seg || curSeg === seg) return;
+			const qs = window.location.search || "";
+			window.history.replaceState({}, "", `/create-checkplan/${encodeURIComponent(seg)}${qs}`);
+		} catch (_) {}
+	}, [plan]);
 
 	if (loading) {
 		return (
@@ -185,7 +203,7 @@ export default function EditCheckplanPage() {
 			<Header />
 			<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
 				<CreateCheckplan
-					planIdStr={idStr}
+					planIdStr={plan.id_str}
 					initialPlan={plan}
 					initialPlanData={planData}
 					fromAccount={fromAccount}

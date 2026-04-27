@@ -1,6 +1,7 @@
 export const TESTS_LIST = [
   {
     id: 1,
+    slug: "kakoy-vy-tip-puteshestvennika",
     imageSrc: "/img/main/test1.png",
     imageAlt: "Какой вы тип путешественника?",
     title: "Какой вы тип путешественника?",
@@ -9,6 +10,7 @@ export const TESTS_LIST = [
   },
   {
     id: 2,
+    slug: "naskolko-vy-gotovy-k-neozhidannostyam-v-poezdke",
     imageSrc: "/img/main/test2.png",
     imageAlt: "Насколько вы готовы к неожиданностям в поездке?",
     title: "Насколько вы готовы к неожиданностям в поездке?",
@@ -17,6 +19,7 @@ export const TESTS_LIST = [
   },
   {
     id: 3,
+    slug: "chto-dlya-vas-glavnoe-v-puteshestvii",
     imageSrc: "/img/main/test3.png",
     imageAlt: "Что для вас главное в путешествии?",
     title: "Что для вас главное в путешествии?",
@@ -621,5 +624,30 @@ export function getTestById(testId) {
   if (!Number.isFinite(parsed)) return null;
   const listItem = TESTS_LIST.find((test) => test.id === parsed);
   if (!listItem) return null;
-  return TEST_DETAILS[parsed] ?? { ...listItem, questions: [], results: [] };
+  const detail = TEST_DETAILS[parsed];
+  if (!detail) {
+    return { ...listItem, questions: [], results: [] };
+  }
+  return { ...detail, slug: listItem.slug };
+}
+
+export function getTestBySlug(slug) {
+  const s = String(slug ?? "").trim();
+  if (!s) return null;
+  const listItem = TESTS_LIST.find((test) => test.slug === s);
+  if (!listItem) return null;
+  const parsed = listItem.id;
+  const detail = TEST_DETAILS[parsed];
+  if (!detail) {
+    return { ...listItem, questions: [], results: [] };
+  }
+  return { ...detail, slug: listItem.slug };
+}
+
+/** Старые ссылки /tests/1 и новые /tests/{slug}. */
+export function getTestByIdOrSlug(param) {
+  const raw = String(param ?? "").trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return getTestById(Number(raw));
+  return getTestBySlug(raw);
 }

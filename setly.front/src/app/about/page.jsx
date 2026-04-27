@@ -1,13 +1,12 @@
 import AboutPageClient from "./about-page-client";
+import { shareMetadataBundle } from "@/app/lib/og-helpers";
 
-export const metadata = {
-  title: "О проекте Setly",
+export const metadata = shareMetadataBundle({
+  segmentTitle: "О проекте Setly",
   description:
     "Узнайте больше о нашей команде, философии проекта и людях, которые делают ваши путешествия лучше.",
-  alternates: {
-    canonical: "https://setly.space/about",
-  },
-};
+  path: "/about",
+});
 
 export default function AboutPage() {
   return <AboutPageClient />;

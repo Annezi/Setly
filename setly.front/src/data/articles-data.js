@@ -8,12 +8,12 @@
 /** image2/image2Caption можно не задавать — второй блок с картинкой не выведется */
 
 export const ARTICLES_LIST = [
-  { id: 1, imageSrc: '/img/main/suit-case-2.png', imageAlt: 'Чемодан', title: 'Как собраться в поездку за 15 минут', description: 'Не обязательно брать все подряд, чтобы быть готовым ко всему', readTime: '8 минут' },
-  { id: 2, imageSrc: '/img/main/question-sign.png', imageAlt: 'Вопрос', title: 'Почему вы всё ещё забываете вещи', description: 'Разбираемся, как перестать это делать и систематизировать свой опыт', readTime: '5 минут' },
-  { id: 3, imageSrc: '/img/main/med-kit.png', imageAlt: 'Аптечка', title: 'Собираем универсальную дорожную аптечку', description: 'Собираем базовый минимум, чтобы исключить рискованный максимум', readTime: '5 минут' },
-  { id: 4, imageSrc: '/img/main/post4.webp', imageAlt: 'Подготовка к поездке', title: 'Если вы не любите планировать', description: 'Покажем, как создать чек-план за 3 минуты, не обязательно заполнять с нуля', readTime: '5 минут' },
-  { id: 5, imageSrc: '/img/main/post5.webp', imageAlt: 'Распечатанные документы', title: 'Зачем брать распечатанные документы', description: 'Даже если есть копии на почте. Покажем, как компактно хранить', readTime: '5 минут' },
-  { id: 6, imageSrc: '/img/main/post6.webp', imageAlt: '5 универсальных вещей', title: '5 универсальных вещей для каждой поездки', description: 'Они спасли многих в 90% поездок — от Тбилиси до Токио', readTime: '5 минут' },
+  { id: 1, slug: 'kak-sobratsya-v-poezdku-za-15-minut', imageSrc: '/img/main/suit-case-2.png', imageAlt: 'Чемодан', title: 'Как собраться в поездку за 15 минут', description: 'Не обязательно брать все подряд, чтобы быть готовым ко всему', readTime: '8 минут' },
+  { id: 2, slug: 'pochemu-vy-vsyo-eshchyo-zabyvaete-veschi', imageSrc: '/img/main/question-sign.png', imageAlt: 'Вопрос', title: 'Почему вы всё ещё забываете вещи', description: 'Разбираемся, как перестать это делать и систематизировать свой опыт', readTime: '5 минут' },
+  { id: 3, slug: 'sobiraem-universalnuyu-dorozhnuyu-aptechku', imageSrc: '/img/main/med-kit.png', imageAlt: 'Аптечка', title: 'Собираем универсальную дорожную аптечку', description: 'Собираем базовый минимум, чтобы исключить рискованный максимум', readTime: '5 минут' },
+  { id: 4, slug: 'esli-vy-ne-lyubite-planirovat', imageSrc: '/img/main/post4.webp', imageAlt: 'Подготовка к поездке', title: 'Если вы не любите планировать', description: 'Покажем, как создать чек-план за 3 минуты, не обязательно заполнять с нуля', readTime: '5 минут' },
+  { id: 5, slug: 'zachem-brat-raspechatannye-dokumenty', imageSrc: '/img/main/post5.webp', imageAlt: 'Распечатанные документы', title: 'Зачем брать распечатанные документы', description: 'Даже если есть копии на почте. Покажем, как компактно хранить', readTime: '5 минут' },
+  { id: 6, slug: '5-universalnykh-veschey-dlya-kazhdoy-poezdki', imageSrc: '/img/main/post6.webp', imageAlt: '5 универсальных вещей', title: '5 универсальных вещей для каждой поездки', description: 'Они спасли многих в 90% поездок — от Тбилиси до Токио', readTime: '5 минут' },
 ];
 
 const ARTICLES_FULL = {
@@ -178,6 +178,34 @@ export function getArticleById(id) {
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId < 1) return null;
   return ARTICLES_FULL[numId] || null;
+}
+
+/**
+ * ЧПУ статьи; при коллизии заголовков в данных задаётся уникальный slug (+ суффикс вручную).
+ */
+export function getArticleBySlug(slug) {
+  const s = String(slug ?? "").trim();
+  if (!s) return null;
+  const row = ARTICLES_LIST.find((a) => a.slug === s);
+  if (!row) return null;
+  return ARTICLES_FULL[row.id] || null;
+}
+
+/** Поддержка старых ссылок /articles/1 и новых /articles/{slug}. */
+export function getArticleByIdOrSlug(param) {
+  const raw = String(param ?? "").trim();
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) {
+    return getArticleById(raw);
+  }
+  return getArticleBySlug(raw);
+}
+
+export function getArticleCanonicalSlug(articleId) {
+  const numId = Number(articleId);
+  if (!Number.isInteger(numId) || numId < 1) return null;
+  const row = ARTICLES_LIST.find((a) => a.id === numId);
+  return row?.slug ?? null;
 }
 
 export function getArticleIds() {

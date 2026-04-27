@@ -13,7 +13,7 @@ import ScrollReveal from '@/app/components/globals/scroll-reveal/scroll-reveal';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import { getAuth } from '@/app/lib/auth-storage';
-import { getArticleById } from '@/data/articles-data';
+import { getArticleByIdOrSlug } from '@/data/articles-data';
 import { applyTypograf } from '@/app/lib/typograf';
 import styles from './article.module.css';
 
@@ -38,7 +38,7 @@ export default function Article({ articleId }) {
   const pathname = usePathname();
   const [showCopyLinkToast, setShowCopyLinkToast] = useState(false);
 
-  const article = getArticleById(articleId);
+  const article = getArticleByIdOrSlug(articleId);
 
   const handleCopyLink = useCallback(() => {
     const url =

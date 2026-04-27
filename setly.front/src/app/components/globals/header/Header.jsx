@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { id: 'about', label: 'О нас', href: '/about' },
 ];
 
-const isAccountPage = (path) => path === '/account';
+const isAccountPage = (path) => path === '/account' || /^\/u\/[^/]+$/.test(path);
 
 export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigation = false }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

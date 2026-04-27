@@ -1,6 +1,7 @@
 """Роуты каталога чек-планов (страница /check-plans)."""
 
 import copy as copy_module
+import re
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Annotated
@@ -27,6 +28,64 @@ import uuid
 from auth import get_current_user
 
 router = APIRouter(prefix="/check-plans", tags=["check-plans"])
+
+_RE_UUID32_HEX = re.compile(r"^[a-fA-F0-9]{32}$")
+
+
+async def _find_check_plan_and_author(
+    session: AsyncSession,
+    ref: str,
+) -> tuple[CheckPlan, User] | None:
+    """
+    Находит план по:
+    1) полному id_str;
+    2) только UUID32 (суффикс старых коротких ссылок);
+    3) «slug»-число — число — первичный ключ CheckPlan.id (как /u/nick-user_id);
+    4) строка из одних цифр — тот же PK.
+    """
+    key = (ref or "").strip()
+    if not key:
+        return None
+
+    base = (
+        select(CheckPlan, User)
+        .join(User, CheckPlan.author_id == User.id)
+    )
+
+    result = await session.execute(base.where(CheckPlan.id_str == key))
+    row = result.first()
+    if row is not None:
+        return row[0], row[1]
+
+    token = key.lower()
+    if _RE_UUID32_HEX.match(token):
+        result = await session.execute(
+            base.where(CheckPlan.id_str.endswith("-" + token))
+        )
+        row = result.first()
+        if row is not None:
+            return row[0], row[1]
+
+    # slug-{plan_pk} или только PK
+    m_slug_id = re.match(r"^(.+)-(\d+)$", key)
+    if m_slug_id:
+        pid = int(m_slug_id.group(2))
+        if pid > 0:
+            result = await session.execute(base.where(CheckPlan.id == pid))
+            row = result.first()
+            if row is not None:
+                return row[0], row[1]
+
+    if key.isdigit():
+        pid = int(key)
+        if pid > 0:
+            result = await session.execute(base.where(CheckPlan.id == pid))
+            row = result.first()
+            if row is not None:
+                return row[0], row[1]
+
+    return None
+
 
 # Порядок и тексты блоков по категориям (filter_tag)
 BLOCK_ORDER = [
@@ -74,6 +133,7 @@ def _plan_to_card(
         image_src = f"/storage/{image_src}"
     return CheckPlanCard(
         id=plan.id_str,
+        planDbId=plan.id if plan.id is not None else 0,
         imageSrc=image_src,
         imageAlt=plan.image_alt or plan.title,
         days=plan.days,
@@ -194,21 +254,16 @@ async def get_check_plan(
     id_str: str,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Один чек-план по id_str. Количество лайков считается по таблице UserLikes (как в списке планов)."""
-    result = await session.execute(
-        select(CheckPlan, User)
-        .join(User, CheckPlan.author_id == User.id)
-        .where(CheckPlan.id_str == id_str)
-    )
-    row = result.first()
-    if row is None:
+    """Один чек-план по id_str (или только по uuid-суффиксу id_str для коротких URL). Лайки — через UserLikes."""
+    pair = await _find_check_plan_and_author(session, id_str)
+    if pair is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",
         )
-    plan, author = row
+    plan, author = pair
     likes_result = await session.execute(
-        select(func.count()).select_from(UserLikes).where(UserLikes.checklist_id == id_str)
+        select(func.count()).select_from(UserLikes).where(UserLikes.checklist_id == plan.id_str)
     )
     likes_count = likes_result.scalar() or 0
     base = _plan_to_response(plan, author=author)

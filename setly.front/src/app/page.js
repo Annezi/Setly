@@ -3,16 +3,15 @@ import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import WelcomeScreen from "@/app/components/blocks/main/welcome-screen/welcome-screen";
 import ScrollReveal from "@/app/components/globals/scroll-reveal/scroll-reveal";
+import { shareMetadataBundle } from "@/app/lib/og-helpers";
 
-
-export const metadata = {
-title: "Setly - чекпланы для планирования путешествий",
-	description:
-"Мы разработали чек-планы, которые позволяют быстро спланировать путешествие и сосредоточиться на том, что действительно важно. Скажи «пока» тревоге при планировании путешествий.",
-	alternates: {
-	canonical: "https://setly.space",
-  },
-};
+export const metadata = shareMetadataBundle({
+  fullTitle: true,
+  segmentTitle: "Setly - чекпланы для планирования путешествий",
+  description:
+    "Мы разработали чек-планы, которые позволяют быстро спланировать путешествие и сосредоточиться на том, что действительно важно. Скажи «пока» тревоге при планировании путешествий.",
+  path: "/",
+});
 
 const ThreeSteps = dynamic(
 	() => import("@/app/components/blocks/main/three-steps/three-steps"),

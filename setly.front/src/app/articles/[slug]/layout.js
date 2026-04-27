@@ -1,4 +1,5 @@
 import {
+  absoluteDocumentTitle,
   getArticleOgImagePaths,
   getSiteOrigin,
   ogImageDescriptors,
@@ -6,14 +7,22 @@ import {
   absoluteUrl,
   snippetPixelsIfUrlMatches,
 } from "@/app/lib/og-helpers";
-import { getArticleById } from "@/data/articles-data";
+import {
+  getArticleByIdOrSlug,
+  getArticleCanonicalSlug,
+} from "@/data/articles-data";
 
 export async function generateMetadata({ params }) {
   const p = await params;
-  const id = p?.id != null ? String(p.id) : "";
-  const article = getArticleById(id);
+  const slugParam = p?.slug != null ? String(p.slug) : "";
+  const article = getArticleByIdOrSlug(slugParam);
   const origin = getSiteOrigin();
   const fallbackImg = snippetImagePath();
+
+  const canonicalSegment =
+    article && /^\d+$/.test(slugParam)
+      ? getArticleCanonicalSlug(Number(slugParam)) || slugParam
+      : slugParam;
 
   if (!article) {
     const nfUrl = `${origin}${fallbackImg}`;
@@ -22,21 +31,22 @@ export async function generateMetadata({ params }) {
       "Setly",
       snippetPixelsIfUrlMatches(nfUrl)
     );
+    const nfTitle = absoluteDocumentTitle("Статья не найдена");
     return {
-      title: "Статья не найдена",
+      title: { absolute: nfTitle },
       description: "Статья не найдена или удалена.",
       openGraph: {
         type: "website",
         locale: "ru_RU",
-        url: `${origin}/articles/${encodeURIComponent(id)}`,
+        url: `${origin}/articles/${encodeURIComponent(slugParam)}`,
         siteName: "Setly",
-        title: "Статья не найдена",
+        title: nfTitle,
         description: "Статья не найдена или удалена.",
         images: nfImages,
       },
       twitter: {
         card: "summary_large_image",
-        title: "Статья не найдена",
+        title: nfTitle,
         description: "Статья не найдена или удалена.",
         images: [nfUrl],
       },
@@ -60,10 +70,11 @@ export async function generateMetadata({ params }) {
     snippetPixelsIfUrlMatches(imageUrl)
   );
 
-  const canonicalPath = `/articles/${encodeURIComponent(id)}`;
+  const canonicalPath = `/articles/${encodeURIComponent(canonicalSegment)}`;
+  const docTitle = absoluteDocumentTitle(title);
 
   return {
-    title,
+    title: { absolute: docTitle },
     description,
     alternates: {
       canonical: `${origin}${canonicalPath}`,
@@ -73,13 +84,13 @@ export async function generateMetadata({ params }) {
       locale: "ru_RU",
       url: `${origin}${canonicalPath}`,
       siteName: "Setly",
-      title,
+      title: docTitle,
       description,
       images: articleOgImages,
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: docTitle,
       description,
       images: [imageUrl],
     },

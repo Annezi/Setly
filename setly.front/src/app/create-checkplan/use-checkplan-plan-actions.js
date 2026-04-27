@@ -4,11 +4,12 @@ import { useState, useCallback } from "react";
 import { apiFetch } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { useAnimatedClosing } from "./use-animated-closing";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 
 export function useCheckplanPlanActions({ planIdStr, fromAccount, router }) {
 	const [showDuplicateSuccessPopup, setShowDuplicateSuccessPopup] = useState(false);
 	const [duplicateSuccessClosing, setDuplicateSuccessClosing] = useState(false);
-	const [duplicatedPlanIdStr, setDuplicatedPlanIdStr] = useState(null);
+	const [duplicatedNavSegment, setDuplicatedNavSegment] = useState(null);
 	const [duplicateInProgress, setDuplicateInProgress] = useState(false);
 
 	const [showDeleteCheckplanPopup, setShowDeleteCheckplanPopup] = useState(false);
@@ -19,7 +20,7 @@ export function useCheckplanPlanActions({ planIdStr, fromAccount, router }) {
 		setDuplicateSuccessClosing,
 		useCallback(() => {
 			setShowDuplicateSuccessPopup(false);
-			setDuplicatedPlanIdStr(null);
+			setDuplicatedNavSegment(null);
 		}, [])
 	);
 
@@ -34,7 +35,13 @@ export function useCheckplanPlanActions({ planIdStr, fromAccount, router }) {
 			});
 			const data = res.ok ? await res.json().catch(() => null) : null;
 			if (data?.id_str) {
-				setDuplicatedPlanIdStr(data.id_str);
+				setDuplicatedNavSegment(
+					buildCheckplanPublicSegment({
+						id_str: data.id_str,
+						title: data?.title,
+						id: typeof data?.id === "number" ? data.id : undefined,
+					})
+				);
 				setShowDuplicateSuccessPopup(true);
 			}
 		} finally {
@@ -44,11 +51,11 @@ export function useCheckplanPlanActions({ planIdStr, fromAccount, router }) {
 
 	const handleDuplicateSuccessGoToCopy = useCallback(() => {
 		closeDuplicateSuccessPopup(() => {
-			if (duplicatedPlanIdStr) {
-				router.push(`/create-checkplan/${encodeURIComponent(duplicatedPlanIdStr)}`);
+			if (duplicatedNavSegment) {
+				router.push(`/create-checkplan/${encodeURIComponent(duplicatedNavSegment)}`);
 			}
 		});
-	}, [closeDuplicateSuccessPopup, duplicatedPlanIdStr, router]);
+	}, [closeDuplicateSuccessPopup, duplicatedNavSegment, router]);
 
 	const openDeleteCheckplanPopup = useCallback(() => setShowDeleteCheckplanPopup(true), []);
 

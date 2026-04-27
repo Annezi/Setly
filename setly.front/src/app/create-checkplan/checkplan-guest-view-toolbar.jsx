@@ -9,11 +9,12 @@ import { apiFetch } from "@/app/lib/api";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import { formatLikesCompact } from "./create-checkplan-utils";
 import { useMobileFloatingToolbar } from "./use-mobile-floating-toolbar";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 import { copyCheckplanLink } from "./copy-checkplan-link";
 import styles from "./create-checkplan.module.css";
 
 /** Тулбар для гостя (не владелец): «Использовать чек-план» / «Войти, чтобы использовать», лайк, ссылка, жалоба */
-export const GuestViewToolbar = memo(function GuestViewToolbar({ planIdStr, isAuthenticated, initialLikes = 0, onCopyLink }) {
+export const GuestViewToolbar = memo(function GuestViewToolbar({ planIdStr, planTitle, planDbId, isAuthenticated, initialLikes = 0, onCopyLink }) {
 	const router = useRouter();
 	const { isLiked, toggle, getLikeCount, setInitialLikeCounts } = useLikedChecklists();
 	const [alertMenuOpen, setAlertMenuOpen] = useState(false);
@@ -43,7 +44,12 @@ export const GuestViewToolbar = memo(function GuestViewToolbar({ planIdStr, isAu
 				.then((r) => (r.ok ? r.json() : null))
 				.then((data) => {
 					if (data?.id_str) {
-						router.push(`/create-checkplan/${encodeURIComponent(data.id_str)}`);
+						const seg = buildCheckplanPublicSegment({
+							id_str: data.id_str,
+							title: data?.title,
+							id: typeof data?.id === "number" ? data.id : undefined,
+						});
+						router.push(`/create-checkplan/${encodeURIComponent(seg)}`);
 					}
 				})
 				.finally(() => setUseLoading(false));
@@ -61,8 +67,11 @@ export const GuestViewToolbar = memo(function GuestViewToolbar({ planIdStr, isAu
 	}, [isAuthenticated, planIdStr, toggle]);
 
 	const handleCopyLink = useCallback(() => {
-		copyCheckplanLink(planIdStr, onCopyLink);
-	}, [planIdStr, onCopyLink]);
+		copyCheckplanLink(
+			{ id_str: planIdStr, title: planTitle, planDbId, id: planDbId },
+			onCopyLink
+		);
+	}, [planIdStr, planTitle, planDbId, onCopyLink]);
 
 	const updateAlertPosition = useCallback(() => {
 		const triggerEl = alertTriggerRef.current;

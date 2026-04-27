@@ -2,15 +2,14 @@ import Link from "next/link";
 import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import styles from "@/app/legal/legal.module.css";
+import { shareMetadataBundle } from "@/app/lib/og-helpers";
 
-export const metadata = {
-  title: "Политика конфиденциальности",
+export const metadata = shareMetadataBundle({
+  segmentTitle: "Политика конфиденциальности",
   description:
     "Политика конфиденциальности сервиса Setly: какие данные мы собираем, как используем и как защищаем персональные данные пользователей.",
-  alternates: {
-    canonical: "https://setly.space/privacy",
-  },
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

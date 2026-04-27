@@ -2,15 +2,14 @@ import Link from "next/link";
 import { Header } from "@/app/components/globals/header/Header";
 import { Footer } from "@/app/components/globals/footer/Footer";
 import styles from "@/app/legal/legal.module.css";
+import { shareMetadataBundle } from "@/app/lib/og-helpers";
 
-export const metadata = {
-  title: "Пользовательское соглашение",
+export const metadata = shareMetadataBundle({
+  segmentTitle: "Пользовательское соглашение",
   description:
     "Пользовательское соглашение сервиса Setly: условия использования сервиса, права и обязанности сторон.",
-  alternates: {
-    canonical: "https://setly.space/terms",
-  },
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

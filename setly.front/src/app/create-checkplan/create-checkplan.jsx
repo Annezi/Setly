@@ -32,6 +32,7 @@ import {
 	emptyCount,
 	canAddItem,
 } from "./create-checkplan-utils";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 import { LocationDropdownContent } from "./location-dropdown-content";
 import { ChecklistSection } from "./checkplan-checklist-section";
 import { TripImageSection } from "./checkplan-trip-image-section";
@@ -499,7 +500,12 @@ export default function CreateCheckplan({
 				const msg = dataResJson?.detail || dataResJson?.message || "Не удалось сохранить данные чек-плана";
 				throw new Error(Array.isArray(msg) ? msg[0]?.msg : msg);
 			}
-			router.push(`/preview-checkplan/${encodeURIComponent(planIdStr)}${fromAccount ? "?from=account" : ""}`);
+			const pub = buildCheckplanPublicSegment({
+				id_str: planIdStr,
+				title: planTitle,
+				id: typeof data?.id === "number" ? data.id : initialPlan?.id,
+			});
+			router.push(`/preview-checkplan/${encodeURIComponent(pub)}${fromAccount ? "?from=account" : ""}`);
 		} catch (err) {
 			setSaveError(err.message || "Ошибка сохранения");
 		} finally {
@@ -1073,6 +1079,8 @@ export default function CreateCheckplan({
 			{readOnly && planIdStr && isOwner && (
 				<ViewModeToolbar
 					planIdStr={planIdStr}
+					planTitle={planTitle}
+					planDbId={typeof initialPlan?.id === "number" ? initialPlan.id : undefined}
 					fromAccount={fromAccount}
 					visibility={currentVisibility}
 					onVisibilityChange={setVisibilityOverride}
@@ -1085,6 +1093,8 @@ export default function CreateCheckplan({
 			{readOnly && planIdStr && !isOwner && (
 				<GuestViewToolbar
 					planIdStr={planIdStr}
+					planTitle={planTitle}
+					planDbId={typeof initialPlan?.id === "number" ? initialPlan.id : undefined}
 					isAuthenticated={!!getAuth()?.user?.id}
 					initialLikes={Number(initialPlan?.initial_likes) || 0}
 					onCopyLink={() => setShowCopyLinkToast(true)}

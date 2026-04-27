@@ -127,13 +127,15 @@ export default function TestRunner({ test }) {
 
   const handleShareTest = useCallback(() => {
     const url =
-      typeof window !== "undefined" ? `${window.location.origin}/tests/${test.id}` : "";
+      typeof window !== "undefined"
+        ? `${window.location.origin}/tests/${encodeURIComponent(test.slug ?? test.id)}`
+        : "";
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url).then(() => setShowCopyLinkToast(true));
       return;
     }
     setShowCopyLinkToast(true);
-  }, [test.id]);
+  }, [test.id, test.slug]);
 
   return (
     <main className={styles.main}>

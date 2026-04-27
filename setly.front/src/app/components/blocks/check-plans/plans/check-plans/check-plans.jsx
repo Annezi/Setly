@@ -7,6 +7,7 @@ import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-rou
 import { applyTypograf } from "@/app/lib/typograf";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import styles from "./check-plans.module.css";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 
 const SLIDER_BREAKPOINT = 1024;
 const SLIDER_MAX_WIDTH = 950; /* совпадает с CSS: слайдер виден при max-width: 950px */
@@ -21,11 +22,28 @@ function formatLikes(n) {
   return String(n);
 }
 
-export function PlanCard({ id: cardId, imageSrc, imageAlt, days, location, title, description, userName, avatarSrc = DEFAULT_AVATAR, initialLikes = 0, filterTag, isAuthenticated, onRequestLogin }) {
+export function PlanCard({
+  id: cardId,
+  planDbId,
+  imageSrc,
+  imageAlt,
+  days,
+  location,
+  title,
+  description,
+  userName,
+  avatarSrc = DEFAULT_AVATAR,
+  initialLikes = 0,
+  filterTag,
+  isAuthenticated,
+  onRequestLogin,
+}) {
   const { isLiked, toggle, getLikeCount } = useLikedChecklists();
   const liked = isLiked(cardId);
   const likes = getLikeCount(cardId);
-  const previewHref = `/preview-checkplan/${encodeURIComponent(String(cardId))}`;
+  const previewHref = `/preview-checkplan/${encodeURIComponent(
+    buildCheckplanPublicSegment({ title, planDbId, id_str: String(cardId) })
+  )}`;
 
   const handleLikeClick = (e) => {
     e.preventDefault();

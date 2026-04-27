@@ -4,6 +4,7 @@ import ScrollToTop from "./components/globals/ScrollToTop";
 import RoutePrefetcher from "./components/globals/RoutePrefetcher";
 import { LikedChecklistsProvider } from "./lib/liked-checklists-context";
 import {
+  BRAND_TITLE_SUFFIX,
   SNIPPET_IMAGE_PIXELS,
   ogImageDescriptors,
 } from "@/app/lib/og-helpers";
@@ -62,7 +63,7 @@ const websiteJsonLd = {
 export const metadata = {
   title: {
     default: siteTitle,
-    template: "%s | Setly",
+    template: `%s${BRAND_TITLE_SUFFIX}`,
   },
   metadataBase: new URL(siteUrl),
   description: siteDescription,

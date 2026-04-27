@@ -12,6 +12,7 @@ import Input from "@/app/components/atomic/molecules/input/input";
 import styles from "./creating.module.css";
 import { getAuth } from "@/app/lib/auth-storage";
 import { getApiUrl } from "@/app/lib/api";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 
 const STEPS = [1, 2, 3, 4];
 
@@ -169,7 +170,12 @@ export default function Creating() {
       }
       const idStr = data?.id_str;
       if (idStr) {
-        router.push(`/create-checkplan/${encodeURIComponent(idStr)}?onboarding=1`);
+        const seg = buildCheckplanPublicSegment({
+          id_str: idStr,
+          title: data?.title,
+          id: typeof data?.id === "number" ? data.id : undefined,
+        });
+        router.push(`/create-checkplan/${encodeURIComponent(seg)}?onboarding=1`);
       } else {
         throw new Error("Сервер не вернул id плана");
       }

@@ -20,6 +20,7 @@ import styles from "./our-experience.module.css";
 
 const EXPERIENCE_CARDS = ARTICLES_LIST.map((article) => ({
     id: article.id,
+    slug: article.slug,
     imageSrc: article.imageSrc,
     imageAlt: article.imageAlt,
     title: article.title,
@@ -36,10 +37,10 @@ const totalPositions = EXPERIENCE_CARDS.length + 1;
 const SWIPE_MIN_PX = 50;
 const MOBILE_BREAKPOINT = 2561;
 
-function ExperienceCard({ id, imageSrc, imageAlt, title, description, readTime }) {
+function ExperienceCard({ id, slug, imageSrc, imageAlt, title, description, readTime }) {
     return (
         <Link
-            href={`/articles/${id}`}
+            href={`/articles/${encodeURIComponent(slug || String(id))}`}
             className={styles.cardLink}
             aria-label={`Читать: ${title}`}
         >

@@ -1,7 +1,6 @@
 import AccountPageClient from "./account-page-client.jsx";
 import {
-  absoluteUrl,
-  fetchUserOgPreview,
+  generateProfileShareMetadata,
   getSiteOrigin,
   ogImageDescriptors,
   snippetImagePath,
@@ -17,10 +16,6 @@ export async function generateMetadata({ searchParams }) {
   const snippetRel = snippetImagePath();
   const snippetAbs = `${origin}${snippetRel}`;
   const baseAccountUrl = `${origin}/account`;
-  const accountUrl =
-    uid != null && String(uid).trim() !== ""
-      ? `${baseAccountUrl}?uid=${encodeURIComponent(String(uid).trim())}`
-      : baseAccountUrl;
 
   const fallbackTitle = "Личный кабинет";
   const fallbackDesc =
@@ -32,69 +27,31 @@ export async function generateMetadata({ searchParams }) {
   );
 
   if (uid != null && String(uid).trim() !== "") {
-    const preview = await fetchUserOgPreview(uid);
-    if (!preview) {
-      return {
-        title: fallbackTitle,
-        description: fallbackDesc,
-        alternates: { canonical: accountUrl },
-        openGraph: {
-          type: "website",
-          locale: "ru_RU",
-          url: accountUrl,
-          siteName: "Setly",
-          title: fallbackTitle,
-          description: fallbackDesc,
-          images: snippetOg,
-        },
-        twitter: {
-          card: "summary_large_image",
-          title: fallbackTitle,
-          description: fallbackDesc,
-          images: [snippetAbs],
-        },
-      };
-    }
-    const nickname = preview?.nickname?.trim() || "Пользователь";
-    const title = `Профиль пользователя ${nickname} в сервисе Setly`;
-    const rawPhoto =
-      typeof preview?.profile_photo_url === "string"
-        ? preview.profile_photo_url.trim()
-        : "";
-    const imageUrl =
-      rawPhoto !== "" ? absoluteUrl(rawPhoto) : snippetAbs;
-    const profileOg = ogImageDescriptors(
-      imageUrl,
-      nickname,
-      snippetPixelsIfUrlMatches(imageUrl)
-    );
-
-    return {
-      title,
+    const meta = await generateProfileShareMetadata(String(uid).trim());
+    return meta ?? {
+      title: { absolute: fallbackTitle },
       description: fallbackDesc,
-      alternates: {
-        canonical: accountUrl,
-      },
+      alternates: { canonical: baseAccountUrl },
       openGraph: {
         type: "website",
         locale: "ru_RU",
-        url: accountUrl,
+        url: baseAccountUrl,
         siteName: "Setly",
-        title,
+        title: fallbackTitle,
         description: fallbackDesc,
-        images: profileOg,
+        images: snippetOg,
       },
       twitter: {
         card: "summary_large_image",
-        title,
+        title: fallbackTitle,
         description: fallbackDesc,
-        images: [imageUrl],
+        images: [snippetAbs],
       },
     };
   }
 
   return {
-    title: fallbackTitle,
+    title: { absolute: fallbackTitle },
     description: fallbackDesc,
     alternates: {
       canonical: baseAccountUrl,

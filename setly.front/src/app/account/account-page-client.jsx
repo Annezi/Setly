@@ -7,6 +7,7 @@ import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
 import { getAuth, updateAuthUser, clearAuth } from '@/app/lib/auth-storage';
 import { apiFetch } from '@/app/lib/api';
+import { buildProfilePublicPath } from '@/app/lib/slug';
 
 const API_PREFIX = '/api/user';
 const PersonalHeader = dynamic(
@@ -60,16 +61,19 @@ export default function AccountPageClient() {
     return () => cancelAnimationFrame(rafId);
   }, [router]);
 
-  /** В адрес добавляем uid для корректного OG-превью при копировании ссылки (краулеры без cookie). */
+  /** Канонический адрес профиля: /u/{slug}-{id} (ник в транслите + числовой id без двусмысленности). */
   useEffect(() => {
     if (!user?.id || typeof window === 'undefined') return;
     try {
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('uid') === String(user.id)) return;
-      url.searchParams.set('uid', String(user.id));
-      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      const canonicalPath = buildProfilePublicPath(user.id, user?.nickname);
+      const u = new URL(window.location.href);
+      u.searchParams.delete('uid');
+      u.searchParams.delete('user');
+      const next = `${canonicalPath}${u.search}${u.hash}`;
+      const cur = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (next !== cur) window.history.replaceState({}, '', next);
     } catch (_) {}
-  }, [user?.id]);
+  }, [user?.id, user?.nickname]);
 
   if (!authChecked) return null;
 

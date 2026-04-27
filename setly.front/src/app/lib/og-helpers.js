@@ -12,8 +12,73 @@
  *   прямой запрос к API (например http://setly-api:8000 в Docker); на клиенте не используется.
  */
 
+import {
+  buildCheckplanPublicSegment,
+  buildProfilePublicPath,
+  parseCheckplanUrlSegment,
+} from "@/app/lib/slug";
+
 const DEFAULT_SITE = "https://setly.space";
 const DEFAULT_PUBLIC_API = "https://api.setly.space";
+
+/** Должен совпадать с `title.template` в `app/layout.js`. */
+export const BRAND_TITLE_SUFFIX = " | Setly";
+
+/** Полный текст вкладки и рекомендуемый `og:title` для ВК / Telegram (как в `<title>`). */
+export function absoluteDocumentTitle(segmentTitle) {
+  const t = String(segmentTitle ?? "").trim();
+  if (!t) return `Setly${BRAND_TITLE_SUFFIX}`;
+  if (t.endsWith(BRAND_TITLE_SUFFIX)) return t;
+  return `${t}${BRAND_TITLE_SUFFIX}`;
+}
+
+/**
+ * OG + Twitter для статичных страниц (ВК часто берёт `og:title`; без него остаётся заголовок сайта).
+ * @param {{ segmentTitle: string; description: string; path: string; fullTitle?: boolean }} p path вида `/about`. Если `fullTitle: true`, `segmentTitle` уже полный текст вкладки (главная без суффикса « | Setly»).
+ */
+export function shareMetadataBundle({ segmentTitle, description, path, fullTitle = false }) {
+  const origin = getSiteOrigin();
+  const norm = path.startsWith("/") ? path : `/${path}`;
+  const url = `${origin}${norm === "/" ? "" : norm}` || origin;
+  const docTitle = fullTitle
+    ? String(segmentTitle ?? "").trim()
+    : absoluteDocumentTitle(segmentTitle);
+  const snippetAbs = `${origin}${snippetImagePath()}`;
+  const images = ogImageDescriptors(
+    snippetAbs,
+    segmentTitle,
+    snippetPixelsIfUrlMatches(snippetAbs)
+  );
+  return {
+    title: { absolute: docTitle },
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      locale: "ru_RU",
+      url,
+      siteName: "Setly",
+      title: docTitle,
+      description,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: docTitle,
+      description,
+      images: [snippetAbs],
+    },
+  };
+}
+
+const METADATA_FETCH_MS = 6000;
+
+function fetchWithMetadataTimeout(url, init = {}) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), METADATA_FETCH_MS);
+  const nextInit = { ...init, signal: controller.signal };
+  return fetch(url, nextInit).finally(() => clearTimeout(tid));
+}
 
 function trimUrl(s) {
   if (typeof s !== "string") return "";
@@ -147,17 +212,22 @@ export function absoluteCheckplanImage(imageSrc) {
 }
 
 /**
- * @param {string | undefined} idStr
- * @returns {Promise<{ title: string; description?: string; image: string } | null>}
+ * @param {string | undefined} urlSegment Сегмент из URL (slug-uuid или legacy id_str).
+ * @returns {Promise<{ title: string; description?: string; image: string; canonicalSegment: string } | null>}
  */
-export async function fetchCheckplanOg(idStr) {
-  if (!idStr || typeof idStr !== "string") return null;
+export async function fetchCheckplanOg(urlSegment) {
+  if (!urlSegment || typeof urlSegment !== "string") return null;
+  const apiKey = parseCheckplanUrlSegment(urlSegment);
+  if (!apiKey) return null;
   const api = getMetadataFetchApiUrl();
   try {
-    const res = await fetch(`${api}/api/check-plans/${encodeURIComponent(idStr)}`, {
-      next: { revalidate: 120 },
-      headers: { Accept: "application/json" },
-    });
+    const res = await fetchWithMetadataTimeout(
+      `${api}/api/check-plans/${encodeURIComponent(apiKey)}`,
+      {
+        next: { revalidate: 120 },
+        headers: { Accept: "application/json" },
+      }
+    );
     if (!res.ok) return null;
     const plan = await res.json();
     const title = typeof plan.title === "string" ? plan.title.trim() : "";
@@ -170,10 +240,95 @@ export async function fetchCheckplanOg(idStr) {
       title: title || "Чек-план",
       description,
       image,
+      canonicalSegment: buildCheckplanPublicSegment(plan),
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * Метаданные для публичного URL профиля /u/{slug}-{id} (OG / canonical).
+ */
+export async function generateProfileShareMetadata(userIdRaw) {
+  const n = Number(userIdRaw);
+  if (!Number.isInteger(n) || n < 1) return null;
+
+  const origin = getSiteOrigin();
+  const snippetRel = snippetImagePath();
+  const snippetAbs = `${origin}${snippetRel}`;
+  const fallbackTitle = "Личный кабинет";
+  const fallbackDesc =
+    "Ваш профиль и чек-планы в Setly — планирование путешествий без лишней суеты.";
+  const snippetOg = ogImageDescriptors(
+    snippetAbs,
+    "Setly",
+    snippetPixelsIfUrlMatches(snippetAbs)
+  );
+
+  const preview = await fetchUserOgPreview(n);
+  const nicknameForPath = preview?.nickname?.trim() || "user";
+  const canonicalPath = buildProfilePublicPath(n, nicknameForPath);
+  const pageUrl = `${origin}${canonicalPath}`;
+
+  if (!preview) {
+    return {
+      title: { absolute: fallbackTitle },
+      description: fallbackDesc,
+      alternates: { canonical: pageUrl },
+      openGraph: {
+        type: "website",
+        locale: "ru_RU",
+        url: pageUrl,
+        siteName: "Setly",
+        title: fallbackTitle,
+        description: fallbackDesc,
+        images: snippetOg,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: fallbackTitle,
+        description: fallbackDesc,
+        images: [snippetAbs],
+      },
+    };
+  }
+
+  const nickname = preview?.nickname?.trim() || "Пользователь";
+  const title = `Профиль пользователя ${nickname} на сервисе Setly`;
+  const rawPhoto =
+    typeof preview?.profile_photo_url === "string"
+      ? preview.profile_photo_url.trim()
+      : "";
+  const imageUrl = rawPhoto !== "" ? absoluteUrl(rawPhoto) : snippetAbs;
+  const profileOg = ogImageDescriptors(
+    imageUrl,
+    nickname,
+    snippetPixelsIfUrlMatches(imageUrl)
+  );
+
+  return {
+    title: { absolute: title },
+    description: fallbackDesc,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      type: "website",
+      locale: "ru_RU",
+      url: pageUrl,
+      siteName: "Setly",
+      title,
+      description: fallbackDesc,
+      images: profileOg,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: fallbackDesc,
+      images: [imageUrl],
+    },
+  };
 }
 
 /**
@@ -185,10 +340,13 @@ export async function fetchUserOgPreview(uid) {
   if (!Number.isInteger(n) || n < 1) return null;
   const api = getMetadataFetchApiUrl();
   try {
-    const res = await fetch(`${api}/api/user/public-profile/${n}`, {
-      next: { revalidate: 120 },
-      headers: { Accept: "application/json" },
-    });
+    const res = await fetchWithMetadataTimeout(
+      `${api}/api/user/public-profile/${n}`,
+      {
+        next: { revalidate: 120 },
+        headers: { Accept: "application/json" },
+      }
+    );
     if (!res.ok) return null;
     return await res.json();
   } catch {

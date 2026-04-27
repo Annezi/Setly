@@ -70,6 +70,7 @@ class CheckPlanResponse(BaseModel):
 class CheckPlanCard(BaseModel):
     """Карточка чек-плана для фронта: id, обложка, дни, локация, автор, теги."""
     id: str
+    planDbId: int
     imageSrc: str
     imageAlt: str
     days: str

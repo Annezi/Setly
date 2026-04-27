@@ -1,4 +1,5 @@
 import {
+  absoluteDocumentTitle,
   fetchCheckplanOg,
   getSiteOrigin,
   ogImageDescriptors,
@@ -8,12 +9,13 @@ import {
 
 export async function generateMetadata({ params }) {
   const p = await params;
-  const rawId = p?.id != null ? decodeURIComponent(String(p.id)) : "";
+  const rawId = p?.ref != null ? decodeURIComponent(String(p.ref)) : "";
   const origin = getSiteOrigin();
   const fallbackImg = snippetImagePath();
-  const canonicalPath = `/create-checkplan/${encodeURIComponent(rawId)}`;
 
   const og = await fetchCheckplanOg(rawId);
+  const canonicalSeg = og?.canonicalSegment ?? rawId;
+  const canonicalPath = `/create-checkplan/${encodeURIComponent(canonicalSeg)}`;
   const title = og?.title ?? "Чек-план";
   const description =
     og?.description ??
@@ -24,9 +26,10 @@ export async function generateMetadata({ params }) {
     title,
     snippetPixelsIfUrlMatches(imageUrl)
   );
+  const docTitle = absoluteDocumentTitle(title);
 
   return {
-    title,
+    title: { absolute: docTitle },
     description,
     alternates: {
       canonical: `${origin}${canonicalPath}`,
@@ -36,13 +39,13 @@ export async function generateMetadata({ params }) {
       locale: "ru_RU",
       url: `${origin}${canonicalPath}`,
       siteName: "Setly",
-      title,
+      title: docTitle,
       description,
       images: ogImages,
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: docTitle,
       description,
       images: [imageUrl],
     },

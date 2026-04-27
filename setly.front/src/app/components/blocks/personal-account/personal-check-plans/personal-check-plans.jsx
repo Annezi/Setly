@@ -13,6 +13,7 @@ import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { normalizeMediaUrl, resolveStorageMediaUrl } from "@/app/lib/checkplan-media";
 import { CHECK_PLANS_SORT_ITEMS, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
 import styles from "./personal-check-plans.module.css";
 
@@ -21,11 +22,19 @@ const API_PREFIX = "/api/user";
 /** Преобразует ответ GET /api/check-plans/{id_str} в формат карточки для PersonalPlanCard */
 function planResponseToCard(apiPlan) {
   if (!apiPlan) return null;
-  const id = apiPlan.id_str || apiPlan.id;
+  const idStr =
+    typeof apiPlan.id_str === "string" && apiPlan.id_str.trim() !== ""
+      ? apiPlan.id_str
+      : "";
+  const planDbId =
+    typeof apiPlan.id === "number" && Number.isInteger(apiPlan.id) && apiPlan.id > 0
+      ? apiPlan.id
+      : null;
   const imageSrc = resolveStorageMediaUrl(apiPlan.image_src || apiPlan.imageSrc || "");
   const creationTime = apiPlan.creation_time ?? apiPlan.creationTime ?? null;
   return {
-    id: String(id),
+    id: idStr || String(apiPlan.id ?? ""),
+    planDbId,
     imageSrc: imageSrc || "/img/main/create-folio.png",
     imageAlt: normalizeMediaUrl(apiPlan.image_alt || apiPlan.imageAlt || "") || apiPlan.title || "",
     days: apiPlan.days || "",
@@ -59,7 +68,7 @@ function PersonalPlanCard({ plan }) {
   return (
     <>
       {/* Из личного кабинета открываем чек-план в режиме предпросмотра, не редактирования */}
-      <Link href={`/preview-checkplan/${encodeURIComponent(plan.id)}?from=account`} className={styles.cardLink} aria-label={`Открыть ${plan.title}`}>
+      <Link href={`/preview-checkplan/${encodeURIComponent(buildCheckplanPublicSegment({ title: plan.title, planDbId: plan.planDbId, id_str: plan.id }))}?from=account`} className={styles.cardLink} aria-label={`Открыть ${plan.title}`}>
     <article className={styles.card}>
       <div className={styles.tags}>
         <span className={styles.tag}>

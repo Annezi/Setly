@@ -22,7 +22,7 @@ function filterArticlesBySearch(articles, query) {
   });
 }
 
-function ArticleCard({ id, imageSrc, imageAlt, title, description, readTime }) {
+function ArticleCard({ id, slug, imageSrc, imageAlt, title, description, readTime }) {
   const card = (
     <>
       <div className={styles.tags}>
@@ -44,7 +44,7 @@ function ArticleCard({ id, imageSrc, imageAlt, title, description, readTime }) {
   );
 
   return (
-    <Link href={`/articles/${id}`} className={styles.cardLink} aria-label={`Читать: ${title}`}>
+    <Link href={`/articles/${encodeURIComponent(slug || String(id))}`} className={styles.cardLink} aria-label={`Читать: ${title}`}>
       <article className={styles.card}>{card}</article>
     </Link>
   );

@@ -8,12 +8,15 @@ import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import { getAuth } from "@/app/lib/auth-storage";
 import { apiFetch } from "@/app/lib/api";
 import { useMobileFloatingToolbar } from "./use-mobile-floating-toolbar";
+import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 import { copyCheckplanLink } from "./copy-checkplan-link";
 import styles from "./create-checkplan.module.css";
 
 /** Тулбар режима просмотра: кнопка «Редактировать чек-план», Share, More */
 export const ViewModeToolbar = memo(function ViewModeToolbar({
 	planIdStr,
+	planTitle,
+	planDbId,
 	fromAccount = false,
 	visibility = "private",
 	onVisibilityChange,
@@ -108,10 +111,10 @@ export const ViewModeToolbar = memo(function ViewModeToolbar({
 	}, [planIdStr, isPublic, onVisibilityChange]);
 
 	const handleCopyLink = useCallback(() => {
-		copyCheckplanLink(planIdStr, onCopyLink).finally(() => {
+		copyCheckplanLink({ id_str: planIdStr, title: planTitle, planDbId, id: planDbId }, onCopyLink).finally(() => {
 			setShareMenuOpen(false);
 		});
-	}, [planIdStr, onCopyLink]);
+	}, [planIdStr, planTitle, planDbId, onCopyLink]);
 
 	useEffect(() => {
 		if (!shareMenuOpen) return;
@@ -192,7 +195,7 @@ export const ViewModeToolbar = memo(function ViewModeToolbar({
 		<div className={`${styles.bottomBar} ${styles.bottomBarViewMode} ${isFloatingOnMobile ? styles.bottomBarMobileFloating : ""}`}>
 			<div ref={anchorRef} className={styles.bottomBarMobileAnchor} aria-hidden />
 			<div className={styles.viewModeToolbar} ref={toolbarRef}>
-				<Link href={`/create-checkplan/${encodeURIComponent(planIdStr)}${fromAccount ? "?from=account" : ""}`} className={styles.viewModeEditWrap} aria-label="Редактировать чек-план">
+				<Link href={`/create-checkplan/${encodeURIComponent(buildCheckplanPublicSegment({ id_str: planIdStr, title: planTitle, planDbId, id: planDbId }))}${fromAccount ? "?from=account" : ""}`} className={styles.viewModeEditWrap} aria-label="Редактировать чек-план">
 					<Button Text="Редактировать чек-план" color="blue" size="small" type="button" />
 				</Link>
 				<div className={styles.viewModeToolbarIcons}>
