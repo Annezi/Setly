@@ -6,7 +6,7 @@ import PublicImage from '@/app/components/globals/public-image';
 import ProfilePhoto from '@/app/components/atomic/atoms/profile-photo/profile-photo';
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import styles from './profile-info.module.css';
-import { getApiUrl } from '@/app/lib/api';
+import { apiFetch } from '@/app/lib/api';
 import ImageCropModal from '@/app/components/globals/image-crop-modal/image-crop-modal';
 
 /** Загрузка аватара через бэкенд POST /api/user/me/save-image/profile_photo, затем PATCH /api/user/me */
@@ -71,11 +71,9 @@ export default function ProfileInfo({
         const formData = new FormData();
         formData.append('file', file);
 
-        const base = getApiUrl();
-        const uploadUrl = base ? `${base}${UPLOAD_AVATAR_API}` : UPLOAD_AVATAR_API;
-        const res = await fetch(uploadUrl, {
+        const res = await apiFetch(UPLOAD_AVATAR_API, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token.trim()}` },
+          token: token.trim(),
           body: formData,
         });
         const data = await res.json().catch(() => ({}));
@@ -90,14 +88,10 @@ export default function ProfileInfo({
         if (url) {
           setLocalAvatarPath(url);
           onUserChange?.();
-          const patchUrl = base ? `${base}${UPDATE_ME_API}` : UPDATE_ME_API;
-          await fetch(patchUrl, {
+          await apiFetch(UPDATE_ME_API, {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token.trim()}`,
-            },
-            body: JSON.stringify({ profile_photo_url: url }),
+            token: token.trim(),
+            body: { profile_photo_url: url },
           });
         }
       } catch (err) {

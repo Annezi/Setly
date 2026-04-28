@@ -38,8 +38,9 @@ export async function apiFetch(path, opts = {}) {
   }
   const base = getApiUrl();
   const url = base ? `${base}${path.startsWith("/") ? path : `/${path}`}` : path;
+  const isFormDataBody = typeof FormData !== "undefined" && body instanceof FormData;
   const headers = {
-    "Content-Type": "application/json",
+    ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
     ...extraHeaders,
   };
   if (token && typeof token === "string") {
@@ -50,33 +51,41 @@ export async function apiFetch(path, opts = {}) {
     headers,
   };
   if (body !== undefined && body !== null) {
-    init.body = typeof body === "string" ? body : JSON.stringify(body);
+    if (isFormDataBody) {
+      init.body = body;
+    } else {
+      init.body = typeof body === "string" ? body : JSON.stringify(body);
+    }
   }
+
+  const tryDirectFetch = async () => {
+    if (
+      typeof window === "undefined" ||
+      base ||
+      !process.env.NEXT_PUBLIC_API_URL ||
+      !path.startsWith("/api/")
+    ) {
+      return null;
+    }
+    const directBase = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+    try {
+      return await fetch(`${directBase}${path}`, init);
+    } catch (_) {
+      return null;
+    }
+  };
+
   try {
     const res = await fetch(url, init);
     if (res.status < 500) return res;
     // Проксированный /api может отдавать 5xx при временных сетевых сбоях до внешнего API.
     // В браузере пробуем прямой URL API как аварийный фолбэк.
-    if (
-      typeof window !== "undefined" &&
-      !base &&
-      process.env.NEXT_PUBLIC_API_URL &&
-      path.startsWith("/api/")
-    ) {
-      const directBase = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-      return await fetch(`${directBase}${path}`, init);
-    }
+    const directRes = await tryDirectFetch();
+    if (directRes) return directRes;
     return res;
   } catch (err) {
-    if (
-      typeof window !== "undefined" &&
-      !base &&
-      process.env.NEXT_PUBLIC_API_URL &&
-      path.startsWith("/api/")
-    ) {
-      const directBase = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-      return await fetch(`${directBase}${path}`, init);
-    }
+    const directRes = await tryDirectFetch();
+    if (directRes) return directRes;
     throw err;
   }
 }

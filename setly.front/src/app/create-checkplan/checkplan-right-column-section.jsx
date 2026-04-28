@@ -13,6 +13,7 @@ import { TextBlockCard } from "./checkplan-text-block-card";
 import { UsefulContactsBlockCard } from "./useful-contacts-block-card";
 import { WhereToGoBlockCard } from "./where-to-go-block-card";
 import { computeIndexedRowDropIndex, budgetRowSiblingShiftPx } from "./sectioned-row-list-drag";
+import { createViewportAutoScrollController } from "@/app/lib/drag-auto-scroll";
 import styles from "./create-checkplan.module.css";
 
 function computePersonalNoteDropIndex(clientY, containerEl) {
@@ -73,10 +74,12 @@ export const RightColumnSection = memo(function RightColumnSection({
 	const personalNoteDragUserSelectRef = useRef(null);
 	const personalNoteDragRafRef = useRef(null);
 	const personalNoteDragPendingRef = useRef(null);
+	const personalNoteAutoScrollRef = useRef(createViewportAutoScrollController());
 
 	useEffect(
 		() => () => {
 			if (personalNoteDragRafRef.current != null) cancelAnimationFrame(personalNoteDragRafRef.current);
+			personalNoteAutoScrollRef.current.stop();
 		},
 		[]
 	);
@@ -120,6 +123,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 		if (personalNoteDragFromRef.current === null) return;
 		e.preventDefault();
 		personalNoteDragPendingRef.current = { clientY: e.clientY };
+		personalNoteAutoScrollRef.current.update(e.clientY);
 		if (personalNoteDragRafRef.current != null) return;
 		personalNoteDragRafRef.current = requestAnimationFrame(() => {
 			personalNoteDragRafRef.current = null;
@@ -146,6 +150,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 				cancelAnimationFrame(personalNoteDragRafRef.current);
 				personalNoteDragRafRef.current = null;
 			}
+			personalNoteAutoScrollRef.current.stop();
 			personalNoteDragPendingRef.current = null;
 			if (personalNoteDragFromRef.current === null) return;
 			const from = personalNoteDragFromRef.current;
@@ -171,6 +176,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 			cancelAnimationFrame(personalNoteDragRafRef.current);
 			personalNoteDragRafRef.current = null;
 		}
+		personalNoteAutoScrollRef.current.stop();
 		personalNoteDragPendingRef.current = null;
 		setPersonalNoteDragVisual(null);
 		try {

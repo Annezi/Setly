@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { getApiUrl } from "@/app/lib/api";
+import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { DEFAULT_COVER_IMAGE, UPLOAD_COVER_API } from "./create-checkplan-utils";
 
@@ -27,19 +27,17 @@ export function useCheckplanCoverUpload(initialPlan) {
 			const formData = new FormData();
 			formData.append("file", file);
 
-			const base = getApiUrl();
-			const uploadUrl = base ? `${base}${UPLOAD_COVER_API}` : UPLOAD_COVER_API;
-			const headers = {};
+			let token = null;
 			try {
 				const auth = getAuth();
 				if (auth?.token && typeof auth.token === "string") {
-					headers.Authorization = `Bearer ${auth.token.trim()}`;
+					token = auth.token.trim();
 				}
 			} catch (_) {}
 
-			const res = await fetch(uploadUrl, {
+			const res = await apiFetch(UPLOAD_COVER_API, {
 				method: "POST",
-				headers,
+				token,
 				body: formData,
 			});
 			const data = await res.json().catch(() => ({}));
@@ -48,6 +46,7 @@ export function useCheckplanCoverUpload(initialPlan) {
 				const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
 				throw new Error(msg || data?.message || "Ошибка загрузки");
 			}
+			const base = getApiUrl();
 			const imageUrl =
 				data.url ||
 				(base && data.path ? `${base.replace(/\/$/, "")}${data.path}` : null) ||

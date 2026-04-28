@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { createViewportAutoScrollController } from "@/app/lib/drag-auto-scroll";
 
 /** Индекс вставки по Y внутри контейнера строк; attrName — data-* на корне каждой строки */
 export function computeIndexedRowDropIndex(clientY, containerEl, attrName) {
@@ -42,10 +43,12 @@ export function useSectionedRowListDrag({ readOnly, rootRef, reorderInSection })
   const rowlistDragUserSelectRef = useRef(null);
   const rowlistDragRafRef = useRef(null);
   const rowlistDragPendingRef = useRef(null);
+  const autoScrollRef = useRef(createViewportAutoScrollController());
 
   useEffect(
     () => () => {
       if (rowlistDragRafRef.current != null) cancelAnimationFrame(rowlistDragRafRef.current);
+      autoScrollRef.current.stop();
     },
     []
   );
@@ -95,6 +98,7 @@ export function useSectionedRowListDrag({ readOnly, rootRef, reorderInSection })
       if (rowlistDragFromRef.current === null || !rowlistDragSectionKeyRef.current) return;
       e.preventDefault();
       rowlistDragPendingRef.current = { clientY: e.clientY };
+      autoScrollRef.current.update(e.clientY);
       if (rowlistDragRafRef.current != null) return;
       rowlistDragRafRef.current = requestAnimationFrame(() => {
         rowlistDragRafRef.current = null;
@@ -126,6 +130,7 @@ export function useSectionedRowListDrag({ readOnly, rootRef, reorderInSection })
         cancelAnimationFrame(rowlistDragRafRef.current);
         rowlistDragRafRef.current = null;
       }
+      autoScrollRef.current.stop();
       rowlistDragPendingRef.current = null;
       const sk = rowlistDragSectionKeyRef.current;
       const from = rowlistDragFromRef.current;
@@ -156,6 +161,7 @@ export function useSectionedRowListDrag({ readOnly, rootRef, reorderInSection })
       cancelAnimationFrame(rowlistDragRafRef.current);
       rowlistDragRafRef.current = null;
     }
+    autoScrollRef.current.stop();
     rowlistDragPendingRef.current = null;
     setRowlistDragVisual(null);
     try {

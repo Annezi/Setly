@@ -14,6 +14,7 @@ import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { normalizeMediaUrl, resolveStorageMediaUrl } from "@/app/lib/checkplan-media";
 import { CHECK_PLANS_SORT_ITEMS, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
+import { autoScrollViewportByPointer, createViewportAutoScrollController } from "@/app/lib/drag-auto-scroll";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
 import styles from "./personal-check-plans.module.css";
 
@@ -61,12 +62,18 @@ const VISIBILITY_CONFIG = {
 function PersonalPlanCard({
   plan,
   isGuestView = false,
+  isMobile = false,
+  isPinHandleArmed = false,
   isPinnedDragSource = false,
   isPinnedDragOver = false,
+  onPinHandleToggle,
   onPinnedDragStart,
   onPinnedDragEnd,
   onPinnedDragOver,
   onPinnedDrop,
+  onPinnedPointerStart,
+  onPinnedPointerMove,
+  onPinnedPointerEnd,
   slotRef,
 }) {
   const { isLiked, toggle, getLikeCount } = useLikedChecklists();
@@ -81,6 +88,7 @@ function PersonalPlanCard({
       {/* Из личного кабинета открываем чек-план в режиме предпросмотра, не редактирования */}
       <div
         className={`${styles.cardSlot} ${isPinnedDragOver ? styles.cardSlotDragOver : ""}`}
+        data-plan-slot-id={String(plan.id)}
         ref={slotRef}
         onDragOver={(e) => onPinnedDragOver?.(e, plan)}
         onDrop={(e) => onPinnedDrop?.(e, plan)}
@@ -90,15 +98,31 @@ function PersonalPlanCard({
       {plan.isPinned && !isGuestView && (
         <button
           type="button"
-          className={styles.pinMorphHandle}
+          className={`${styles.pinMorphHandle} ${isPinHandleArmed ? styles.pinMorphHandleArmed : ""}`}
+          data-pin-handle="true"
           aria-label="Переместить закреплённый чек-план"
-          draggable
-          onDragStart={(e) => onPinnedDragStart?.(e, plan)}
+          draggable={!isMobile}
+          onDragStart={(e) => {
+            onPinnedDragStart?.(e, plan);
+          }}
           onDragEnd={() => onPinnedDragEnd?.()}
+          onPointerDown={(e) => {
+            if (isMobile && isPinHandleArmed) onPinnedPointerStart?.(e, plan);
+          }}
+          onPointerMove={(e) => {
+            if (isMobile && isPinHandleArmed) onPinnedPointerMove?.(e, plan);
+          }}
+          onPointerUp={(e) => {
+            if (isMobile && isPinHandleArmed) onPinnedPointerEnd?.(e, plan);
+          }}
+          onPointerCancel={(e) => {
+            if (isMobile && isPinHandleArmed) onPinnedPointerEnd?.(e, plan);
+          }}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (isMobile) onPinHandleToggle?.(plan);
           }}
         >
           <Image
@@ -191,9 +215,35 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
   const [plansLoading, setPlansLoading] = useState(false);
   const [dragPinnedId, setDragPinnedId] = useState(null);
   const [dragOverPinnedId, setDragOverPinnedId] = useState(null);
+  const [activePinHandleId, setActivePinHandleId] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [isMobilePointerDragging, setIsMobilePointerDragging] = useState(false);
   const cardSlotRefs = useRef(new Map());
   const prevCardRectsRef = useRef(new Map());
+  const mobilePointerDragRef = useRef({
+    active: false,
+    pointerId: null,
+    sourceId: null,
+    overId: null,
+    moved: false,
+  });
+  const mobileDragHandleElRef = useRef(null);
+  const mobileAutoScrollRef = useRef(createViewportAutoScrollController());
+  const skipNextHandleToggleRef = useRef(false);
   const { getLikeCount, setInitialLikeCounts } = useLikedChecklists();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const mediaQuery = window.matchMedia("(max-width: 620px)");
+    const update = () => setIsMobileView(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => () => {
+    mobileAutoScrollRef.current.stop();
+  }, []);
 
   // Загрузка чек-планов профиля: все свои / только публичные у другого пользователя
   useEffect(() => {
@@ -335,11 +385,13 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
     }
     setDragPinnedId(String(plan.id));
     setDragOverPinnedId(null);
+    setActivePinHandleId(String(plan.id));
   }, []);
 
   const handlePinnedDragOver = useCallback((e, plan) => {
     if (!dragPinnedId || !plan?.isPinned) return;
     e.preventDefault();
+    autoScrollViewportByPointer(e.clientY);
     if (String(plan.id) !== dragPinnedId) {
       setDragOverPinnedId(String(plan.id));
     }
@@ -372,7 +424,174 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
   const handlePinnedDragEnd = useCallback(() => {
     setDragPinnedId(null);
     setDragOverPinnedId(null);
+    setActivePinHandleId(null);
+    mobileAutoScrollRef.current.stop();
   }, []);
+
+  const handlePinHandleToggle = useCallback((plan) => {
+    if (!isMobileView || !plan?.isPinned) return;
+    if (skipNextHandleToggleRef.current) {
+      skipNextHandleToggleRef.current = false;
+      return;
+    }
+    const id = String(plan.id);
+    setActivePinHandleId((prev) => (prev === id ? null : id));
+  }, [isMobileView]);
+
+  const handlePinnedPointerStart = useCallback((e, plan) => {
+    if (!isMobileView || !plan?.isPinned) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    mobileDragHandleElRef.current = e.currentTarget;
+    const sourceId = String(plan.id);
+    mobilePointerDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      sourceId,
+      overId: sourceId,
+      moved: false,
+    };
+    setIsMobilePointerDragging(true);
+    setDragPinnedId(sourceId);
+    setDragOverPinnedId(null);
+  }, [isMobileView]);
+
+  const handlePinnedPointerMoveByCoords = useCallback((clientX, clientY) => {
+    const drag = mobilePointerDragRef.current;
+    if (!drag.active) return;
+    mobileAutoScrollRef.current.update(clientY);
+    const targetEl = document.elementFromPoint(clientX, clientY);
+    const targetSlot = targetEl?.closest?.("[data-plan-slot-id]");
+    let targetId = targetSlot?.getAttribute?.("data-plan-slot-id");
+    if (!targetId) {
+      // Fallback для мобильного: если палец между карточками/над первой,
+      // выбираем ближайший pinned-слот по вертикальной позиции.
+      const pinnedSlots = pinnedIdStrs
+        .map((id) => ({ id: String(id), el: cardSlotRefs.current.get(String(id)) }))
+        .filter((item) => Boolean(item.el));
+      if (pinnedSlots.length > 0) {
+        const firstRect = pinnedSlots[0].el.getBoundingClientRect();
+        if (clientY <= firstRect.top + firstRect.height / 2) {
+          targetId = pinnedSlots[0].id;
+        } else {
+          for (let i = 0; i < pinnedSlots.length; i += 1) {
+            const rect = pinnedSlots[i].el.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            if (clientY <= midY) {
+              targetId = pinnedSlots[i].id;
+              break;
+            }
+          }
+          if (!targetId) {
+            targetId = pinnedSlots[pinnedSlots.length - 1].id;
+          }
+        }
+      }
+    }
+    if (!targetId || targetId === drag.sourceId || !pinnedIdStrs.includes(String(targetId))) {
+      setDragOverPinnedId(null);
+      return;
+    }
+    drag.overId = String(targetId);
+    drag.moved = true;
+    setDragOverPinnedId(String(targetId));
+  }, [pinnedIdStrs]);
+
+  const finishMobilePointerDrag = useCallback(() => {
+    const drag = mobilePointerDragRef.current;
+    if (!drag.active) return;
+
+    const sourceId = String(drag.sourceId);
+    const targetId = drag.overId ? String(drag.overId) : null;
+    if (targetId && targetId !== sourceId) {
+      const prevPinnedOrder = [...pinnedIdStrs];
+      const sourceIndex = prevPinnedOrder.indexOf(sourceId);
+      const targetIndex = prevPinnedOrder.indexOf(targetId);
+      if (sourceIndex >= 0 && targetIndex >= 0) {
+        const nextPinnedOrder = [...prevPinnedOrder];
+        const [moved] = nextPinnedOrder.splice(sourceIndex, 1);
+        nextPinnedOrder.splice(targetIndex, 0, moved);
+        setPinnedIdStrs(nextPinnedOrder);
+        persistPinnedOrder(nextPinnedOrder, prevPinnedOrder);
+      }
+      skipNextHandleToggleRef.current = true;
+    }
+
+    if (mobileDragHandleElRef.current && drag.pointerId != null) {
+      try {
+        mobileDragHandleElRef.current.releasePointerCapture?.(drag.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    mobileDragHandleElRef.current = null;
+    mobilePointerDragRef.current = {
+      active: false,
+      pointerId: null,
+      sourceId: null,
+      overId: null,
+      moved: false,
+    };
+    setIsMobilePointerDragging(false);
+    setDragPinnedId(null);
+    setDragOverPinnedId(null);
+    setActivePinHandleId(null);
+    mobileAutoScrollRef.current.stop();
+  }, [persistPinnedOrder, pinnedIdStrs]);
+
+  const handlePinnedPointerMove = useCallback((e) => {
+    const drag = mobilePointerDragRef.current;
+    if (!drag.active || drag.pointerId !== e.pointerId) return;
+    e.preventDefault();
+    handlePinnedPointerMoveByCoords(e.clientX, e.clientY);
+  }, [handlePinnedPointerMoveByCoords]);
+
+  const handlePinnedPointerEnd = useCallback((e) => {
+    const drag = mobilePointerDragRef.current;
+    if (!drag.active || drag.pointerId !== e.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    finishMobilePointerDrag();
+  }, [finishMobilePointerDrag]);
+
+  useEffect(() => {
+    if (!isMobileView || !isMobilePointerDragging) return undefined;
+
+    const onPointerMove = (event) => {
+      const drag = mobilePointerDragRef.current;
+      if (!drag.active || drag.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      handlePinnedPointerMoveByCoords(event.clientX, event.clientY);
+    };
+    const onPointerEnd = (event) => {
+      const drag = mobilePointerDragRef.current;
+      if (!drag.active || drag.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      finishMobilePointerDrag();
+    };
+
+    window.addEventListener("pointermove", onPointerMove, { passive: false });
+    window.addEventListener("pointerup", onPointerEnd, { passive: false });
+    window.addEventListener("pointercancel", onPointerEnd, { passive: false });
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerEnd);
+      window.removeEventListener("pointercancel", onPointerEnd);
+    };
+  }, [finishMobilePointerDrag, handlePinnedPointerMoveByCoords, isMobilePointerDragging, isMobileView]);
+
+  useEffect(() => {
+    if (!isMobileView || !activePinHandleId) return undefined;
+    const handleOutsidePointerDown = (event) => {
+      const target = event.target;
+      if (target?.closest?.('[data-pin-handle="true"]')) return;
+      setActivePinHandleId(null);
+    };
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointerDown);
+  }, [isMobileView, activePinHandleId]);
 
   const plans = useMemo(
     () => {
@@ -468,12 +687,18 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
             <PersonalPlanCard
               key={plan.id}
               plan={plan}
+              isMobile={isMobileView}
+              isPinHandleArmed={plan.isPinned && String(plan.id) === activePinHandleId}
               isPinnedDragSource={plan.isPinned && String(plan.id) === dragPinnedId}
               isPinnedDragOver={plan.isPinned && String(plan.id) === dragOverPinnedId}
+              onPinHandleToggle={handlePinHandleToggle}
               onPinnedDragStart={handlePinnedDragStart}
               onPinnedDragEnd={handlePinnedDragEnd}
               onPinnedDragOver={handlePinnedDragOver}
               onPinnedDrop={handlePinnedDrop}
+              onPinnedPointerStart={handlePinnedPointerStart}
+              onPinnedPointerMove={handlePinnedPointerMove}
+              onPinnedPointerEnd={handlePinnedPointerEnd}
               isGuestView={isGuestView}
               slotRef={(el) => {
                 const id = String(plan.id);

@@ -12,7 +12,7 @@ import Input from "@/app/components/atomic/molecules/input/input";
 import ImageCropModal from "@/app/components/globals/image-crop-modal/image-crop-modal";
 import styles from "./creating.module.css";
 import { getAuth } from "@/app/lib/auth-storage";
-import { getApiUrl } from "@/app/lib/api";
+import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 
 const STEPS = [1, 2, 3, 4];
@@ -201,19 +201,17 @@ export default function Creating() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const base = getApiUrl();
-      const url = base ? `${base}${UPLOAD_COVER_API}` : UPLOAD_COVER_API;
-      const headers = {};
+      let token = null;
       try {
         const auth = getAuth();
         if (auth?.token && typeof auth.token === "string") {
-          headers.Authorization = `Bearer ${auth.token.trim()}`;
+          token = auth.token.trim();
         }
       } catch (_) {}
 
-      const res = await fetch(url, {
+      const res = await apiFetch(UPLOAD_COVER_API, {
         method: "POST",
-        headers,
+        token,
         body: formData,
       });
       const data = await res.json().catch(() => ({}));
@@ -227,6 +225,7 @@ export default function Creating() {
         throw new Error(message);
       }
       // Бэкенд возвращает url (полный) или path (относительный) — для отображения нужен полный URL
+      const base = getApiUrl();
       const imageUrl = data.url || (base && data.path ? `${base.replace(/\/$/, "")}${data.path}` : null) || data.path;
       if (imageUrl) setCoverImage(imageUrl);
     } catch (err) {

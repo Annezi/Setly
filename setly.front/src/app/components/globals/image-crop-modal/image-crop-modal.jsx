@@ -50,14 +50,45 @@ export default function ImageCropModal({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [submitting, setSubmitting] = useState(false);
   const draggingRef = useRef(null);
+  const [cropFrameElement, setCropFrameElement] = useState(null);
+  const [availableFrameWidth, setAvailableFrameWidth] = useState(360);
   const zoomProgress = ((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100;
 
   const frameSize = useMemo(() => {
+    const MAX_FRAME_WIDTH = 360;
+    const MIN_FRAME_WIDTH = 220;
+    const safeAvailableWidth = Math.max(
+      MIN_FRAME_WIDTH,
+      Math.min(MAX_FRAME_WIDTH, Math.floor(availableFrameWidth))
+    );
+
     if (aspectRatio >= 1) {
-      return { width: 360, height: Math.round(360 / aspectRatio) };
+      return { width: safeAvailableWidth, height: Math.round(safeAvailableWidth / aspectRatio) };
     }
-    return { width: Math.round(320 * aspectRatio), height: 320 };
-  }, [aspectRatio]);
+    const baseHeight = 320;
+    const baseWidth = Math.round(baseHeight * aspectRatio);
+    const scale = Math.min(1, safeAvailableWidth / baseWidth);
+    return {
+      width: Math.max(1, Math.round(baseWidth * scale)),
+      height: Math.max(1, Math.round(baseHeight * scale)),
+    };
+  }, [aspectRatio, availableFrameWidth]);
+
+  useEffect(() => {
+    const container = cropFrameElement;
+    if (!container) return undefined;
+
+    const updateWidth = () => {
+      setAvailableFrameWidth(container.clientWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [cropFrameElement]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,28 +221,30 @@ export default function ImageCropModal({
         {error && <p className={styles.error}>{error}</p>}
         {!loading && !error && imageSrc && renderState && (
           <>
-            <div
-              className={`${styles.cropArea} ${previewShape === 'circle' ? styles.cropAreaCircle : ''} ${previewShape === 'binocular' ? styles.cropAreaBinocular : ''}`}
-              style={{ width: `${frameSize.width}px`, height: `${frameSize.height}px` }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-            >
-              <NextImage
-                src={imageSrc}
-                alt=""
-                width={imageMeta.width}
-                height={imageMeta.height}
-                unoptimized
-                draggable={false}
-                className={styles.cropImage}
-                style={{
-                  width: `${imageMeta.width * renderState.displayScale}px`,
-                  height: `${imageMeta.height * renderState.displayScale}px`,
-                  transform: `translate(calc(-50% + ${clampedOffset.x}px), calc(-50% + ${clampedOffset.y}px))`,
-                }}
-              />
+            <div className={styles.cropFrame} ref={setCropFrameElement}>
+              <div
+                className={`${styles.cropArea} ${previewShape === 'circle' ? styles.cropAreaCircle : ''} ${previewShape === 'binocular' ? styles.cropAreaBinocular : ''}`}
+                style={{ width: `${frameSize.width}px`, height: `${frameSize.height}px` }}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+              >
+                <NextImage
+                  src={imageSrc}
+                  alt=""
+                  width={imageMeta.width}
+                  height={imageMeta.height}
+                  unoptimized
+                  draggable={false}
+                  className={styles.cropImage}
+                  style={{
+                    width: `${imageMeta.width * renderState.displayScale}px`,
+                    height: `${imageMeta.height * renderState.displayScale}px`,
+                    transform: `translate(calc(-50% + ${clampedOffset.x}px), calc(-50% + ${clampedOffset.y}px))`,
+                  }}
+                />
+              </div>
             </div>
             <label className={styles.meta} htmlFor="crop-zoom-range">
               Масштаб

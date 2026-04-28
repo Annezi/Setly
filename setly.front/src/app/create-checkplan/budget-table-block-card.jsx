@@ -9,6 +9,7 @@ import { ContentBlockToolbar } from "./content-block-toolbar";
 import styles from "./create-checkplan.module.css";
 import { computeIndexedRowDropIndex, budgetRowSiblingShiftPx } from "./sectioned-row-list-drag";
 import { DEFAULT_BUDGET_ROWS_FALLBACK, parseBudgetNumber } from "./budget-table-constants";
+import { createViewportAutoScrollController } from "@/app/lib/drag-auto-scroll";
 
 function onlyNumericValue(v) {
 	const s = String(v ?? "").replace(",", ".");
@@ -284,10 +285,12 @@ export const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 	const budgetRowDragUserSelectRef = useRef(null);
 	const budgetDragRafRef = useRef(null);
 	const budgetDragPendingRef = useRef(null);
+	const budgetAutoScrollRef = useRef(createViewportAutoScrollController());
 
 	useEffect(
 		() => () => {
 			if (budgetDragRafRef.current != null) cancelAnimationFrame(budgetDragRafRef.current);
+			budgetAutoScrollRef.current.stop();
 		},
 		[]
 	);
@@ -330,6 +333,7 @@ export const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 		if (budgetRowDragFromRef.current === null) return;
 		e.preventDefault();
 		budgetDragPendingRef.current = { clientY: e.clientY };
+		budgetAutoScrollRef.current.update(e.clientY);
 		if (budgetDragRafRef.current != null) return;
 		budgetDragRafRef.current = requestAnimationFrame(() => {
 			budgetDragRafRef.current = null;
@@ -355,6 +359,7 @@ export const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 				cancelAnimationFrame(budgetDragRafRef.current);
 				budgetDragRafRef.current = null;
 			}
+			budgetAutoScrollRef.current.stop();
 			budgetDragPendingRef.current = null;
 			if (budgetRowDragFromRef.current === null) return;
 			const from = budgetRowDragFromRef.current;
@@ -379,6 +384,7 @@ export const BudgetTableBlockCard = memo(function BudgetTableBlockCard({
 			cancelAnimationFrame(budgetDragRafRef.current);
 			budgetDragRafRef.current = null;
 		}
+		budgetAutoScrollRef.current.stop();
 		budgetDragPendingRef.current = null;
 		setBudgetRowDragVisual(null);
 		try {

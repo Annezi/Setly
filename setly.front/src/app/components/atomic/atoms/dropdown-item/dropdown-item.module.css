@@ -1,6 +1,6 @@
 .dropdownItem {
-    width: 212px;
-    height: 36px;
+    width: 100%;
+    min-height: 36px;
     border: none;
     border-radius: 100px;
     background: transparent !important;
@@ -10,20 +10,22 @@
     font: inherit;
     cursor: pointer;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 8px 16px;
     text-align: center !important;
     transition: background-color 0.2s ease, color 0.2s ease;
     user-select: none;
+    box-sizing: border-box;
 }
 
 .dropdownItem span {
-    display: inline-flex;
-    align-items: center;
-    min-height: 36px;
-    line-height: 1;
+    display: block;
+    width: 100%;
+    line-height: 1.25;
     text-align: center !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .dropdownItem:hover {

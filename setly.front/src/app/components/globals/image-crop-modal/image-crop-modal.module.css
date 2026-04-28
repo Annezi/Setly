@@ -26,6 +26,12 @@
   color: var(--grayscale-dark-gray);
 }
 
+.cropFrame {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .cropArea {
   margin: 0 auto;
   position: relative;

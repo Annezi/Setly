@@ -10,7 +10,7 @@ import planStyles from "./plans/check-plans/check-plans.module.css";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import { parseAppliedFilters } from "./utils/parseFilterTags";
-import { getApiUrl } from "@/app/lib/api";
+import { apiFetch } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { mapFlatCheckPlanCardFromApi, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
@@ -153,10 +153,8 @@ export function CheckPlansPage() {
     useEffect(() => {
         let cancelled = false;
         async function fetchCheckPlans() {
-            const base = getApiUrl();
-            const url = base ? `${base}/api/check-plans` : "/api/check-plans";
             try {
-                const res = await fetch(url);
+                const res = await apiFetch("/api/check-plans");
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 if (cancelled) return;

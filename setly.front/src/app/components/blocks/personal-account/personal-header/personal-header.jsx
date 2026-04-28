@@ -3,12 +3,22 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './personal-header.module.css';
-import { getApiUrl } from '@/app/lib/api';
+import { apiFetch } from '@/app/lib/api';
 import ImageCropModal from '@/app/components/globals/image-crop-modal/image-crop-modal';
 
 const DEFAULT_HEADER_IMAGE = '/img/main/personal-bg-default.png';
 const DEFAULT_HEADER_IMAGE_MOBILE = '/img/main/personal-bg-default-mobile.png';
 const MOBILE_BREAKPOINT = 601;
+const DESKTOP_HEADER_CROP = {
+  aspectRatio: 1045 / 200,
+  outputWidth: 1600,
+  outputHeight: 306,
+};
+const MOBILE_HEADER_CROP = {
+  aspectRatio: 560 / 334,
+  outputWidth: 1120,
+  outputHeight: 668,
+};
 /** Загрузка шапки через бэкенд POST /api/user/me/save-image/profile_bg, затем PATCH /api/user/me */
 const UPLOAD_HEADER_API = '/api/user/me/save-image/profile_bg/';
 const UPDATE_ME_API = '/api/user/me';
@@ -46,6 +56,7 @@ export default function PersonalHeader({ profileBgUrl, userId, token, canEdit = 
   const [fileToCrop, setFileToCrop] = useState(null);
   const inputRef = useRef(null);
   const isMobile = useIsMobileView(MOBILE_BREAKPOINT);
+  const headerCrop = isMobile ? MOBILE_HEADER_CROP : DESKTOP_HEADER_CROP;
 
   const defaultImage = isMobile ? DEFAULT_HEADER_IMAGE_MOBILE : DEFAULT_HEADER_IMAGE;
   const effectivePath =
@@ -61,11 +72,9 @@ export default function PersonalHeader({ profileBgUrl, userId, token, canEdit = 
         const formData = new FormData();
         formData.append('file', file);
 
-        const base = getApiUrl();
-        const uploadUrl = base ? `${base}${UPLOAD_HEADER_API}` : UPLOAD_HEADER_API;
-        const res = await fetch(uploadUrl, {
+        const res = await apiFetch(UPLOAD_HEADER_API, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token.trim()}` },
+          token: token.trim(),
           body: formData,
         });
         const data = await res.json().catch(() => ({}));
@@ -80,14 +89,10 @@ export default function PersonalHeader({ profileBgUrl, userId, token, canEdit = 
         if (url) {
           setLocalPath(url);
           onHeaderImageChange?.();
-          const patchUrl = base ? `${base}${UPDATE_ME_API}` : UPDATE_ME_API;
-          await fetch(patchUrl, {
+          await apiFetch(UPDATE_ME_API, {
             method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token.trim()}`,
-            },
-            body: JSON.stringify({ profile_bg_url: url }),
+            token: token.trim(),
+            body: { profile_bg_url: url },
           });
         }
       } catch (err) {
@@ -157,9 +162,9 @@ export default function PersonalHeader({ profileBgUrl, userId, token, canEdit = 
       {fileToCrop && (
         <ImageCropModal
           file={fileToCrop}
-          aspectRatio={1045 / 200}
-          outputWidth={1600}
-          outputHeight={306}
+          aspectRatio={headerCrop.aspectRatio}
+          outputWidth={headerCrop.outputWidth}
+          outputHeight={headerCrop.outputHeight}
           title="Кадрировать фото шапки"
           confirmText="Применить"
           onCancel={() => setFileToCrop(null)}

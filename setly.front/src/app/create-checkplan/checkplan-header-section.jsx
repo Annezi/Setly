@@ -65,7 +65,7 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 			</Link>
 
 			<div className={styles.topRow}>
-				<div className={`${styles.card} ${readOnly ? styles.cardReadOnly : ""}`}>
+				<div className={`${styles.card} ${readOnly ? styles.cardReadOnly : ""}`} data-main-info-card>
 					<div className={styles.cardMain}>
 						{readOnly ? (
 							<>
@@ -156,6 +156,10 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 											dropdownContent={datesDropdownContent}
 											bgView={false}
 											hasValue={datesRange[0] != null && datesRange[1] != null}
+											mobileAdaptiveMenu
+											mobileAdaptiveBreakpoint={900}
+											mobileFullWidthBreakpoint={0}
+											mobileAdaptiveNoHeightClamp
 											dropdownMenuClassName={styles.datesDropdownMenu}
 										/>
 									)}
@@ -175,6 +179,12 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 											items={[]}
 											dropdownContent={locationDropdownContent}
 											hasValue={!!locationLabel}
+											mobileAdaptiveMenu
+											mobileAdaptiveBreakpoint={899}
+											mobileFullWidthBreakpoint={768}
+											menuMatchContainerSelector="[data-main-info-card]"
+											mobileAlignToContainerLeft
+											dropdownMenuClassName={styles.cardInfoDropdownMenu}
 										/>
 									)}
 								</div>
@@ -193,6 +203,12 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 											items={TYPE_OPTIONS}
 											selectedIndex={typeIndex}
 											onSelect={(i) => setTypeIndex(i)}
+											mobileAdaptiveMenu
+											mobileAdaptiveBreakpoint={899}
+											mobileFullWidthBreakpoint={768}
+											menuMatchContainerSelector="[data-main-info-card]"
+											mobileAlignToContainerLeft
+											dropdownMenuClassName={styles.cardInfoDropdownMenu}
 										/>
 									)}
 								</div>
@@ -211,6 +227,12 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 											items={TRAVELER_OPTIONS}
 											selectedIndex={peopleIndex}
 											onSelect={(i) => setPeopleIndex(i)}
+											mobileAdaptiveMenu
+											mobileAdaptiveBreakpoint={899}
+											mobileFullWidthBreakpoint={768}
+											menuMatchContainerSelector="[data-main-info-card]"
+											mobileAlignToContainerLeft
+											dropdownMenuClassName={styles.cardInfoDropdownMenu}
 										/>
 									)}
 								</div>

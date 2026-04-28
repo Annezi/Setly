@@ -172,6 +172,9 @@
 	line-height: 1.2;
 	color: var(--grayscale-dark-gray);
 	padding: 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	word-break: break-word;
 }
 
 .cardTitleTextarea::placeholder {
@@ -417,24 +420,47 @@
 	display: block;
 }
 
-/* Кнопка дропдауна: 212×44 px по макету, выравнивание по правому краю */
-.cardDropdown button {
+/* Кнопка-триггер дропдауна: 212×34 px по макету, не влияет на кнопки внутри контента (например, календарь) */
+.cardDropdown > div > button {
 	width: 212px;
 	max-width: 212px;
 	height: 34px;
 	min-height: 34px;
-	padding: 12px 12px;
+	padding: 0 12px;
 	background: var(--grayscale-primary-gray);
 	box-shadow: none;
+	display: flex;
+	align-items: center;
 	justify-content: space-between;
 	border-radius: 40px;
+}
+
+.cardInfoDropdownMenu {
+	width: 212px;
+	min-width: 212px;
+	max-width: 212px;
+}
+
+/* Дропдаун «Даты»: фиксируем меню под ширину календаря, без обрезания контента */
+.datesDropdownMenu {
+	width: max-content !important;
+	min-width: 335px !important;
+	max-width: 400px !important;
+	overflow: visible !important;
 }
 
 /* Только у кнопки-триггера: текст слева; плейсхолдер — серый, выбранное значение — тёмно-серый */
 .cardDropdown>div>button span:first-of-type {
 	flex: 1;
+	display: flex;
+	align-items: center;
+	height: 100%;
 	text-align: left;
 	min-width: 0;
+	line-height: 1.25;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	color: var(--grayscale-gray);
 }
 
@@ -445,15 +471,12 @@
 /* Дропдаун «Даты»: на мобильных календарь центрируем по экрану и уменьшаем масштаб */
 @media (max-width: 768px) {
 	.datesDropdownMenu {
-		position: fixed !important;
-		left: 50% !important;
-		top: 50% !important;
-		right: auto !important;
-		width: max-content !important;
-		max-width: min(95vw, 360px) !important;
-		max-height: 90vh !important;
-		overflow: auto !important;
-		transform: translate(-50%, -50%) scale(0.9) !important;
+		width: fit-content !important;
+		min-width: 0 !important;
+		max-width: min(400px, calc(100vw - 32px)) !important;
+		overflow-x: auto !important;
+		overflow-y: visible !important;
+		transform: none !important;
 	}
 }
 
@@ -462,8 +485,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
-	width: 212px;
-	min-width: 212px;
+	width: 100%;
+	min-width: 0;
 }
 
 .locationDropdownSearch {
@@ -2639,6 +2662,7 @@
 
 	/* Обложка не схлопывается при колоночной раскладке (flex: 1 1 0% давал высоту 0) */
 	.tripImageWrap {
+		order: -1;
 		flex: 0 0 auto;
 		width: 100%;
 		max-width: 100%;
@@ -2803,6 +2827,37 @@
 	.card {
 		width: 100%;
 		min-width: 0;
+	}
+
+	/* На узких экранах делаем дропдауны компактнее и не вываливающимися за карточку */
+	.cardDropdown button {
+		width: 188px;
+		max-width: 188px;
+	}
+
+	.cardInfoDropdownMenu {
+		width: 188px;
+		min-width: 188px;
+		max-width: 188px;
+	}
+
+	.cardInfoDropdownMenu button {
+		justify-content: center !important;
+	}
+
+	.cardInfoDropdownMenu button span:first-of-type {
+		justify-content: center !important;
+		text-align: center !important;
+	}
+
+	.locationDropdownContent {
+		align-items: center;
+	}
+
+	.locationDropdownSearch,
+	.locationDropdownEmpty,
+	.locationDropdownList button span {
+		text-align: center;
 	}
 
 	.checklistCard {
@@ -3177,6 +3232,13 @@
 
 /* На мобильном: кнопка удаления секции «Полезные контакты» и рядов — видна всегда (где применимо) */
 @media (max-width: 768px) {
+	.notesItemDragHandle,
+	.whereToGoRowDragHandle,
+	.budgetTableRowDragHandle {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
 	.whereToGoSectionTitleRow .whereToGoSectionDeleteBtn {
 		opacity: 1;
 	}

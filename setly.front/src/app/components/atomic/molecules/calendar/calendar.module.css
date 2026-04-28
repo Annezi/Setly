@@ -1,13 +1,271 @@
-/* Обёртка календаря: без чёрной рамки, акцент выбранных дат — --accent-blue */
 .calendarWrap {
-    border: none !important;
-    --vkui--color_background_accent: var(--accent-blue);
-    --vkui--color_background_accent_themed: var(--accent-blue);
+    padding: 16px;
+    background: var(--grayscale-white);
+    border-radius: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: min(400px, calc(100vw - 32px));
+    border: 1px solid var(--grayscale-primary-gray);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
-/* Убираем рамку, фон и тень у контейнера календаря VK UI */
-.calendarWrap :global(.vkuiCalendarRange_host) {
+.calendarNav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.calendarNavButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+}
+
+.calendarNavButton:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.calendarNavIcon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.calendarHeaderSelects {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.selectWrap {
+    position: relative;
+}
+
+.headerSelectTrigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--grayscale-dark-gray);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    margin: 0;
+}
+
+.headerSelectTrigger:focus {
+    outline: none;
+}
+
+.headerSelectTrigger:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.headerSelectTriggerLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.headerSelectArrow {
+    flex-shrink: 0;
+    display: block;
+}
+
+/* Выпадающее меню всегда под триггером (вниз) */
+.selectMenu {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 8px);
+    bottom: auto;
+    transform: translateX(-50%);
+    z-index: 20;
+    min-width: min(200px, calc(100vw - 48px));
+    max-height: min(280px, 50vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--halftone-98-white);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    isolation: isolate;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+}
+
+.selectMenuItem {
+    width: 100%;
+    min-height: 36px;
+    border: none;
+    border-radius: 100px;
     background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--grayscale-dark-gray);
+    font: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    text-align: center;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease;
+}
+
+.selectMenuItem:focus {
+    outline: none;
+}
+
+.selectMenuItem:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.selectMenuItem:hover {
+    background: var(--halftone-80-white) !important;
+}
+
+.selectMenuItem:active {
+    transform: scale(0.98);
+}
+
+.selectMenuItemText {
+    display: block;
+    width: 100%;
+    line-height: 1.25;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.selectMenuItemSelected {
+    background: rgba(255, 255, 255, 0.45) !important;
+}
+
+.weekdaysRow {
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    gap: 0;
+    margin-bottom: 8px;
+    justify-content: center;
+}
+
+.weekdayCell {
+    text-align: center;
+    font-size: 14px;
+    color: var(--grayscale-gray);
+    width: 40px;
+}
+
+.daysGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    gap: 0;
+    justify-content: center;
+}
+
+.dayCell {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--grayscale-dark-gray);
+    font-size: 16px;
+    line-height: 1.2;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    border-radius: 0;
+}
+
+.dayCellEmpty {
+    cursor: default;
+}
+
+/* Слитная заливка: без скругления между соседними днями диапазона */
+.dayCellInRange {
+    background: var(--grayscale-primary-gray);
+}
+
+.dayCellRangeSegLeft {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.dayCellRangeSegRight {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.dayCellSelected {
+    background: var(--accent-blue);
+    color: var(--grayscale-white);
+    border-radius: 8px !important;
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 768px) {
+    .calendarWrap {
+        width: min(400px, calc(100vw - 32px));
+        padding: 14px;
+    }
+
+    .calendarNavButton {
+        width: 20px;
+        height: 20px;
+    }
+
+    .calendarNavIcon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .calendarHeaderSelects {
+        gap: 4px;
+    }
+
+    .headerSelectTrigger {
+        font-size: 18px;
+        padding: 4px 6px;
+    }
+
+    .weekdayCell {
+        font-size: 14px;
+    }
+
+    .dayCell {
+        width: 40px;
+        min-width: 40px;
+        max-width: 40px;
+        height: 36px;
+        font-size: 14px;
+    }
 }

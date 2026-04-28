@@ -61,6 +61,8 @@
     flex-direction: column;
     gap: 4px;
     min-width: 212px;
+    width: max-content;
+    max-width: min(92vw, 320px);
     background: var(--halftone-98-white);
     -webkit-backdrop-filter: blur(24px);
     backdrop-filter: blur(24px);
@@ -91,6 +93,8 @@
     flex-direction: column;
     gap: 12px;
     min-width: 212px;
+    width: max-content;
+    max-width: min(92vw, 320px);
     background: rgba(255, 255, 255, 0.2);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
@@ -115,4 +119,12 @@
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
+}
+
+@media (max-width: 480px) {
+    .dropdownMenu,
+    .dropdownMenuTransperent {
+        min-width: 188px;
+        max-width: min(88vw, 260px);
+    }
 }
