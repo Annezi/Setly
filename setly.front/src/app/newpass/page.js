@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { Header } from "@/app/components/globals/header/Header";
 import NewPassword from "@/app/components/blocks/auth/newpass/newpass";
 
@@ -9,7 +10,9 @@ export default function NewPassPage() {
       <Header />
       <main>
         <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
-          <NewPassword />
+          <Suspense fallback={null}>
+            <NewPassword />
+          </Suspense>
         </div>
       </main>
     </>
