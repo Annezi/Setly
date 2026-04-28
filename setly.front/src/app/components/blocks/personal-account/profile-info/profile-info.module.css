@@ -38,6 +38,27 @@
   font-weight: 400;
   color: var(--grayscale-gray);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rankMedals {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rankMedalIcon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-block;
+}
+
+.rankLabel {
+  display: block;
 }
 
 .settingsButton {

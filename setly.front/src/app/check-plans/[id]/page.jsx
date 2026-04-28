@@ -1,11 +1,15 @@
-import { Header } from "@/app/components/globals/header/Header";
-import { Footer } from "@/app/components/globals/footer/Footer";
+import { redirect } from "next/navigation";
 
-export default function CheckPlansDynamic() {
-    return (
-        <>
-            <Header></Header>
-            <Footer></Footer>
-        </>
-    )
+/**
+ * Единый публичный просмотр — `/preview-checkplan/...`.
+ * Старые и закладки на `/check-plans/{segment}` ведут на ту же страницу.
+ */
+export default async function CheckPlansDynamic({ params }) {
+  const resolved = await params;
+  const raw = resolved?.id != null ? String(resolved.id) : "";
+  const segment = raw.trim();
+  if (!segment) {
+    redirect("/check-plans");
+  }
+  redirect(`/preview-checkplan/${encodeURIComponent(segment)}`);
 }

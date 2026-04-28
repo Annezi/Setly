@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import styles from './personal-header.module.css';
 import { getApiUrl } from '@/app/lib/api';
+import ImageCropModal from '@/app/components/globals/image-crop-modal/image-crop-modal';
 
 const DEFAULT_HEADER_IMAGE = '/img/main/personal-bg-default.png';
 const DEFAULT_HEADER_IMAGE_MOBILE = '/img/main/personal-bg-default-mobile.png';
@@ -38,26 +39,22 @@ function useIsMobileView(breakpoint = MOBILE_BREAKPOINT) {
  * @param {string} [props.token] - JWT для запросов к API
  * @param {function(): void} [props.onHeaderImageChange] - Вызов после успешной загрузки (перезапросить user)
  */
-export default function PersonalHeader({ profileBgUrl, userId, token, onHeaderImageChange }) {
+export default function PersonalHeader({ profileBgUrl, userId, token, canEdit = true, onHeaderImageChange }) {
   const [localPath, setLocalPath] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fileToCrop, setFileToCrop] = useState(null);
   const inputRef = useRef(null);
   const isMobile = useIsMobileView(MOBILE_BREAKPOINT);
 
   const defaultImage = isMobile ? DEFAULT_HEADER_IMAGE_MOBILE : DEFAULT_HEADER_IMAGE;
   const effectivePath =
     localPath ?? (profileBgUrl && profileBgUrl.trim() ? profileBgUrl : defaultImage);
-  const canUpload = Boolean(userId && token);
+  const canUpload = Boolean(canEdit && userId && token);
 
-  const handleFileChange = useCallback(
-    async (e) => {
-      const file = e.target?.files?.[0];
+  const uploadHeaderFile = useCallback(
+    async (file) => {
       if (!file || !userId || !token) return;
-      if (!file.type.startsWith('image/')) {
-        setError('Выберите изображение (JPG, PNG и т.д.)');
-        return;
-      }
       setError(null);
       setLoading(true);
       try {
@@ -97,10 +94,23 @@ export default function PersonalHeader({ profileBgUrl, userId, token, onHeaderIm
         setError(err.message || 'Не удалось загрузить фото');
       } finally {
         setLoading(false);
-        if (inputRef.current) inputRef.current.value = '';
       }
     },
     [userId, token, onHeaderImageChange]
+  );
+
+  const handleFileChange = useCallback(
+    async (e) => {
+      const file = e.target?.files?.[0];
+      if (!file || !userId || !token) return;
+      if (!file.type.startsWith('image/')) {
+        setError('Выберите изображение (JPG, PNG и т.д.)');
+        return;
+      }
+      setFileToCrop(file);
+      if (inputRef.current) inputRef.current.value = '';
+    },
+    [userId, token]
   );
 
   const handleClick = useCallback(() => {
@@ -144,6 +154,21 @@ export default function PersonalHeader({ profileBgUrl, userId, token, onHeaderIm
         </div>
       )}
       {error && <span className={styles.errorText}>{error}</span>}
+      {fileToCrop && (
+        <ImageCropModal
+          file={fileToCrop}
+          aspectRatio={1045 / 200}
+          outputWidth={1600}
+          outputHeight={306}
+          title="Кадрировать фото шапки"
+          confirmText="Применить"
+          onCancel={() => setFileToCrop(null)}
+          onConfirm={async (croppedFile) => {
+            await uploadHeaderFile(croppedFile);
+            setFileToCrop(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -77,6 +77,19 @@ export const DeleteCheckplanConfirmPopup = memo(function DeleteCheckplanConfirmP
 	);
 });
 
+export const PinLimitReachedPopup = memo(function PinLimitReachedPopup({ isClosing, onClose }) {
+	return (
+		<CheckplanCenterDialog
+			isClosing={isClosing}
+			onOverlayClick={onClose}
+			titleId="pin-limit-reached-title"
+			title="Достигнут максимум закреплённых чек-планов: 6"
+		>
+			<Button Text="Хорошо, откреплю неактуальные" color="blue" type="button" onClick={onClose} />
+		</CheckplanCenterDialog>
+	);
+});
+
 /** Тостер «Ссылка на Чек-план скопирована» */
 export const CopyLinkToast = memo(function CopyLinkToast({ show, onExited }) {
 	useEffect(() => {

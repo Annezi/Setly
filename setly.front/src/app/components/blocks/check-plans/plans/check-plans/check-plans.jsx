@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
@@ -8,6 +9,7 @@ import { applyTypograf } from "@/app/lib/typograf";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import styles from "./check-plans.module.css";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
+import { buildProfilePublicPath } from "@/app/lib/slug";
 
 const SLIDER_BREAKPOINT = 1024;
 const SLIDER_MAX_WIDTH = 950; /* совпадает с CSS: слайдер виден при max-width: 950px */
@@ -32,18 +34,22 @@ export function PlanCard({
   title,
   description,
   userName,
+  authorId,
   avatarSrc = DEFAULT_AVATAR,
   initialLikes = 0,
   filterTag,
   isAuthenticated,
   onRequestLogin,
 }) {
+  const router = useRouter();
   const { isLiked, toggle, getLikeCount } = useLikedChecklists();
   const liked = isLiked(cardId);
   const likes = getLikeCount(cardId);
   const previewHref = `/preview-checkplan/${encodeURIComponent(
     buildCheckplanPublicSegment({ title, planDbId, id_str: String(cardId) })
   )}`;
+  const authorProfileHref =
+    authorId != null ? buildProfilePublicPath(authorId, userName) : null;
 
   const handleLikeClick = (e) => {
     e.preventDefault();
@@ -53,6 +59,13 @@ export function PlanCard({
       return;
     }
     toggle(cardId);
+  };
+
+  const handleAuthorClick = (e) => {
+    if (!authorProfileHref) return;
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(authorProfileHref);
   };
 
   const cardContent = (
@@ -82,7 +95,16 @@ export function PlanCard({
       <div className={styles.cardFooter}>
         <div className={styles.userRow}>
           <Image src={avatarSrc} alt={userName} width={24} height={24} className={styles.userAvatar} />
-          <span className={`${styles.userName} subinfo`}>{applyTypograf(userName)}</span>
+          {authorProfileHref ? (
+            <span
+              className={`${styles.userName} subinfo`}
+              onClick={handleAuthorClick}
+            >
+              {applyTypograf(userName)}
+            </span>
+          ) : (
+            <span className={`${styles.userName} subinfo`}>{applyTypograf(userName)}</span>
+          )}
         </div>
         <button
           type="button"

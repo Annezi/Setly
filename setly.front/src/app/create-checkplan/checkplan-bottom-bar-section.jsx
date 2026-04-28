@@ -22,8 +22,11 @@ export const BottomBarSection = memo(function BottomBarSection({
 	onSave,
 	saveLoading,
 	onDuplicatePlan,
+	onTogglePin,
 	onDeletePlan,
 	duplicateInProgress = false,
+	isPinned = false,
+	pinInProgress = false,
 }) {
 	const [addBlockMenuOpen, setAddBlockMenuOpen] = useState(false);
 	const [menuPosition, setMenuPosition] = useState({ bottom: 0, left: 0 });
@@ -143,6 +146,11 @@ export const BottomBarSection = memo(function BottomBarSection({
 		onDeletePlan?.();
 	}, [onDeletePlan]);
 
+	const handleMoreMenuTogglePin = useCallback(() => {
+		setMoreMenuOpen(false);
+		onTogglePin?.();
+	}, [onTogglePin]);
+
 	const menuContent = addBlockMenuOpen && (
 		<div
 			className={`component-blur ${styles.addBlockMenu} ${styles.addBlockMenuOpen} ${styles.addBlockMenuPortal}`}
@@ -248,6 +256,17 @@ export const BottomBarSection = memo(function BottomBarSection({
 							onClick={handleMoreMenuDuplicate}
 						>
 							{duplicateInProgress ? "Дублирование…" : "Дублировать чек-план"}
+						</button>
+						<button
+							type="button"
+							className={`subinfo ${styles.moreMenuItem}`}
+							role="menuitem"
+							disabled={pinInProgress}
+							onClick={handleMoreMenuTogglePin}
+						>
+							{pinInProgress
+								? (isPinned ? "Открепление…" : "Закрепление…")
+								: (isPinned ? "Открепить чекплан" : "Закрепить чек-план")}
 						</button>
 						<button
 							type="button"

@@ -43,6 +43,14 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: setly_redis
+    command: redis-server --save "" --appendonly no
+    networks:
+      - setly_network
+    restart: unless-stopped
+
   setly-api:
     build:
       context: ./backend
@@ -51,6 +59,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      redis:
+        condition: service_started
     env_file:
       - ./.env
     # ports:
@@ -63,7 +73,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
       POSTGRES_HOST: ${POSTGRES_HOST:-localhost}
       CORS_ORIGINS: ${CORS_ORIGINS:-what}
-      JWT_SECRET: 08f1357da6d2b7b56d6c8ec215ca076f
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     networks:
       - setly_network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload

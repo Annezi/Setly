@@ -24,6 +24,7 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 	currentVisibility,
 	creatorAvatar,
 	creatorName,
+	creatorProfileHref,
 	handleHeaderLikeClick,
 	canLikeFromHeader,
 	headerLiked,
@@ -114,7 +115,13 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 									className={styles.cardAuthorAvatar}
 									unoptimized={typeof creatorAvatar === "string" && creatorAvatar.startsWith("http")}
 								/>
-								<span className={`paragraph ${styles.cardAuthorName}`}>{creatorName}</span>
+								{creatorProfileHref ? (
+									<Link href={creatorProfileHref} className={`paragraph ${styles.cardAuthorName}`}>
+										{creatorName}
+									</Link>
+								) : (
+									<span className={`paragraph ${styles.cardAuthorName}`}>{creatorName}</span>
+								)}
 							</div>
 							<button
 								type="button"

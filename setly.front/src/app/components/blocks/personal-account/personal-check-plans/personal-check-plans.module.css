@@ -56,6 +56,18 @@
   height: 100%;
 }
 
+.cardSlot {
+  width: 100%;
+  max-width: 335px;
+  border-radius: 16px;
+  will-change: transform;
+}
+
+.cardSlotDragOver .card {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
 .cardLink:hover .card {
   transform: scale(1.01);
 }
@@ -78,6 +90,74 @@
   align-items: center;
   transition: transform 0.2s ease;
   transform-origin: center;
+  position: relative;
+}
+
+.pinnedIcon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  z-index: 2;
+}
+
+.cardPinned {
+  --pin-icon-size: 20px;
+}
+
+.cardPinnedDragging {
+  opacity: 0.35;
+  transform: scale(0.98);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pinMorphHandle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: var(--pin-icon-size);
+  height: var(--pin-icon-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  z-index: 3;
+  cursor: grab;
+}
+
+.pinMorphHandle:active {
+  cursor: grabbing;
+}
+
+.pinMorphPinnedIcon {
+  width: var(--pin-icon-size);
+  height: var(--pin-icon-size);
+  object-fit: contain;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.pinMorphDotsIcon {
+  position: absolute;
+  width: 11px;
+  height: 18px;
+  display: block;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.cardPinned:hover .pinMorphPinnedIcon {
+  opacity: 0;
+  transform: scale(0.55);
+}
+
+.cardPinned:hover .pinMorphDotsIcon {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .cardLink .card {

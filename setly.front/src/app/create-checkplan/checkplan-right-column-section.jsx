@@ -1,6 +1,8 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- плавающая строка при перетаскивании заметок */
 
-import { memo } from "react";
+import { memo, useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { PERSONAL_NOTES, SUGGESTION_LINKS } from "./create-checkplan-data";
 import { canAddItem } from "./create-checkplan-utils";
@@ -10,7 +12,33 @@ import { CheckplanPersonalNoteRow } from "./checkplan-editable-rows";
 import { TextBlockCard } from "./checkplan-text-block-card";
 import { UsefulContactsBlockCard } from "./useful-contacts-block-card";
 import { WhereToGoBlockCard } from "./where-to-go-block-card";
+import { computeIndexedRowDropIndex, budgetRowSiblingShiftPx } from "./sectioned-row-list-drag";
 import styles from "./create-checkplan.module.css";
+
+function computePersonalNoteDropIndex(clientY, containerEl) {
+	return computeIndexedRowDropIndex(clientY, containerEl, "data-personal-note-row-index");
+}
+
+const PersonalNotesDragFloatRow = memo(function PersonalNotesDragFloatRow({ top, left, width, text }) {
+	if (typeof document === "undefined") return null;
+	return createPortal(
+		<div className={styles.personalNoteRowFloatRoot} style={{ top, left, width }}>
+			<div className={styles.personalNoteRowFloatInner}>
+				<div className={styles.notesPersonalRow}>
+					<div className={styles.notesItemDragHandle} aria-hidden>
+						<img src="/icons/system/draggableDots.svg" alt="" width={11} height={18} draggable={false} />
+					</div>
+					<div className={styles.notesItemRow}>
+						<span className={`paragraph ${styles.notesPersonalNoteFloatText}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+							{text?.trim() || "—"}
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>,
+		document.body
+	);
+});
 
 export const RightColumnSection = memo(function RightColumnSection({
 	showPlatformNote,
@@ -26,6 +54,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 	updatePersonalNoteItem,
 	addPersonalNoteItem,
 	removePersonalNoteItem,
+	reorderPersonalNoteItems,
 	canAddWhereToGoBlock,
 	canAddUsefulContactsBlock,
 	canAddBudgetTableBlock,
@@ -38,6 +67,119 @@ export const RightColumnSection = memo(function RightColumnSection({
 	isPreview = false,
 	fullWidth = false,
 }) {
+	const personalNotesRowsContainerRef = useRef(null);
+	const [personalNoteDragVisual, setPersonalNoteDragVisual] = useState(null);
+	const personalNoteDragFromRef = useRef(null);
+	const personalNoteDragUserSelectRef = useRef(null);
+	const personalNoteDragRafRef = useRef(null);
+	const personalNoteDragPendingRef = useRef(null);
+
+	useEffect(
+		() => () => {
+			if (personalNoteDragRafRef.current != null) cancelAnimationFrame(personalNoteDragRafRef.current);
+		},
+		[]
+	);
+
+	const onPersonalNoteDragHandlePointerDown = useCallback(
+		(rowIndex, e) => {
+			if (readOnly || e.button !== 0) return;
+			e.preventDefault();
+			e.stopPropagation();
+			const rowEl = e.currentTarget.closest("[data-personal-note-row-index]");
+			if (!rowEl || !personalNotesRowsContainerRef.current) return;
+			const rect = rowEl.getBoundingClientRect();
+			const grabOffsetY = e.clientY - rect.top;
+			let slotPx = rect.height + 20;
+			const nextEl = rowEl.nextElementSibling;
+			if (nextEl?.hasAttribute?.("data-personal-note-row-index")) {
+				slotPx = Math.max(1, nextEl.getBoundingClientRect().top - rect.top);
+			}
+			personalNoteDragFromRef.current = rowIndex;
+			personalNoteDragUserSelectRef.current = document.body.style.userSelect;
+			document.body.style.userSelect = "none";
+			setPersonalNoteDragVisual({
+				fromIndex: rowIndex,
+				overIndex: rowIndex,
+				floatTop: e.clientY - grabOffsetY,
+				floatLeft: rect.left,
+				floatWidth: rect.width,
+				grabOffsetY,
+				slotPx,
+			});
+			try {
+				e.currentTarget.setPointerCapture(e.pointerId);
+			} catch {
+				/* ignore */
+			}
+		},
+		[readOnly]
+	);
+
+	const onPersonalNoteDragHandlePointerMove = useCallback((e) => {
+		if (personalNoteDragFromRef.current === null) return;
+		e.preventDefault();
+		personalNoteDragPendingRef.current = { clientY: e.clientY };
+		if (personalNoteDragRafRef.current != null) return;
+		personalNoteDragRafRef.current = requestAnimationFrame(() => {
+			personalNoteDragRafRef.current = null;
+			const p = personalNoteDragPendingRef.current;
+			if (!p || personalNoteDragFromRef.current === null) return;
+			const container = personalNotesRowsContainerRef.current;
+			const over = container ? computePersonalNoteDropIndex(p.clientY, container) : personalNoteDragFromRef.current;
+			setPersonalNoteDragVisual((prev) => {
+				if (!prev) return prev;
+				return {
+					...prev,
+					overIndex: over,
+					floatTop: p.clientY - prev.grabOffsetY,
+				};
+			});
+		});
+	}, []);
+
+	const onPersonalNoteDragHandlePointerUp = useCallback(
+		(e) => {
+			document.body.style.userSelect = personalNoteDragUserSelectRef.current ?? "";
+			personalNoteDragUserSelectRef.current = null;
+			if (personalNoteDragRafRef.current != null) {
+				cancelAnimationFrame(personalNoteDragRafRef.current);
+				personalNoteDragRafRef.current = null;
+			}
+			personalNoteDragPendingRef.current = null;
+			if (personalNoteDragFromRef.current === null) return;
+			const from = personalNoteDragFromRef.current;
+			personalNoteDragFromRef.current = null;
+			try {
+				e.currentTarget.releasePointerCapture(e.pointerId);
+			} catch {
+				/* ignore */
+			}
+			setPersonalNoteDragVisual(null);
+			const container = personalNotesRowsContainerRef.current;
+			const to = container ? computePersonalNoteDropIndex(e.clientY, container) : from;
+			reorderPersonalNoteItems?.(from, to);
+		},
+		[reorderPersonalNoteItems]
+	);
+
+	const onPersonalNoteDragHandlePointerCancel = useCallback((e) => {
+		document.body.style.userSelect = personalNoteDragUserSelectRef.current ?? "";
+		personalNoteDragUserSelectRef.current = null;
+		personalNoteDragFromRef.current = null;
+		if (personalNoteDragRafRef.current != null) {
+			cancelAnimationFrame(personalNoteDragRafRef.current);
+			personalNoteDragRafRef.current = null;
+		}
+		personalNoteDragPendingRef.current = null;
+		setPersonalNoteDragVisual(null);
+		try {
+			e.currentTarget.releasePointerCapture(e.pointerId);
+		} catch {
+			/* ignore */
+		}
+	}, []);
+
 	const canShowDeleteOnEmpty =
 		personalNotesItems.length >= 2 ||
 		personalNotesItems.some((item) => (item.text || "").trim() !== "");
@@ -114,21 +256,42 @@ export const RightColumnSection = memo(function RightColumnSection({
 						Личные заметки
 					</h3>
 				</div>
-				<div className={styles.notesItemsWrap}>
+				<div ref={personalNotesRowsContainerRef} className={styles.notesItemsWrap}>
 					{personalNotesItems.map((item, i) => {
 						const isEmpty = !(item.text || "").trim();
 						const showDelete = !readOnly && canShowDeleteOnEmpty && isEmpty;
+						const d = personalNoteDragVisual;
+						const from = d?.fromIndex ?? -1;
+						const over = d?.overIndex ?? -1;
+						const slot = d?.slotPx ?? 0;
 						return (
 							<CheckplanPersonalNoteRow
 								key={i}
 								item={item}
+								rowIndex={i}
 								readOnly={readOnly}
 								showDelete={showDelete}
 								onTextChange={(e) => updatePersonalNoteItem(i, { text: e.target.value })}
 								onRemove={() => removePersonalNoteItem(i)}
+								onPersonalNoteDragHandlePointerDown={onPersonalNoteDragHandlePointerDown}
+								onPersonalNoteDragHandlePointerMove={onPersonalNoteDragHandlePointerMove}
+								onPersonalNoteDragHandlePointerUp={onPersonalNoteDragHandlePointerUp}
+								onPersonalNoteDragHandlePointerCancel={onPersonalNoteDragHandlePointerCancel}
+								personalNoteRowDragShiftPx={budgetRowSiblingShiftPx(i, from, over, slot)}
+								personalNoteRowIsDragSource={d != null && d.fromIndex === i}
+								personalNoteRowIsDropTarget={d != null && d.fromIndex !== d.overIndex && d.overIndex === i}
+								personalNoteRowShiftTransition={d != null}
 							/>
 						);
 					})}
+					{personalNoteDragVisual && personalNotesItems[personalNoteDragVisual.fromIndex] != null && (
+						<PersonalNotesDragFloatRow
+							top={personalNoteDragVisual.floatTop}
+							left={personalNoteDragVisual.floatLeft}
+							width={personalNoteDragVisual.floatWidth}
+							text={personalNotesItems[personalNoteDragVisual.fromIndex]?.text}
+						/>
+					)}
 				</div>
 				<div className={styles.bulletList}>
 					{PERSONAL_NOTES.map((text, i) => (

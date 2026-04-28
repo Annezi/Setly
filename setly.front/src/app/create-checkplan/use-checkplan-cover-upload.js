@@ -16,15 +16,11 @@ export function useCheckplanCoverUpload(initialPlan) {
 	const [coverImage, setCoverImage] = useState(() => resolveInitialCoverSrc(initialPlan));
 	const [coverLoading, setCoverLoading] = useState(false);
 	const [coverError, setCoverError] = useState(null);
+	const [coverFileToCrop, setCoverFileToCrop] = useState(null);
 	const coverInputRef = useRef(null);
 
-	const handleCoverFileChange = useCallback(async (e) => {
-		const file = e.target?.files?.[0];
+	const uploadCoverFile = useCallback(async (file) => {
 		if (!file) return;
-		if (!file.type.startsWith("image/")) {
-			setCoverError("Выберите изображение (JPG, PNG и т.д.)");
-			return;
-		}
 		setCoverError(null);
 		setCoverLoading(true);
 		try {
@@ -64,8 +60,18 @@ export function useCheckplanCoverUpload(initialPlan) {
 			setCoverError(err.message || "Не удалось загрузить изображение");
 		} finally {
 			setCoverLoading(false);
-			if (coverInputRef.current) coverInputRef.current.value = "";
 		}
+	}, []);
+
+	const handleCoverFileChange = useCallback(async (e) => {
+		const file = e.target?.files?.[0];
+		if (!file) return;
+		if (!file.type.startsWith("image/")) {
+			setCoverError("Выберите изображение (JPG, PNG и т.д.)");
+			return;
+		}
+		setCoverFileToCrop(file);
+		if (coverInputRef.current) coverInputRef.current.value = "";
 	}, []);
 
 	const handleCoverClick = useCallback(() => {
@@ -76,7 +82,10 @@ export function useCheckplanCoverUpload(initialPlan) {
 		coverImage,
 		coverLoading,
 		coverError,
+		coverFileToCrop,
 		coverInputRef,
+		setCoverFileToCrop,
+		uploadCoverFile,
 		handleCoverFileChange,
 		handleCoverClick,
 	};

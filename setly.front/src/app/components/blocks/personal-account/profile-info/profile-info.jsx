@@ -7,6 +7,7 @@ import ProfilePhoto from '@/app/components/atomic/atoms/profile-photo/profile-ph
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import styles from './profile-info.module.css';
 import { getApiUrl } from '@/app/lib/api';
+import ImageCropModal from '@/app/components/globals/image-crop-modal/image-crop-modal';
 
 /** Загрузка аватара через бэкенд POST /api/user/me/save-image/profile_photo, затем PATCH /api/user/me */
 const UPLOAD_AVATAR_API = '/api/user/me/save-image/profile_photo/';
@@ -21,27 +22,47 @@ const UPDATE_ME_API = '/api/user/me';
  * @param {string} [props.token] - JWT для запросов к API
  * @param {function(): void} [props.onUserChange] - вызов после обновления данных (перезапрос user)
  */
-export default function ProfileInfo({ user, token, onUserChange }) {
+function resolveTravelerRank(createdPlansCount, isOfficialSetlyProfile) {
+  if (isOfficialSetlyProfile) {
+    return { label: 'Проводник в мир путешествий', level: 4 };
+  }
+  const count = Number.isFinite(Number(createdPlansCount)) ? Number(createdPlansCount) : 0;
+  if (count <= 0) return { label: 'Новый пользователь Setly', level: 1 };
+  if (count >= 10) return { label: 'Специалист по путешествиям', level: 4 };
+  if (count >= 5) return { label: 'Профессиональный путешественник', level: 3 };
+  if (count >= 3) return { label: 'Опытный путешественник', level: 2 };
+  return { label: 'Начинающий путешественник', level: 1 };
+}
+
+function getRankIconSrc(level) {
+  const safeLevel = Number.isInteger(level) && level >= 1 && level <= 4 ? level : 1;
+  return `/icons/images/rank${safeLevel}.svg`;
+}
+
+export default function ProfileInfo({
+  user,
+  token,
+  canEdit = true,
+  createdPlansCount = 0,
+  isOfficialSetlyProfile = false,
+  onUserChange,
+}) {
   const router = useRouter();
   const [localAvatarPath, setLocalAvatarPath] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fileToCrop, setFileToCrop] = useState(null);
   const inputRef = useRef(null);
 
   const effectiveAvatarPath =
     localAvatarPath ??
     (user?.profile_photo_url && user.profile_photo_url.trim() ? user.profile_photo_url : null) ??
     (user?.avatarPath && user.avatarPath.trim() ? user.avatarPath : null);
-  const canUpload = Boolean(user?.id && token);
+  const canUpload = Boolean(canEdit && user?.id && token);
 
-  const handleFileChange = useCallback(
-    async (e) => {
-      const file = e.target?.files?.[0];
+  const uploadAvatarFile = useCallback(
+    async (file) => {
       if (!file || !user?.id || !token) return;
-      if (!file.type.startsWith('image/')) {
-        setError('Выберите изображение (JPG, PNG и т.д.)');
-        return;
-      }
       setError(null);
       setLoading(true);
       try {
@@ -81,10 +102,23 @@ export default function ProfileInfo({ user, token, onUserChange }) {
         setError(err.message || 'Не удалось загрузить фото');
       } finally {
         setLoading(false);
-        if (inputRef.current) inputRef.current.value = '';
       }
     },
-    [user?.id, token, onUserChange]
+    [onUserChange, token, user?.id]
+  );
+
+  const handleFileChange = useCallback(
+    async (e) => {
+      const file = e.target?.files?.[0];
+      if (!file || !user?.id || !token) return;
+      if (!file.type.startsWith('image/')) {
+        setError('Выберите изображение (JPG, PNG и т.д.)');
+        return;
+      }
+      setFileToCrop(file);
+      if (inputRef.current) inputRef.current.value = '';
+    },
+    [user?.id, token]
   );
 
   const handlePhotoClick = useCallback(() => {
@@ -92,7 +126,8 @@ export default function ProfileInfo({ user, token, onUserChange }) {
   }, [canUpload]);
 
   const displayName = user?.nickname ?? user?.name ?? 'Пользователь';
-  const displayEmail = user?.email ?? '';
+  const travelerRank = resolveTravelerRank(createdPlansCount, isOfficialSetlyProfile);
+  const medalLevels = [travelerRank.level];
 
   return (
     <div className={styles.wrapper}>
@@ -107,23 +142,56 @@ export default function ProfileInfo({ user, token, onUserChange }) {
       <div className={styles.left}>
         <ProfilePhoto
           src={effectiveAvatarPath ? effectiveAvatarPath : undefined}
-          onClick={handlePhotoClick}
+          onClick={canUpload ? handlePhotoClick : undefined}
+          interactive={canEdit}
         />
         <div className={styles.textBlock}>
           <h1 className={`title_1 ${styles.profileName}`}>{displayName}</h1>
-          <p className={`subinfo ${styles.email}`}>{displayEmail}</p>
+          <p className={`subinfo ${styles.email}`}>
+            <span className={styles.rankMedals} aria-hidden>
+              {medalLevels.map((level) => (
+                <PublicImage
+                  key={level}
+                  src={getRankIconSrc(level)}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className={styles.rankMedalIcon}
+                />
+              ))}
+            </span>
+            <span className={styles.rankLabel}>{travelerRank.label}</span>
+          </p>
         </div>
       </div>
-      <div className={styles.settingsButton}>
-        <RoundButton
-          variant="white"
-          icon={<PublicImage src="/icons/system/Settings.svg" alt="" width={20} height={20} />}
-          aria-label="Настройки профиля"
-          onClick={() => router.push('/settings')}
-        />
-      </div>
+      {canEdit && (
+        <div className={styles.settingsButton}>
+          <RoundButton
+            variant="white"
+            icon={<PublicImage src="/icons/system/Settings.svg" alt="" width={20} height={20} />}
+            aria-label="Настройки профиля"
+            onClick={() => router.push('/settings')}
+          />
+        </div>
+      )}
       {loading && <span className={styles.loading}>Загрузка…</span>}
       {error && <span className={styles.error}>{error}</span>}
+      {fileToCrop && (
+        <ImageCropModal
+          file={fileToCrop}
+          aspectRatio={1}
+          outputWidth={600}
+          outputHeight={600}
+          previewShape="circle"
+          title="Кадрировать фото профиля"
+          confirmText="Применить"
+          onCancel={() => setFileToCrop(null)}
+          onConfirm={async (croppedFile) => {
+            await uploadAvatarFile(croppedFile);
+            setFileToCrop(null);
+          }}
+        />
+      )}
     </div>
   );
 }

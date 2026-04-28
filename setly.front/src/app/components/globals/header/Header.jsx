@@ -33,6 +33,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
   const router = useRouter();
   const pathname = usePathname();
   const onAccountPage = isAccountPage(pathname);
+  const onOwnAccountPage = pathname === '/account';
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setPortalsReady(true));
@@ -195,7 +196,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
               >
                 <span className={styles.headerAuthButtonText}>Войти</span>
               </button>
-            ) : onAccountPage ? (
+            ) : onOwnAccountPage ? (
               <span ref={accountMenuWrapRef} className={styles.accountMenuWrap}>
                 <ProfilePhoto
                   src={user?.profile_photo_url ?? user?.avatarPath}
@@ -252,7 +253,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
       </div>
 
       {/* Выпадающее меню аккаунта (только на /account) */}
-      {portalsReady && onAccountPage && isLoggedIn && accountMenuOpen &&
+      {portalsReady && onOwnAccountPage && isLoggedIn && accountMenuOpen &&
         createPortal(
           <div
             className={`component-blur ${styles.accountDropdownMenu} ${styles.accountDropdownMenuPortal}`}

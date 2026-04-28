@@ -2,14 +2,16 @@ import os
 import re
 import uuid
 from typing import Annotated, Optional
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Request
 from sqlmodel import select
 
 from auth import get_current_user, hash_password, verify_password, create_access_token
 from database.database import get_session
-from database.models import User, UserLikes, UserCheckPlan, CheckPlan
+from database.models import User, UserLikes, UserCheckPlan, UserPinnedCheckPlan, CheckPlan
 from sqlmodel.ext.asyncio.session import AsyncSession
+from rate_limit import enforce_rate_limit
 
 from api.schemas.user import (
     UserCreate,
@@ -23,12 +25,21 @@ from api.schemas.user import (
     MeCheckplansResponse,
     LikeCreate,
     CheckplanCreate,
+    PinnedCheckplansOrderUpdate,
     UserOgPreview,
+    UserPublicProfileResponse,
+    UserPublicCheckplansResponse,
 )
 
 router = APIRouter(prefix="/user", tags=["user"])
 
 NICKNAME_MAX_LENGTH = 40
+MAX_PINNED_CHECKPLANS = 6
+RATE_LIMITS = {
+    "check_email": 30,
+    "register": 10,
+    "login": 20,
+}
 
 
 def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
@@ -73,6 +84,13 @@ def _normalize_nickname(value: str) -> str:
     return " ".join((value or "").strip().split())
 
 
+def _is_official_setly_user(user: User | None) -> bool:
+    if user is None:
+        return False
+    email = (user.email or "").strip().lower()
+    return email == "setly@setly.com"
+
+
 def _validate_password(value: str) -> bool:
     pwd = (value or "").replace(" ", "")
     return len(pwd) >= PASSWORD_MIN_LENGTH and bool(PASSWORD_ALLOWED.fullmatch(pwd))
@@ -80,25 +98,28 @@ def _validate_password(value: str) -> bool:
 
 @router.get("/check-email")
 async def check_email(
+    request: Request,
     email: str,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Проверка, занята ли почта. Ответ: { exists: true/false }."""
-    result = await session.execute(select(User).where(User.email == email.strip().lower()))
-    return {"exists": result.scalar_one_or_none() is not None}
+    """Унифицированный ответ для проверки email без раскрытия существования аккаунта."""
+    await enforce_rate_limit(request, "check_email", RATE_LIMITS["check_email"])
+    return {"ok": True}
 
 
 @router.post("/register", response_model=UserRegisterResponse)
 async def register(
+    request: Request,
     data: UserCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Регистрация нового пользователя. Возвращает пользователя и токен."""
+    await enforce_rate_limit(request, "register", RATE_LIMITS["register"])
     result = await session.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none() is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists",
+            detail="Не удалось выполнить регистрацию",
         )
     user = User(
         email=data.email,
@@ -120,10 +141,12 @@ async def register(
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    request: Request,
     data: UserLogin,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Вход по email и паролю. Возвращает пользователя и токен (без вызова /me на клиенте)."""
+    await enforce_rate_limit(request, "login", RATE_LIMITS["login"])
     result = await session.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if user is None or not verify_password(data.password, user.password_hash):
@@ -159,6 +182,58 @@ async def public_profile_for_og(
         nickname=_normalize_nickname(user.nickname or ""),
         profile_photo_url=_sanitize_profile_photo_url(user.profile_photo_url),
     )
+
+
+@router.get("/public-profile/{user_id}/full", response_model=UserPublicProfileResponse)
+async def public_profile_full(
+    user_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Публичные данные профиля для страницы профиля (без email и приватных полей)."""
+    result = await session.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return UserPublicProfileResponse(
+        id=user.id,
+        nickname=_normalize_nickname(user.nickname or ""),
+        profile_photo_url=_sanitize_profile_photo_url(user.profile_photo_url),
+        profile_bg_url=_sanitize_profile_photo_url(user.profile_bg_url),
+        is_official_setly=_is_official_setly_user(user),
+    )
+
+
+@router.get("/public-profile/{user_id}/checkplans", response_model=UserPublicCheckplansResponse)
+async def public_profile_checkplans(
+    user_id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Публичные чек-планы пользователя (приватные исключаются)."""
+    user_result = await session.execute(select(User.id).where(User.id == user_id))
+    if user_result.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    plans_result = await session.execute(
+        select(CheckPlan.id_str)
+        .where(CheckPlan.author_id == user_id, CheckPlan.visibility == "public")
+        .distinct()
+    )
+    id_strs = [row[0] for row in plans_result.all()]
+    id_set = set(id_strs)
+
+    pinned_result = await session.execute(
+        select(UserPinnedCheckPlan.id_str)
+        .where(UserPinnedCheckPlan.user_id == user_id)
+        .order_by(UserPinnedCheckPlan.pinned_at.asc(), UserPinnedCheckPlan.id.asc())
+    )
+    pinned_id_strs = [row[0] for row in pinned_result.all() if row[0] in id_set]
+    return UserPublicCheckplansResponse(id_strs=id_strs, pinned_id_strs=pinned_id_strs)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -381,7 +456,13 @@ async def me_checkplans(
         .distinct()
     )
     id_strs = [row[0] for row in result.all()]
-    return MeCheckplansResponse(id_strs=id_strs)
+    pinned_result = await session.execute(
+        select(UserPinnedCheckPlan.id_str)
+        .where(UserPinnedCheckPlan.user_id == current_user.id)
+        .order_by(UserPinnedCheckPlan.pinned_at.asc(), UserPinnedCheckPlan.id.asc())
+    )
+    pinned_id_strs = [row[0] for row in pinned_result.all()]
+    return MeCheckplansResponse(id_strs=id_strs, pinned_id_strs=pinned_id_strs)
 
 
 @router.post("/me/checkplans", status_code=status.HTTP_201_CREATED)
@@ -407,7 +488,7 @@ async def me_checkplans_add(
     return {"ok": True}
 
 
-@router.delete("/me/checkplans/{id_str:path}")
+@router.delete("/me/checkplans/{id_str}")
 async def me_checkplans_remove(
     id_str: str,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -427,4 +508,107 @@ async def me_checkplans_remove(
     if row is not None:
         await session.delete(row)
         await session.commit()
+    return {"ok": True}
+
+
+@router.post("/me/checkplans/{id_str}/pin", status_code=status.HTTP_201_CREATED)
+async def me_checkplans_pin(
+    id_str: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Закрепить свой чек-план (максимум 6)."""
+    sid = (id_str or "").strip()
+    if not sid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required")
+    plan_result = await session.execute(select(CheckPlan).where(CheckPlan.id_str == sid))
+    plan = plan_result.scalar_one_or_none()
+    if plan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="CheckPlan not found")
+    if plan.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the author can pin this check plan",
+        )
+    existing_result = await session.execute(
+        select(UserPinnedCheckPlan).where(
+            UserPinnedCheckPlan.user_id == current_user.id,
+            UserPinnedCheckPlan.id_str == sid,
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing is not None:
+        return {"ok": True, "message": "already pinned"}
+
+    count_result = await session.execute(
+        select(UserPinnedCheckPlan.id).where(UserPinnedCheckPlan.user_id == current_user.id)
+    )
+    pinned_count = len(count_result.all())
+    if pinned_count >= MAX_PINNED_CHECKPLANS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Достигнут максимум закреплённых чек-планов: {MAX_PINNED_CHECKPLANS}",
+        )
+    session.add(UserPinnedCheckPlan(user_id=current_user.id, id_str=sid))
+    await session.commit()
+    return {"ok": True}
+
+
+@router.delete("/me/checkplans/{id_str}/pin")
+async def me_checkplans_unpin(
+    id_str: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Открепить свой чек-план."""
+    sid = (id_str or "").strip()
+    if not sid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required")
+    result = await session.execute(
+        select(UserPinnedCheckPlan).where(
+            UserPinnedCheckPlan.user_id == current_user.id,
+            UserPinnedCheckPlan.id_str == sid,
+        )
+    )
+    row = result.scalar_one_or_none()
+    if row is not None:
+        await session.delete(row)
+        await session.commit()
+    return {"ok": True}
+
+
+@router.patch("/me/checkplans/pinned/order")
+async def me_checkplans_pinned_order(
+    data: PinnedCheckplansOrderUpdate,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Переупорядочить закреплённые чек-планы пользователя."""
+    requested = [str(x).strip() for x in (data.id_strs or []) if str(x).strip()]
+    if len(requested) > MAX_PINNED_CHECKPLANS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Достигнут максимум закреплённых чек-планов: {MAX_PINNED_CHECKPLANS}",
+        )
+    rows_result = await session.execute(
+        select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.user_id == current_user.id)
+    )
+    rows = rows_result.scalars().all()
+    existing_set = {str(r.id_str) for r in rows}
+    requested_set = set(requested)
+    if existing_set != requested_set:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Передан некорректный набор закреплённых чек-планов",
+        )
+
+    by_id = {str(r.id_str): r for r in rows}
+    base_time = datetime.utcnow()
+    for idx, id_str in enumerate(requested):
+        row = by_id.get(id_str)
+        if row is None:
+            continue
+        row.pinned_at = base_time + timedelta(milliseconds=idx)
+        session.add(row)
+    await session.commit()
     return {"ok": True}

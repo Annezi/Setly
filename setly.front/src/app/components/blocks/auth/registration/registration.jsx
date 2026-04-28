@@ -62,7 +62,6 @@ export default function Registration() {
   const [showAgreeError, setShowAgreeError] = useState(false);
   const [showEmailExistsError, setShowEmailExistsError] = useState(false);
   const [showNicknameExistsError, setShowNicknameExistsError] = useState(false);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState(null);
 
@@ -112,22 +111,6 @@ export default function Registration() {
       setPasswordError(null);
       if (password !== passwordAgain) return;
 
-      setIsCheckingEmail(true);
-      try {
-        const checkRes = await apiFetch(
-          `${API_PREFIX}/check-email?email=${encodeURIComponent(emailTrimmed.toLowerCase())}`
-        );
-        const checkData = await checkRes.json();
-        if (checkData.exists) {
-          setShowEmailExistsError(true);
-          setIsCheckingEmail(false);
-          return;
-        }
-      } catch {
-        setIsCheckingEmail(false);
-        return;
-      }
-      setIsCheckingEmail(false);
       setIsSubmitting(true);
       try {
         const res = await apiFetch(`${API_PREFIX}/register`, {
@@ -278,10 +261,10 @@ export default function Registration() {
         <div className={styles.submitButton}>
           <Button
             color="white"
-            Text={isSubmitting ? "Регистрация..." : isCheckingEmail ? "Проверка..." : "Зарегистрироваться"}
+              Text={isSubmitting ? "Регистрация..." : "Зарегистрироваться"}
             type="submit"
             onClick={handleSubmit}
-            disabled={isCheckingEmail || isSubmitting}
+              disabled={isSubmitting}
           />
         </div>
 

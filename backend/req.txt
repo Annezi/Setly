@@ -34,3 +34,4 @@ email-validator
 python-multipart
 alembic
 psycopg2-binary
+redis==7.4.0

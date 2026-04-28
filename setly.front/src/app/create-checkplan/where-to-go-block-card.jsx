@@ -21,8 +21,8 @@ function isValidLink(value) {
 	if (s === "") return true;
 	try {
 		const url = s.startsWith("http://") || s.startsWith("https://") ? s : `https://${s}`;
-		new URL(url);
-		return true;
+		const parsed = new URL(url);
+		return parsed.protocol === "http:" || parsed.protocol === "https:";
 	} catch {
 		return false;
 	}
@@ -117,9 +117,10 @@ export const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
 		if (url) {
 			try {
 				const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+				if (u.protocol !== "http:" && u.protocol !== "https:") return;
 				window.open(u.toString(), "_blank", "noopener,noreferrer");
 			} catch {
-				window.open(`https://${url}`, "_blank", "noopener,noreferrer");
+				// Невалидные URL не открываем.
 			}
 		}
 	}, [row.link]);

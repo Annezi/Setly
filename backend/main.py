@@ -38,12 +38,7 @@ async def lifespan(app: FastAPI):
             await asyncio.sleep(DB_CONNECT_RETRY_INTERVAL)
     os.makedirs(STORAGE_DIR, exist_ok=True)
     from auth import SECRET_KEY
-    _default = "huita"
-    if (SECRET_KEY or "").strip() == _default:
-        print(f"WARNING: {SECRET_KEY}")
-        print("WARNING: JWT_SECRET is default! Set JWT_SECRET in .env to avoid 401.", flush=True)
-    else:
-        print("JWT_SECRET: set (from .env)", flush=True)
+    print(f"JWT_SECRET: set ({len(SECRET_KEY)} chars)", flush=True)
     yield
 
 
@@ -52,10 +47,17 @@ app = FastAPI(lifespan=lifespan)
 # С allow_credentials=True нельзя использовать "*" — нужны явные origins, иначе браузер может не отправлять Authorization
 _CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS", "https://setly.space,http://localhost:3000")
 CORS_ORIGINS = [o.strip() for o in _CORS_ORIGINS_STR.split(",") if o.strip()]
+_DEFAULT_CORS_ORIGIN_REGEX = (
+    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    r"|^https?://(?:\d{1,3}\.){3}\d{1,3}(:\d+)?$"
+    r"|^https://([a-z0-9-]+\.)?setly\.space$"
+)
+CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX", _DEFAULT_CORS_ORIGIN_REGEX).strip() or _DEFAULT_CORS_ORIGIN_REGEX
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

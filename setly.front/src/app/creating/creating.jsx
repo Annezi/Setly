@@ -9,6 +9,7 @@ import ButtonsMini from "@/app/components/atomic/atoms/buttons-mini/buttons-mini
 import Questions from "@/app/components/atomic/atoms/questions/questions";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import Input from "@/app/components/atomic/molecules/input/input";
+import ImageCropModal from "@/app/components/globals/image-crop-modal/image-crop-modal";
 import styles from "./creating.module.css";
 import { getAuth } from "@/app/lib/auth-storage";
 import { getApiUrl } from "@/app/lib/api";
@@ -106,6 +107,7 @@ export default function Creating() {
   const [coverImage, setCoverImage] = useState(DEFAULT_COVER_IMAGE);
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverError, setCoverError] = useState(null);
+  const [coverFileToCrop, setCoverFileToCrop] = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState(null);
   const coverInputRef = useRef(null);
@@ -191,13 +193,8 @@ export default function Creating() {
     setCurrentStep((s) => s - 1);
   }, [currentStep]);
 
-  const handleCoverFileChange = useCallback(async (e) => {
-    const file = e.target?.files?.[0];
+  const uploadCoverFile = useCallback(async (file) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setCoverError("Выберите изображение (JPG, PNG и т.д.)");
-      return;
-    }
     setCoverError(null);
     setCoverLoading(true);
     try {
@@ -236,8 +233,18 @@ export default function Creating() {
       setCoverError(err.message || "Не удалось загрузить изображение");
     } finally {
       setCoverLoading(false);
-      if (coverInputRef.current) coverInputRef.current.value = "";
     }
+  }, []);
+
+  const handleCoverFileChange = useCallback(async (e) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setCoverError("Выберите изображение (JPG, PNG и т.д.)");
+      return;
+    }
+    setCoverFileToCrop(file);
+    if (coverInputRef.current) coverInputRef.current.value = "";
   }, []);
 
   const handleCoverClick = useCallback(() => {
@@ -543,6 +550,22 @@ export default function Creating() {
           />}
         </div>
       </div>
+      {coverFileToCrop && (
+        <ImageCropModal
+          file={coverFileToCrop}
+          aspectRatio={464 / 270}
+          outputWidth={928}
+          outputHeight={540}
+          previewShape="binocular"
+          title="Кадрировать обложку"
+          confirmText="Применить"
+          onCancel={() => setCoverFileToCrop(null)}
+          onConfirm={async (croppedFile) => {
+            await uploadCoverFile(croppedFile);
+            setCoverFileToCrop(null);
+          }}
+        />
+      )}
     </div>
   );
 }

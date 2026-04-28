@@ -28,6 +28,14 @@ class UserCheckPlan(SQLModel, table=True):
     id_str: str = Field(nullable=False)
 
 
+class UserPinnedCheckPlan(SQLModel, table=True):
+    """Закреплённые чек-планы пользователя (до 6, в порядке закрепления)."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(nullable=False)
+    id_str: str = Field(nullable=False)
+    pinned_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
 class CheckPlan(SQLModel, table=True):
     """Чек-план (карточка каталога): обложка, заголовок, описание, теги для фильтров."""
     __tablename__ = "checkplans"

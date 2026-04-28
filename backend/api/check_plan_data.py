@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 from database.database import get_session
 from database.models import CheckPlan, CheckPlanData, CheckPlanDataStaff, User
 from api.schemas.check_plan_data import (
@@ -17,6 +17,14 @@ from api.schemas.check_plan_data import (
 )
 
 router = APIRouter(prefix="/checkplan-data", tags=["checkplan-data"])
+
+
+def _can_read_plan(plan: CheckPlan, current_user: User | None) -> bool:
+    visibility = (plan.visibility or "public").strip().lower()
+    if visibility == "private":
+        return current_user is not None and plan.author_id == current_user.id
+    # link и public доступны по прямой ссылке
+    return True
 
 
 async def _require_current_user_is_author_of_plan_data(
@@ -118,23 +126,48 @@ def _days_from_dates(date_start: str, date_end: str) -> tuple[int, str]:
 
 @router.get("", response_model=list[CheckPlanDataResponse])
 async def list_check_plan_data(
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Список всех записей CheckPlanData."""
-    result = await session.execute(select(CheckPlanData).order_by(CheckPlanData.id))
+    """Список записей CheckPlanData только текущего пользователя."""
+    result = await session.execute(
+        select(CheckPlanData)
+        .join(CheckPlan, CheckPlan.check_plan_data_id == CheckPlanData.id)
+        .where(CheckPlan.author_id == current_user.id)
+        .order_by(CheckPlanData.id)
+    )
     rows = result.scalars().all()
-    return [_row_to_response(r) for r in rows]
+    unique_rows: dict[int, CheckPlanData] = {}
+    for row in rows:
+        unique_rows[row.id] = row
+    return [_row_to_response(r) for r in unique_rows.values()]
 
 
 @router.get("/{item_id}", response_model=CheckPlanDataResponse)
 async def get_check_plan_data(
     item_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User | None, Depends(get_current_user_optional)],
 ):
     """Одна запись по id."""
     result = await session.execute(select(CheckPlanData).where(CheckPlanData.id == item_id))
     row = result.scalar_one_or_none()
     if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="CheckPlanData not found",
+        )
+    plans_result = await session.execute(
+        select(CheckPlan).where(CheckPlan.check_plan_data_id == item_id)
+    )
+    plans = plans_result.scalars().all()
+    if not plans:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No check plan references this data",
+        )
+    can_read = any(_can_read_plan(plan, current_user) for plan in plans)
+    if not can_read:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlanData not found",
@@ -145,6 +178,7 @@ async def get_check_plan_data(
 @router.post("", response_model=CheckPlanDataResponse, status_code=status.HTTP_201_CREATED)
 async def create_check_plan_data(
     data: CheckPlanDataCreate,
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Создать запись CheckPlanData. Тело запроса — объект карточки (CheckPlanDataStaff) напрямую."""
@@ -247,6 +281,7 @@ async def update_check_plan_data(
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_check_plan_data(
     item_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Удалить запись CheckPlanData."""
@@ -257,5 +292,6 @@ async def delete_check_plan_data(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlanData not found",
         )
+    await _require_current_user_is_author_of_plan_data(session, item_id, current_user.id)
     await session.delete(item)
     await session.commit()

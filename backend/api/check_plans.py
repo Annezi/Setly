@@ -12,7 +12,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.database import get_session
-from database.models import CheckPlan, User, UserLikes, CheckPlanData
+from database.models import CheckPlan, User, UserLikes, CheckPlanData, UserPinnedCheckPlan
 from api.schemas.check_plan import (
     CheckPlanCard,
     CheckPlanBlock,
@@ -25,11 +25,19 @@ from api.schemas.check_plan import (
 
 import uuid
 
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/check-plans", tags=["check-plans"])
 
 _RE_UUID32_HEX = re.compile(r"^[a-fA-F0-9]{32}$")
+
+
+def _can_read_plan(plan: CheckPlan, current_user: User | None) -> bool:
+    visibility = (plan.visibility or "public").strip().lower()
+    if visibility == "private":
+        return current_user is not None and plan.author_id == current_user.id
+    # link и public доступны по прямой ссылке (GET /check-plans/{id_str})
+    return True
 
 
 async def _find_check_plan_and_author(
@@ -141,6 +149,7 @@ def _plan_to_card(
         title=plan.title,
         description=plan.description,
         userName=author.nickname or "Автор",
+        authorId=author.id,
         avatarSrc=avatar,
         initialLikes=likes_count,
         filterTag=plan.filter_tag,
@@ -253,6 +262,7 @@ def _plan_to_response(plan: CheckPlan, author: User | None = None) -> CheckPlanR
 async def get_check_plan(
     id_str: str,
     session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User | None, Depends(get_current_user_optional)],
 ):
     """Один чек-план по id_str (или только по uuid-суффиксу id_str для коротких URL). Лайки — через UserLikes."""
     pair = await _find_check_plan_and_author(session, id_str)
@@ -262,6 +272,11 @@ async def get_check_plan(
             detail="CheckPlan not found",
         )
     plan, author = pair
+    if not _can_read_plan(plan, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="CheckPlan not found",
+        )
     likes_result = await session.execute(
         select(func.count()).select_from(UserLikes).where(UserLikes.checklist_id == plan.id_str)
     )
@@ -296,11 +311,35 @@ async def get_check_plan(
 async def create_check_plan(
     data: CheckPlanCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     """Создать чек-план."""
+    check_plan_data_id = data.check_plan_data_id or 0
+    if check_plan_data_id > 0:
+        data_result = await session.execute(
+            select(CheckPlanData).where(CheckPlanData.id == check_plan_data_id)
+        )
+        data_row = data_result.scalar_one_or_none()
+        if data_row is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="check_plan_data_id is invalid",
+            )
+        plans_result = await session.execute(
+            select(CheckPlan.id).where(
+                CheckPlan.check_plan_data_id == check_plan_data_id,
+                CheckPlan.author_id != current_user.id,
+            )
+        )
+        if plans_result.first() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the author can attach this check plan data",
+            )
+
     plan = CheckPlan(
         id_str=data.id_str,
-        author_id=data.author_id,
+        author_id=current_user.id,
         image_src=data.image_src,
         image_alt=data.image_alt,
         days=data.days,
@@ -310,7 +349,7 @@ async def create_check_plan(
         description=data.description,
         visibility=data.visibility,
         initial_likes=data.initial_likes,
-        check_plan_data_id=data.check_plan_data_id,
+        check_plan_data_id=check_plan_data_id,
         filter_tag=data.filter_tag,
         region_tag=data.region_tag,
         traveler_tags=data.traveler_tags,
@@ -399,6 +438,11 @@ async def delete_check_plan(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the author can delete this check plan",
         )
+    pinned_result = await session.execute(
+        select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.id_str == id_str)
+    )
+    for pin_row in pinned_result.scalars().all():
+        await session.delete(pin_row)
     await session.delete(plan)
     await session.commit()
 
@@ -413,6 +457,11 @@ async def copy_check_plan(
     result = await session.execute(select(CheckPlan).where(CheckPlan.id_str == id_str))
     plan = result.scalar_one_or_none()
     if plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="CheckPlan not found",
+        )
+    if not _can_read_plan(plan, current_user):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",

@@ -72,6 +72,20 @@ class MeLikesResponse(BaseModel):
 
 class MeCheckplansResponse(BaseModel):
     id_strs: list[str]
+    pinned_id_strs: list[str] = []
+
+
+class UserPublicProfileResponse(BaseModel):
+    id: int
+    nickname: str = ""
+    profile_photo_url: str = ""
+    profile_bg_url: str = ""
+    is_official_setly: bool = False
+
+
+class UserPublicCheckplansResponse(BaseModel):
+    id_strs: list[str]
+    pinned_id_strs: list[str] = []
 
 
 class LikeCreate(BaseModel):
@@ -80,6 +94,10 @@ class LikeCreate(BaseModel):
 
 class CheckplanCreate(BaseModel):
     id_str: str
+
+
+class PinnedCheckplansOrderUpdate(BaseModel):
+    id_strs: list[str]
 
 
 class UserOgPreview(BaseModel):

@@ -291,6 +291,7 @@ export default function PopularCheckplansCarousel({ excludeIdStr = null }) {
                       title={card.title}
                       description={card.description}
                       userName={card.userName}
+                      authorId={card.authorId}
                       avatarSrc={card.avatarSrc}
                       initialLikes={card.initialLikes ?? 0}
                       filterTag={card.filterTag}

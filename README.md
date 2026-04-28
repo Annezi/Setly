@@ -49,7 +49,8 @@ setly.backend/
 | `POSTGRES_DB` | Имя базы данных | `postgres` |
 | `POSTGRES_HOST` | Хост БД (в Docker: `database`) | `database` или `localhost` |
 | `CORS_ORIGINS` | Разрешённые origins для CORS (через запятую) | `https://setly.space,http://localhost:3000` |
-| `JWT_SECRET` | Секрет для подписи JWT (обязательно сменить в продакшене) | — |
+| `JWT_SECRET` | Секрет для подписи JWT (обязательный, без значения по умолчанию) | — |
+| `REDIS_URL` | Redis для rate-limit (`login/register/check-email`) | `redis://redis:6379/0` |
 | `NEXT_PUBLIC_API_URL` | URL API для фронтенда (при сборке) | `https://api.setly.space` или `http://localhost:8000` |
 
 ## Запуск через Docker

@@ -22,8 +22,11 @@ export const ViewModeToolbar = memo(function ViewModeToolbar({
 	onVisibilityChange,
 	onCopyLink,
 	onDuplicatePlan,
+	onTogglePin,
 	onDeletePlan,
 	duplicateInProgress = false,
+	isPinned = false,
+	pinInProgress = false,
 }) {
 	const [shareMenuOpen, setShareMenuOpen] = useState(false);
 	const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -176,6 +179,20 @@ export const ViewModeToolbar = memo(function ViewModeToolbar({
 				}}
 			>
 				{duplicateInProgress ? "Дублирование…" : "Дублировать чек-план"}
+			</button>
+			<button
+				type="button"
+				className={`subinfo ${styles.moreMenuItem}`}
+				role="menuitem"
+				disabled={pinInProgress}
+				onClick={() => {
+					setMoreMenuOpen(false);
+					onTogglePin?.();
+				}}
+			>
+				{pinInProgress
+					? (isPinned ? "Открепление…" : "Закрепление…")
+					: (isPinned ? "Открепить чекплан" : "Закрепить чек-план")}
 			</button>
 			<button
 				type="button"

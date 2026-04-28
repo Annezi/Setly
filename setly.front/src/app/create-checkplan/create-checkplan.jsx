@@ -32,7 +32,7 @@ import {
 	emptyCount,
 	canAddItem,
 } from "./create-checkplan-utils";
-import { buildCheckplanPublicSegment } from "@/app/lib/slug";
+import { buildCheckplanPublicSegment, buildProfilePublicPath } from "@/app/lib/slug";
 import { LocationDropdownContent } from "./location-dropdown-content";
 import { ChecklistSection } from "./checkplan-checklist-section";
 import { TripImageSection } from "./checkplan-trip-image-section";
@@ -51,6 +51,7 @@ import { useCheckplanOnboarding } from "./use-checkplan-onboarding";
 import { useCheckplanGuestFeedbackPopups } from "./use-checkplan-guest-feedback-popups";
 import { useCheckplanHasChanges } from "./use-checkplan-has-changes";
 import { useCheckplanCoverUpload } from "./use-checkplan-cover-upload";
+import ImageCropModal from "@/app/components/globals/image-crop-modal/image-crop-modal";
 
 export default function CreateCheckplan({
 	planIdStr = null,
@@ -78,7 +79,10 @@ export default function CreateCheckplan({
 		coverImage,
 		coverLoading,
 		coverError,
+		coverFileToCrop,
 		coverInputRef,
+		setCoverFileToCrop,
+		uploadCoverFile,
 		handleCoverFileChange,
 		handleCoverClick,
 	} = useCheckplanCoverUpload(initialPlan);
@@ -229,12 +233,18 @@ export default function CreateCheckplan({
 		showDeleteCheckplanPopup,
 		deleteCheckplanClosing,
 		deleteCheckplanInProgress,
+		isPinned,
+		pinInProgress,
+		showPinLimitReachedPopup,
+		pinLimitReachedClosing,
 		handleDuplicatePlan,
 		handleDuplicateSuccessGoToCopy,
 		openDeleteCheckplanPopup,
 		closeDuplicateSuccessPopup,
 		closeDeleteCheckplanPopup,
 		confirmDeleteCheckplan,
+		handleTogglePin,
+		closePinLimitReachedPopup,
 	} = useCheckplanPlanActions({ planIdStr, fromAccount, router });
 	const {
 		showOnboardingPopup,
@@ -803,6 +813,18 @@ export default function CreateCheckplan({
 		});
 	}, []);
 
+	const reorderPersonalNoteItems = useCallback((fromIndex, toIndex) => {
+		if (fromIndex === toIndex) return;
+		setPersonalNotesItems((prev) => {
+			const len = prev.length;
+			if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len) return prev;
+			const next = [...prev];
+			const [removed] = next.splice(fromIndex, 1);
+			next.splice(toIndex, 0, removed);
+			return next;
+		});
+	}, []);
+
 	const datesPlaceholder = "— — — —";
 	const datesLabel = useMemo(() => getButtonLabel(datesRange, datesPlaceholder), [datesRange]);
 
@@ -922,6 +944,10 @@ export default function CreateCheckplan({
 		typeof creatorNameRaw === "string" && creatorNameRaw.trim()
 			? creatorNameRaw.trim()
 			: "User";
+	const creatorIdRaw = initialPlan?.author_id;
+	const creatorId = Number.isInteger(Number(creatorIdRaw)) ? Number(creatorIdRaw) : null;
+	const creatorProfileHref =
+		creatorId != null && creatorId > 0 ? buildProfilePublicPath(creatorId, creatorName) : null;
 	const creatorAvatar = resolveAvatarSrc(
 		initialPlan?.author?.avatar_src ??
 			initialPlan?.author?.avatar ??
@@ -966,6 +992,7 @@ export default function CreateCheckplan({
 					currentVisibility={currentVisibility}
 					creatorAvatar={creatorAvatar}
 					creatorName={creatorName}
+					creatorProfileHref={creatorProfileHref}
 					handleHeaderLikeClick={handleHeaderLikeClick}
 					canLikeFromHeader={canLikeFromHeader}
 					headerLiked={headerLiked}
@@ -1020,6 +1047,7 @@ export default function CreateCheckplan({
 						updatePersonalNoteItem={updatePersonalNoteItem}
 						addPersonalNoteItem={addPersonalNoteItem}
 						removePersonalNoteItem={removePersonalNoteItem}
+						reorderPersonalNoteItems={reorderPersonalNoteItems}
 						canAddWhereToGoBlock={canAddWhereToGoBlock}
 						canAddUsefulContactsBlock={canAddUsefulContactsBlock}
 						canAddBudgetTableBlock={canAddBudgetTableBlock}
@@ -1072,8 +1100,11 @@ export default function CreateCheckplan({
 				onSave={planIdStr ? savePlan : undefined}
 				saveLoading={saveLoading}
 				onDuplicatePlan={handleDuplicatePlan}
+				onTogglePin={handleTogglePin}
 				onDeletePlan={openDeleteCheckplanPopup}
 				duplicateInProgress={duplicateInProgress}
+				isPinned={isPinned}
+				pinInProgress={pinInProgress}
 			/>
 			)}
 			{readOnly && planIdStr && isOwner && (
@@ -1086,8 +1117,11 @@ export default function CreateCheckplan({
 					onVisibilityChange={setVisibilityOverride}
 					onCopyLink={() => setShowCopyLinkToast(true)}
 					onDuplicatePlan={handleDuplicatePlan}
+					onTogglePin={handleTogglePin}
 					onDeletePlan={openDeleteCheckplanPopup}
 					duplicateInProgress={duplicateInProgress}
+					isPinned={isPinned}
+					pinInProgress={pinInProgress}
 				/>
 			)}
 			{readOnly && planIdStr && !isOwner && (
@@ -1125,6 +1159,9 @@ export default function CreateCheckplan({
 				closeDeleteCheckplanPopup={closeDeleteCheckplanPopup}
 				confirmDeleteCheckplan={confirmDeleteCheckplan}
 				deleteCheckplanInProgress={deleteCheckplanInProgress}
+				showPinLimitReachedPopup={showPinLimitReachedPopup}
+				pinLimitReachedClosing={pinLimitReachedClosing}
+				closePinLimitReachedPopup={closePinLimitReachedPopup}
 				showLoginToLikePopup={showLoginToLikePopup}
 				loginToLikeClosing={loginToLikeClosing}
 				closeLoginToLikePopup={closeLoginToLikePopup}
@@ -1133,6 +1170,22 @@ export default function CreateCheckplan({
 				reportSentClosing={reportSentClosing}
 				closeReportSentPopup={closeReportSentPopup}
 			/>
+			{coverFileToCrop && (
+				<ImageCropModal
+					file={coverFileToCrop}
+					aspectRatio={464 / 270}
+					outputWidth={928}
+					outputHeight={540}
+					previewShape="binocular"
+					title="Кадрировать обложку"
+					confirmText="Применить"
+					onCancel={() => setCoverFileToCrop(null)}
+					onConfirm={async (croppedFile) => {
+						await uploadCoverFile(croppedFile);
+						setCoverFileToCrop(null);
+					}}
+				/>
+			)}
 		</div>
 	);
 }

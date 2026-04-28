@@ -12,6 +12,7 @@ export default function ProfilePhoto({
   className,
   href,
   hideUploadOnHover = false,
+  interactive = true,
   size,
   ...props
 }) {
@@ -54,7 +55,7 @@ export default function ProfilePhoto({
   );
 
   const commonProps = {
-    className: `${styles.profilePhoto} ${className ?? ""}`,
+    className: `${styles.profilePhoto} ${interactive ? styles.profilePhotoInteractive : styles.profilePhotoNonInteractive} ${className ?? ""}`,
     style: sizeStyle,
     ...props,
   };
@@ -67,16 +68,20 @@ export default function ProfilePhoto({
     );
   }
 
-  return (
-    <button
-      type="button"
-      aria-label="Загрузить фото профиля"
-      onClick={onClick}
-      {...commonProps}
-    >
-      {content}
-    </button>
-  );
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        aria-label="Загрузить фото профиля"
+        onClick={onClick}
+        {...commonProps}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div {...commonProps}>{content}</div>;
 }
 
 export function ProfilePhotoDemo() {

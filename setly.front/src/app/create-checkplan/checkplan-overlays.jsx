@@ -7,6 +7,7 @@ import {
 	DeleteRowConfirmPopup,
 	DuplicateSuccessPopup,
 	DeleteCheckplanConfirmPopup,
+	PinLimitReachedPopup,
 	LoginToLikePopup,
 	ReportSentPopup,
 } from "./checkplan-dialog-popups";
@@ -36,6 +37,9 @@ export const CheckplanOverlays = memo(function CheckplanOverlays({
 	closeDeleteCheckplanPopup,
 	confirmDeleteCheckplan,
 	deleteCheckplanInProgress,
+	showPinLimitReachedPopup,
+	pinLimitReachedClosing,
+	closePinLimitReachedPopup,
 	showLoginToLikePopup,
 	loginToLikeClosing,
 	closeLoginToLikePopup,
@@ -94,6 +98,14 @@ export const CheckplanOverlays = memo(function CheckplanOverlays({
 						onClose={closeDeleteCheckplanPopup}
 						onConfirm={confirmDeleteCheckplan}
 						loading={deleteCheckplanInProgress}
+					/>,
+					document.body
+				)}
+			{showPinLimitReachedPopup &&
+				createPortal(
+					<PinLimitReachedPopup
+						isClosing={pinLimitReachedClosing}
+						onClose={closePinLimitReachedPopup}
 					/>,
 					document.body
 				)}

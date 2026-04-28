@@ -4,10 +4,13 @@
  * В браузере задайте NEXT_PUBLIC_API_URL при сборке, иначе запросы пойдут на тот же хост.
  */
 export function getApiUrl() {
-  if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-  }
   if (typeof window !== "undefined") {
+    // В браузере по умолчанию используем same-origin (/api/*),
+    // чтобы запросы проходили через Next rewrites без CORS проблем.
+    // Прямой вызов внешнего API можно включить явно.
+    if (process.env.NEXT_PUBLIC_API_DIRECT === "1" && process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+    }
     return "";
   }
   return process.env.NEXT_PUBLIC_API_URL || "http://setly-api:8000";
@@ -49,6 +52,31 @@ export async function apiFetch(path, opts = {}) {
   if (body !== undefined && body !== null) {
     init.body = typeof body === "string" ? body : JSON.stringify(body);
   }
-  const res = await fetch(url, init);
-  return res;
+  try {
+    const res = await fetch(url, init);
+    if (res.status < 500) return res;
+    // Проксированный /api может отдавать 5xx при временных сетевых сбоях до внешнего API.
+    // В браузере пробуем прямой URL API как аварийный фолбэк.
+    if (
+      typeof window !== "undefined" &&
+      !base &&
+      process.env.NEXT_PUBLIC_API_URL &&
+      path.startsWith("/api/")
+    ) {
+      const directBase = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+      return await fetch(`${directBase}${path}`, init);
+    }
+    return res;
+  } catch (err) {
+    if (
+      typeof window !== "undefined" &&
+      !base &&
+      process.env.NEXT_PUBLIC_API_URL &&
+      path.startsWith("/api/")
+    ) {
+      const directBase = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+      return await fetch(`${directBase}${path}`, init);
+    }
+    throw err;
+  }
 }

@@ -78,6 +78,7 @@ class CheckPlanCard(BaseModel):
     title: str
     description: str
     userName: str
+    authorId: int
     avatarSrc: str
     initialLikes: int
     filterTag: str

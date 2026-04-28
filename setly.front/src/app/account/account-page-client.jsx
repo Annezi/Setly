@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
 import { getAuth, updateAuthUser, clearAuth } from '@/app/lib/auth-storage';
 import { apiFetch } from '@/app/lib/api';
 import { buildProfilePublicPath } from '@/app/lib/slug';
+import { parseProfilePublicRef } from '@/app/lib/slug';
 
 const API_PREFIX = '/api/user';
 const PersonalHeader = dynamic(
@@ -43,23 +44,99 @@ function refreshUser(token, setUser, router) {
 
 export default function AccountPageClient() {
   const router = useRouter();
+  const params = useParams();
   const [user, setUser] = useState(null);
+  const [createdPlansCount, setCreatedPlansCount] = useState(0);
   /** Не читать localStorage в initial state — на SSR getAuth() всегда null, иначе ломается гидрация. */
   const [authChecked, setAuthChecked] = useState(false);
+  const userRef = typeof params?.userRef === 'string' ? params.userRef : '';
+  const isPublicProfileRoute = userRef.trim() !== '';
+  const { userId: profileUserId } = parseProfilePublicRef(userRef);
 
   useEffect(() => {
     const auth = getAuth();
-    if (!auth?.user?.id || !auth?.token) {
-      router.replace('/login');
+    const authUserId = auth?.user?.id;
+    const isOwnPublicProfile =
+      isPublicProfileRoute &&
+      profileUserId != null &&
+      authUserId != null &&
+      String(profileUserId) === String(authUserId);
+
+    if (!isPublicProfileRoute) {
+      if (!auth?.user?.id || !auth?.token) {
+        router.replace('/login');
+        return;
+      }
+      const rafId = requestAnimationFrame(() => {
+        setUser(auth.user);
+        setAuthChecked(true);
+        refreshUser(auth.token, setUser, router);
+      });
+      return () => cancelAnimationFrame(rafId);
+    }
+
+    if (!profileUserId) {
+      router.replace('/account');
       return;
     }
+
     const rafId = requestAnimationFrame(() => {
-      setUser(auth.user);
       setAuthChecked(true);
-      refreshUser(auth.token, setUser, router);
     });
+
+    if (isOwnPublicProfile && auth?.token) {
+      setUser(auth.user);
+      refreshUser(auth.token, setUser, router);
+      return () => cancelAnimationFrame(rafId);
+    }
+
+    apiFetch(`/api/user/public-profile/${encodeURIComponent(profileUserId)}/full`, {
+      method: 'GET',
+      token: auth?.token,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((publicUser) => {
+        if (!publicUser) {
+          router.replace('/account');
+          return;
+        }
+        setUser({
+          id: publicUser.id,
+          nickname: publicUser.nickname ?? '',
+          profile_photo_url: publicUser.profile_photo_url ?? '',
+          profile_bg_url: publicUser.profile_bg_url ?? '',
+          email: '',
+          is_official_setly: Boolean(publicUser.is_official_setly),
+        });
+      })
+      .catch(() => router.replace('/account'));
+
     return () => cancelAnimationFrame(rafId);
-  }, [router]);
+  }, [router, isPublicProfileRoute, profileUserId]);
+
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    let cancelled = false;
+    apiFetch(`/api/user/public-profile/${encodeURIComponent(uid)}/full`, {
+      method: 'GET',
+      token: getAuth()?.token,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((publicUser) => {
+        if (cancelled || !publicUser) return;
+        const official = Boolean(publicUser.is_official_setly);
+        setUser((prev) => {
+          if (!prev) return prev;
+          if (Boolean(prev.is_official_setly) === official) return prev;
+          return { ...prev, is_official_setly: official };
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   /** Канонический адрес профиля: /u/{slug}-{id} (ник в транслите + числовой id без двусмысленности). */
   useEffect(() => {
@@ -75,10 +152,33 @@ export default function AccountPageClient() {
     } catch (_) {}
   }, [user?.id, user?.nickname]);
 
-  if (!authChecked) return null;
+  const auth = getAuth();
+  const authUserId = auth?.user?.id ?? null;
+  const token = auth?.token;
+  const profileOwnerId = user?.id ?? profileUserId ?? null;
+  const isGuestView = profileOwnerId != null && authUserId != null
+    ? String(profileOwnerId) !== String(authUserId)
+    : isPublicProfileRoute;
+  const canEditProfile = !isGuestView;
+  const isOfficialSetlyProfile =
+    Boolean(user?.is_official_setly) ||
+    String(user?.email ?? '').trim().toLowerCase() === 'setly@setly.com';
 
-  const userId = user?.id;
-  const token = getAuth()?.token;
+  useEffect(() => {
+    if (!authChecked || !profileOwnerId) return;
+    const endpoint = isGuestView
+      ? `${API_PREFIX}/public-profile/${encodeURIComponent(profileOwnerId)}/checkplans`
+      : `${API_PREFIX}/me/checkplans`;
+    apiFetch(endpoint, { method: 'GET', token })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const count = Array.isArray(data?.id_strs) ? data.id_strs.length : 0;
+        setCreatedPlansCount(count);
+      })
+      .catch(() => setCreatedPlansCount(0));
+  }, [authChecked, profileOwnerId, isGuestView, token]);
+
+  if (!authChecked) return null;
 
   return (
     <>
@@ -87,9 +187,13 @@ export default function AccountPageClient() {
         <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
           <PersonalHeaderWrapper
             user={user}
-            userId={userId}
+            userId={profileOwnerId}
             token={token}
             router={router}
+            canEditProfile={canEditProfile}
+            isGuestView={isGuestView}
+            createdPlansCount={createdPlansCount}
+            isOfficialSetlyProfile={isOfficialSetlyProfile}
             onUserChange={() => refreshUser(token, setUser, router)}
           />
         </div>
@@ -101,17 +205,25 @@ export default function AccountPageClient() {
   );
 }
 
-function PersonalHeaderWrapper({ user, userId, token, router, onUserChange }) {
+function PersonalHeaderWrapper({ user, userId, token, router, onUserChange, canEditProfile, isGuestView, createdPlansCount, isOfficialSetlyProfile }) {
   return (
     <>
         <PersonalHeader
           userId={user?.id ?? userId}
           profileBgUrl={user?.profile_bg_url}
           token={token}
+          canEdit={canEditProfile}
           onHeaderImageChange={onUserChange}
         />
-        <ProfileInfo user={user} token={token} onUserChange={onUserChange} />
-      <PersonalCheckPlans userId={user?.id ?? userId} token={token} router={router} />
+        <ProfileInfo
+          user={user}
+          token={token}
+          canEdit={canEditProfile}
+          createdPlansCount={createdPlansCount}
+          isOfficialSetlyProfile={isOfficialSetlyProfile}
+          onUserChange={onUserChange}
+        />
+      <PersonalCheckPlans userId={user?.id ?? userId} token={token} router={router} isGuestView={isGuestView} />
     </>
   );
 }

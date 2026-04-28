@@ -13,13 +13,14 @@ from database.database import get_session
 from database.models import User
 
 # Один и тот же секрет для выдачи и проверки токенов. Обязательно JWT_SECRET в .env (одинаковый на всех инстансах).
-_DEFAULT_JWT_SECRET = "08f1357da6d2b7b56d6c8ec215ca076f"
-_SECRET_RAW = os.getenv("JWT_SECRET", _DEFAULT_JWT_SECRET)
-SECRET_KEY = (_SECRET_RAW or "").strip() or _DEFAULT_JWT_SECRET
+SECRET_KEY = (os.getenv("JWT_SECRET") or "").strip()
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login", auto_error=True)
+optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login", auto_error=False)
 
 # bcrypt принимает не более 72 байт; длинные пароли обрезаем
 BCRYPT_MAX_PASSWORD_BYTES = 72
@@ -119,3 +120,22 @@ async def get_current_user(
             detail="User not found",
         )
     return user
+
+
+async def get_current_user_optional(
+    token: Annotated[str | None, Depends(optional_oauth2_scheme)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> User | None:
+    """Необязательная зависимость пользователя по JWT: возвращает None при отсутствии/невалидности токена."""
+    if not token or not isinstance(token, str) or not token.strip():
+        return None
+    try:
+        payload = decode_access_token(token)
+        raw_sub = payload.get("sub")
+        if raw_sub is None:
+            return None
+        user_id = int(raw_sub)
+    except (HTTPException, TypeError, ValueError):
+        return None
+    result = await session.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
