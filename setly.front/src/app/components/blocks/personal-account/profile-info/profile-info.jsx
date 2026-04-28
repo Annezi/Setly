@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PublicImage from '@/app/components/globals/public-image';
 import ProfilePhoto from '@/app/components/atomic/atoms/profile-photo/profile-photo';
@@ -38,6 +38,8 @@ function getRankIconSrc(level) {
   const safeLevel = Number.isInteger(level) && level >= 1 && level <= 4 ? level : 1;
   return `/icons/images/rank${safeLevel}.svg`;
 }
+
+const RANK_ICON_LEVELS = [1, 2, 3, 4];
 
 export default function ProfileInfo({
   user,
@@ -128,6 +130,14 @@ export default function ProfileInfo({
   const displayName = user?.nickname ?? user?.name ?? 'Пользователь';
   const travelerRank = resolveTravelerRank(createdPlansCount, isOfficialSetlyProfile);
   const medalLevels = [travelerRank.level];
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    RANK_ICON_LEVELS.forEach((level) => {
+      const img = new window.Image();
+      img.src = getRankIconSrc(level);
+    });
+  }, []);
 
   return (
     <div className={styles.wrapper}>

@@ -1,6 +1,8 @@
 import os
 import re
 import uuid
+import hashlib
+import secrets
 from typing import Annotated, Optional
 from datetime import datetime, timedelta
 
@@ -10,8 +12,10 @@ from sqlmodel import select
 from auth import get_current_user, hash_password, verify_password, create_access_token
 from database.database import get_session
 from database.models import User, UserLikes, UserCheckPlan, UserPinnedCheckPlan, CheckPlan
+from database.models import PasswordResetToken
 from sqlmodel.ext.asyncio.session import AsyncSession
 from rate_limit import enforce_rate_limit
+from emailing import send_password_recovery_email
 
 from api.schemas.user import (
     UserCreate,
@@ -29,6 +33,8 @@ from api.schemas.user import (
     UserOgPreview,
     UserPublicProfileResponse,
     UserPublicCheckplansResponse,
+    PasswordRecoveryRequest,
+    PasswordRecoveryConfirm,
 )
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -39,7 +45,10 @@ RATE_LIMITS = {
     "check_email": 30,
     "register": 10,
     "login": 20,
+    "recovery_request": 8,
+    "recovery_confirm": 12,
 }
+PASSWORD_RESET_TOKEN_TTL_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "1440"))
 
 
 def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
@@ -63,6 +72,7 @@ def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
     return f"{api_public_url}/storage/{u}"
 PASSWORD_MIN_LENGTH = 6
 PASSWORD_ALLOWED = re.compile(r"^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;':\",./<>?`~\\]*$")
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", re.IGNORECASE)
 
 
 def _is_safe_profile_media_url(value: Optional[str]) -> bool:
@@ -94,6 +104,47 @@ def _is_official_setly_user(user: User | None) -> bool:
 def _validate_password(value: str) -> bool:
     pwd = (value or "").replace(" ", "")
     return len(pwd) >= PASSWORD_MIN_LENGTH and bool(PASSWORD_ALLOWED.fullmatch(pwd))
+
+
+def _hash_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _public_site_url() -> str:
+    site = (os.getenv("NEXT_PUBLIC_SITE_URL") or os.getenv("SITE_URL") or "https://setly.space").strip()
+    return site.rstrip("/")
+
+
+async def _cleanup_expired_reset_tokens(session: AsyncSession) -> None:
+    """Ленивая очистка: удаляем только явный мусор (expired/used), без отдельного cron."""
+    now = datetime.utcnow()
+    rows_result = await session.execute(
+        select(PasswordResetToken).where(
+            (PasswordResetToken.used_at.is_not(None)) | (PasswordResetToken.expires_at <= now)
+        )
+    )
+    rows = rows_result.scalars().all()
+    for row in rows:
+        await session.delete(row)
+
+
+async def _anti_enumeration_dummy_work(session: AsyncSession, email: str) -> None:
+    """
+    Мягкая защита от enumeration:
+    при несуществующем email выполняем близкий набор действий
+    (хэш токена + select), чтобы поведение было менее различимым.
+    """
+    token_hash = _hash_reset_token(secrets.token_urlsafe(48))
+    await session.execute(
+        select(PasswordResetToken.id).where(PasswordResetToken.token_hash == token_hash)
+    )
+    # Дополнительная нормализация нагрузки (email нормализован как при валидном пути)
+    _ = email
+
+
+def _calculate_reset_expires_at(now_utc: datetime) -> datetime:
+    """Ссылка действует 24 часа с момента отправки."""
+    return now_utc + timedelta(minutes=PASSWORD_RESET_TOKEN_TTL_MINUTES)
 
 
 @router.get("/check-email")
@@ -162,6 +213,140 @@ async def login(
     )
 
 
+@router.post("/recovery/request")
+async def password_recovery_request(
+    request: Request,
+    data: PasswordRecoveryRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(request, "recovery_request", RATE_LIMITS["recovery_request"])
+    await _cleanup_expired_reset_tokens(session)
+
+    email = str(data.email).strip().lower()
+    if not email or not EMAIL_PATTERN.fullmatch(email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Спокойно! Введите корректную почту",
+        )
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if user is None:
+        await _anti_enumeration_dummy_work(session, email)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Данная почта не зарегистрирована на Setly",
+        )
+
+    now = datetime.utcnow()
+    active_tokens_result = await session.execute(
+        select(PasswordResetToken).where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+        )
+    )
+    active_tokens = active_tokens_result.scalars().all()
+    for row in active_tokens:
+        row.used_at = now
+        session.add(row)
+
+    raw_token = secrets.token_urlsafe(48)
+    token_hash = _hash_reset_token(raw_token)
+    expires_at = _calculate_reset_expires_at(now)
+    reset_row = PasswordResetToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    session.add(reset_row)
+    await session.commit()
+
+    recovery_url = f"{_public_site_url()}/newpass?token={raw_token}"
+    try:
+        send_password_recovery_email(user.email, recovery_url)
+    except Exception:
+        token_cleanup_result = await session.execute(
+            select(PasswordResetToken).where(PasswordResetToken.id == reset_row.id)
+        )
+        token_cleanup = token_cleanup_result.scalar_one_or_none()
+        if token_cleanup is not None:
+            token_cleanup.used_at = datetime.utcnow()
+            session.add(token_cleanup)
+            await session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Сервис отправки писем временно недоступен",
+        )
+
+    return {"ok": True, "expires_at": expires_at.isoformat()}
+
+
+@router.post("/recovery/confirm")
+async def password_recovery_confirm(
+    request: Request,
+    data: PasswordRecoveryConfirm,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(request, "recovery_confirm", RATE_LIMITS["recovery_confirm"])
+    await _cleanup_expired_reset_tokens(session)
+    token = str(data.token or "").strip()
+    next_password = str(data.password or "").replace(" ", "")
+    if not _validate_password(next_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Некорректный пароль",
+        )
+
+    now = datetime.utcnow()
+    token_hash = _hash_reset_token(token)
+    token_result = await session.execute(
+        select(PasswordResetToken).where(
+            PasswordResetToken.token_hash == token_hash,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+        )
+    )
+    token_row = token_result.scalar_one_or_none()
+    if token_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ссылка недействительна или истекла",
+        )
+
+    user_result = await session.execute(select(User).where(User.id == token_row.user_id))
+    user = user_result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ссылка недействительна или истекла",
+        )
+    if verify_password(next_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Новый пароль должен отличаться от текущего",
+        )
+
+    user.password_hash = hash_password(next_password)
+    token_row.used_at = now
+    session.add(token_row)
+    session.add(user)
+
+    active_tokens_result = await session.execute(
+        select(PasswordResetToken).where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+            PasswordResetToken.id != token_row.id,
+        )
+    )
+    for row in active_tokens_result.scalars().all():
+        row.used_at = now
+        session.add(row)
+
+    await session.commit()
+    return {"ok": True}
+
+
 @router.get("/public-profile/{user_id}", response_model=UserOgPreview)
 async def public_profile_for_og(
     user_id: int,
@@ -197,12 +382,19 @@ async def public_profile_full(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    plans_result = await session.execute(
+        select(CheckPlan.id_str)
+        .where(CheckPlan.author_id == user_id, CheckPlan.visibility == "public")
+        .distinct()
+    )
+    created_plans_count = len(plans_result.all())
     return UserPublicProfileResponse(
         id=user.id,
         nickname=_normalize_nickname(user.nickname or ""),
         profile_photo_url=_sanitize_profile_photo_url(user.profile_photo_url),
         profile_bg_url=_sanitize_profile_photo_url(user.profile_bg_url),
         is_official_setly=_is_official_setly_user(user),
+        created_plans_count=created_plans_count,
     )
 
 

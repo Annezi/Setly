@@ -21,6 +21,10 @@ export default function Login() {
     router.push("/registration");
   }, [router]);
 
+  const handleRecoveryClick = useCallback(() => {
+    router.push("/recovery");
+  }, [router]);
+
   const handleSubmit = useCallback(
     async (e) => {
       e?.preventDefault?.();
@@ -136,7 +140,18 @@ export default function Login() {
 
           <div className={styles.resetRow}>
             <span className="subinfo">Забыли пароль?</span>
-            <span className="subtitle_2 linkStub" role="button" tabIndex={0}>
+            <span
+              className="subtitle_2 linkStub"
+              role="button"
+              tabIndex={0}
+              onClick={handleRecoveryClick}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleRecoveryClick();
+                }
+              }}
+            >
               Восстановить
             </span>
           </div>

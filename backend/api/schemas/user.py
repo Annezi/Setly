@@ -14,6 +14,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class PasswordRecoveryRequest(BaseModel):
+    email: str
+
+
+class PasswordRecoveryConfirm(BaseModel):
+    token: str = Field(..., min_length=16, max_length=512)
+    password: str = Field(..., min_length=6)
+
+
 class UserResponse(BaseModel):
     """Публичные данные пользователя в ответах."""
     id: int
@@ -81,6 +90,7 @@ class UserPublicProfileResponse(BaseModel):
     profile_photo_url: str = ""
     profile_bg_url: str = ""
     is_official_setly: bool = False
+    created_plans_count: int = 0
 
 
 class UserPublicCheckplansResponse(BaseModel):

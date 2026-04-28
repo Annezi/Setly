@@ -18,7 +18,7 @@ load_dotenv()
 
 # Метаданные из SQLModel — нужны для autogenerate
 from sqlmodel import SQLModel
-from database.models import User, UserLikes, UserCheckPlan, CheckPlan, CheckPlanData  # noqa: F401
+from database.models import User, PasswordResetToken, UserLikes, UserCheckPlan, CheckPlan, CheckPlanData  # noqa: F401
 
 config = context.config
 target_metadata = SQLModel.metadata

@@ -14,7 +14,19 @@ class User(SQLModel, table=True):
 
     check_plans: List["CheckPlan"] = Relationship(back_populates="author")
 
-    
+
+class PasswordResetToken(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(nullable=False, index=True)
+    token_hash: str = Field(nullable=False, unique=True, index=True)
+    expires_at: datetime = Field(nullable=False)
+    used_at: Optional[datetime] = Field(default=None, nullable=True)
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        nullable=False,
+    )
+
+
 class UserLikes(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     checklist_id: str = Field(nullable=False)  # строковый id чеклиста (например setly-japan-2025)

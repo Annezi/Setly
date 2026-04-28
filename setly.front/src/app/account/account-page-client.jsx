@@ -11,6 +11,27 @@ import { buildProfilePublicPath } from '@/app/lib/slug';
 import { parseProfilePublicRef } from '@/app/lib/slug';
 
 const API_PREFIX = '/api/user';
+const CREATED_PLANS_COUNT_CACHE_PREFIX = 'setly:created-plans-count:';
+
+function readCachedCreatedPlansCount(userId) {
+  if (!userId || typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(`${CREATED_PLANS_COUNT_CACHE_PREFIX}${userId}`);
+    if (raw == null) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeCachedCreatedPlansCount(userId, count) {
+  if (!userId || typeof window === 'undefined') return;
+  if (!Number.isFinite(Number(count)) || Number(count) < 0) return;
+  try {
+    window.localStorage.setItem(`${CREATED_PLANS_COUNT_CACHE_PREFIX}${userId}`, String(Number(count)));
+  } catch (_) {}
+}
 const PersonalHeader = dynamic(
   () => import('@/app/components/blocks/personal-account/personal-header/personal-header').then((m) => m.default),
   { ssr: false, loading: () => <div style={{ minHeight: 200 }} aria-busy="true" aria-label="Загрузка профиля" /> }
@@ -100,6 +121,11 @@ export default function AccountPageClient() {
           router.replace('/account');
           return;
         }
+        const initialCreatedPlansCount = Number(publicUser.created_plans_count);
+        if (Number.isFinite(initialCreatedPlansCount) && initialCreatedPlansCount >= 0) {
+          setCreatedPlansCount(initialCreatedPlansCount);
+          writeCachedCreatedPlansCount(publicUser.id, initialCreatedPlansCount);
+        }
         setUser({
           id: publicUser.id,
           nickname: publicUser.nickname ?? '',
@@ -126,6 +152,11 @@ export default function AccountPageClient() {
       .then((publicUser) => {
         if (cancelled || !publicUser) return;
         const official = Boolean(publicUser.is_official_setly);
+        const publicCreatedPlansCount = Number(publicUser.created_plans_count);
+        if (Number.isFinite(publicCreatedPlansCount) && publicCreatedPlansCount >= 0) {
+          setCreatedPlansCount((prev) => (prev === publicCreatedPlansCount ? prev : publicCreatedPlansCount));
+          writeCachedCreatedPlansCount(uid, publicCreatedPlansCount);
+        }
         setUser((prev) => {
           if (!prev) return prev;
           if (Boolean(prev.is_official_setly) === official) return prev;
@@ -166,14 +197,16 @@ export default function AccountPageClient() {
 
   useEffect(() => {
     if (!authChecked || !profileOwnerId) return;
-    const endpoint = isGuestView
-      ? `${API_PREFIX}/public-profile/${encodeURIComponent(profileOwnerId)}/checkplans`
-      : `${API_PREFIX}/me/checkplans`;
+    const cachedCount = readCachedCreatedPlansCount(profileOwnerId);
+    if (cachedCount != null) setCreatedPlansCount(cachedCount);
+    if (isGuestView) return;
+    const endpoint = `${API_PREFIX}/me/checkplans`;
     apiFetch(endpoint, { method: 'GET', token })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         const count = Array.isArray(data?.id_strs) ? data.id_strs.length : 0;
         setCreatedPlansCount(count);
+        writeCachedCreatedPlansCount(profileOwnerId, count);
       })
       .catch(() => setCreatedPlansCount(0));
   }, [authChecked, profileOwnerId, isGuestView, token]);

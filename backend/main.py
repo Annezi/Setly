@@ -2,6 +2,10 @@ import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfoNotFoundError
+from sqlmodel import select
 
 # Важно: загрузить .env до импорта api.user (который тянет auth). Иначе JWT_SECRET при импорте auth будет дефолтным → 401.
 from dotenv import load_dotenv
@@ -14,6 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from database.database import create_tables
+from database.database import async_session_maker
+from database.models import PasswordResetToken
 from api.user import router as user_router
 from api.check_plans import router as check_plans_router
 from api.check_plan_data import router as check_plan_data_router
@@ -24,10 +30,48 @@ STORAGE_DIR = os.path.join(os.path.dirname(__file__), "storage")
 # Повторные попытки подключения к БД при старте (интервал с, макс. попыток)
 DB_CONNECT_RETRY_INTERVAL = 2
 DB_CONNECT_RETRY_ATTEMPTS = 15
+def _resolve_app_timezone():
+    tz_name = (os.getenv("APP_TIMEZONE") or "Europe/Moscow").strip() or "Europe/Moscow"
+    try:
+        return ZoneInfo(tz_name)
+    except ZoneInfoNotFoundError:
+        return timezone.utc
+
+
+APP_TIMEZONE = _resolve_app_timezone()
+
+
+async def _cleanup_password_reset_tokens_once() -> None:
+    now = datetime.utcnow()
+    async with async_session_maker() as session:
+        rows_result = await session.execute(
+            select(PasswordResetToken).where(
+                (PasswordResetToken.used_at.is_not(None)) | (PasswordResetToken.expires_at <= now)
+            )
+        )
+        rows = rows_result.scalars().all()
+        for row in rows:
+            await session.delete(row)
+        await session.commit()
+
+
+def _seconds_until_next_midnight_local() -> float:
+    now_local = datetime.now(APP_TIMEZONE)
+    next_midnight_local = (now_local + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return max((next_midnight_local - now_local).total_seconds(), 1.0)
+
+
+async def _daily_reset_tokens_cleanup_worker() -> None:
+    while True:
+        await asyncio.sleep(_seconds_until_next_midnight_local())
+        await _cleanup_password_reset_tokens_once()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    cleanup_task: asyncio.Task | None = None
     for attempt in range(1, DB_CONNECT_RETRY_ATTEMPTS + 1):
         try:
             await create_tables()
@@ -37,9 +81,19 @@ async def lifespan(app: FastAPI):
                 raise
             await asyncio.sleep(DB_CONNECT_RETRY_INTERVAL)
     os.makedirs(STORAGE_DIR, exist_ok=True)
+    await _cleanup_password_reset_tokens_once()
+    cleanup_task = asyncio.create_task(_daily_reset_tokens_cleanup_worker())
     from auth import SECRET_KEY
     print(f"JWT_SECRET: set ({len(SECRET_KEY)} chars)", flush=True)
-    yield
+    try:
+        yield
+    finally:
+        if cleanup_task is not None:
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(lifespan=lifespan)
