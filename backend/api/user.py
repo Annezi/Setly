@@ -35,6 +35,17 @@ from api.schemas.user import (
     UserPublicCheckplansResponse,
     PasswordRecoveryRequest,
     PasswordRecoveryConfirm,
+    TotpSetupResponse,
+    TotpToggleRequest,
+)
+from totp_utils import (
+    decrypt_secret,
+    encrypt_secret,
+    generate_backup_codes,
+    generate_totp_secret,
+    hash_backup_code,
+    make_totp_uri,
+    verify_totp_code,
 )
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -47,6 +58,9 @@ RATE_LIMITS = {
     "login": 20,
     "recovery_request": 8,
     "recovery_confirm": 12,
+    "totp_setup": 8,
+    "totp_enable": 10,
+    "totp_disable": 8,
 }
 PASSWORD_RESET_TOKEN_TTL_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "1440"))
 
@@ -205,11 +219,43 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is blocked",
+        )
+    if user.is_admin and user.totp_enabled:
+        if not user.totp_secret_encrypted:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="2FA is enabled but not configured",
+            )
+        if not data.totp_code:
+            return LoginResponse(
+                user=user,
+                access_token=None,
+                expires_in=None,
+                requires_2fa=True,
+            )
+        secret = decrypt_secret(user.totp_secret_encrypted)
+        backup_codes_hash = list(user.totp_backup_codes_hash or [])
+        provided = (data.totp_code or "").strip().upper()
+        backup_code_hash = hash_backup_code(provided)
+        if backup_code_hash in backup_codes_hash:
+            user.totp_backup_codes_hash = [c for c in backup_codes_hash if c != backup_code_hash]
+            session.add(user)
+            await session.commit()
+        elif not verify_totp_code(secret, data.totp_code):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid 2FA code",
+            )
     access_token, expires_in = create_access_token(user.id)
     return LoginResponse(
         user=user,
         access_token=access_token,
         expires_in=expires_in,
+        requires_2fa=False,
     )
 
 
@@ -279,6 +325,75 @@ async def password_recovery_request(
         )
 
     return {"ok": True, "expires_at": expires_at.isoformat()}
+
+
+@router.post("/me/2fa/setup", response_model=TotpSetupResponse)
+async def setup_totp(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(request, "totp_setup", RATE_LIMITS["totp_setup"])
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="2FA setup is available for admins only",
+        )
+    secret = generate_totp_secret()
+    backup_codes = generate_backup_codes()
+    current_user.totp_secret_encrypted = encrypt_secret(secret)
+    current_user.totp_enabled = False
+    current_user.totp_backup_codes_hash = [hash_backup_code(code) for code in backup_codes]
+    session.add(current_user)
+    await session.commit()
+    return TotpSetupResponse(
+        secret=secret,
+        otpauth_uri=make_totp_uri(secret, current_user.email),
+        backup_codes=backup_codes,
+    )
+
+
+@router.post("/me/2fa/enable")
+async def enable_totp(
+    request: Request,
+    data: TotpToggleRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(request, "totp_enable", RATE_LIMITS["totp_enable"])
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    if not verify_password(data.password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password")
+    if not current_user.totp_secret_encrypted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Run 2FA setup first")
+    secret = decrypt_secret(current_user.totp_secret_encrypted)
+    if not verify_totp_code(secret, data.totp_code or ""):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid TOTP code")
+    current_user.totp_enabled = True
+    session.add(current_user)
+    await session.commit()
+    return {"ok": True}
+
+
+@router.post("/me/2fa/disable")
+async def disable_totp(
+    request: Request,
+    data: TotpToggleRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(request, "totp_disable", RATE_LIMITS["totp_disable"])
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    if not verify_password(data.password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password")
+    current_user.totp_enabled = False
+    current_user.totp_secret_encrypted = ""
+    current_user.totp_backup_codes_hash = []
+    session.add(current_user)
+    await session.commit()
+    return {"ok": True}
 
 
 @router.post("/recovery/confirm")

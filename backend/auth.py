@@ -119,6 +119,11 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is blocked",
+        )
     return user
 
 
@@ -139,3 +144,23 @@ async def get_current_user_optional(
         return None
     result = await session.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
+
+
+async def require_admin(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user
+
+
+async def require_permission(
+    permission: str,
+    current_user: Annotated[User, Depends(require_admin)],
+) -> User:
+    # MVP: all permissions are granted for admin users.
+    _ = permission
+    return current_user

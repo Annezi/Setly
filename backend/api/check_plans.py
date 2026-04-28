@@ -33,6 +33,10 @@ _RE_UUID32_HEX = re.compile(r"^[a-fA-F0-9]{32}$")
 
 
 def _can_read_plan(plan: CheckPlan, current_user: User | None) -> bool:
+    if plan.is_hidden_by_admin:
+        return current_user is not None and current_user.is_admin
+    if plan.moderation_status == "rejected":
+        return current_user is not None and (current_user.is_admin or plan.author_id == current_user.id)
     visibility = (plan.visibility or "public").strip().lower()
     if visibility == "private":
         return current_user is not None and plan.author_id == current_user.id
@@ -174,7 +178,11 @@ async def list_check_plans(
     result = await session.execute(
         select(CheckPlan, User)
         .join(User, CheckPlan.author_id == User.id)
-        .where(CheckPlan.visibility == "public")
+        .where(
+            CheckPlan.visibility == "public",
+            CheckPlan.is_hidden_by_admin.is_(False),
+            CheckPlan.moderation_status == "approved",
+        )
         .order_by(CheckPlan.id)
     )
     rows = result.all()
@@ -354,6 +362,8 @@ async def create_check_plan(
         region_tag=data.region_tag,
         traveler_tags=data.traveler_tags,
         season_tags=data.season_tags,
+        moderation_status="pending",
+        is_hidden_by_admin=False,
     )
     session.add(plan)
     await session.commit()

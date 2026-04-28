@@ -23,6 +23,7 @@ from database.models import PasswordResetToken
 from api.user import router as user_router
 from api.check_plans import router as check_plans_router
 from api.check_plan_data import router as check_plan_data_router
+from api.admin import router as admin_router
 
 # Директория для загружаемой статики (обложки чек-планов и т.д.)
 STORAGE_DIR = os.path.join(os.path.dirname(__file__), "storage")
@@ -120,6 +121,7 @@ app.add_middleware(
 app.include_router(user_router, prefix="/api")
 app.include_router(check_plans_router, prefix="/api")
 app.include_router(check_plan_data_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 app.mount("/storage", StaticFiles(directory=STORAGE_DIR), name="storage")
 
 

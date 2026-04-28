@@ -5,7 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlmodel import SQLModel
 
 # Импорт моделей нужен, чтобы они зарегистрировались в SQLModel.metadata
-from database.models import User, PasswordResetToken, UserLikes, UserCheckPlan, CheckPlan, CheckPlanData  # noqa: F401
+from database.models import (
+    User,
+    PasswordResetToken,
+    UserLikes,
+    UserCheckPlan,
+    CheckPlan,
+    CheckPlanData,
+    UserPinnedCheckPlan,
+    PlatformSetting,
+    AdminAuditLog,
+)  # noqa: F401
 
 POSTGRES_USER = os.getenv(
     "POSTGRES_USER",

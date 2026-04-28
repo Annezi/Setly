@@ -11,6 +11,11 @@ class User(SQLModel, table=True):
     profile_photo_url: str = Field(default="", nullable=False)
     profile_bg_url: str = Field(default="", nullable=False)
     password_hash: str = Field(default="", nullable=False)
+    is_admin: bool = Field(default=False, nullable=False)
+    is_blocked: bool = Field(default=False, nullable=False)
+    totp_enabled: bool = Field(default=False, nullable=False)
+    totp_secret_encrypted: str = Field(default="", nullable=False)
+    totp_backup_codes_hash: List[str] = Field(sa_type=JSON(), default_factory=list, nullable=False)
 
     check_plans: List["CheckPlan"] = Relationship(back_populates="author")
 
@@ -72,6 +77,8 @@ class CheckPlan(SQLModel, table=True):
     region_tag: Optional[str] = Field(default=None, nullable=True)
     traveler_tags: List[str] = Field(sa_type=JSON(), default_factory=list, nullable=False)
     season_tags: List[str] = Field(sa_type=JSON(), default_factory=list, nullable=False)
+    moderation_status: str = Field(default="pending", nullable=False)  # pending | approved | rejected
+    is_hidden_by_admin: bool = Field(default=False, nullable=False)
 
     author: Optional["User"] = Relationship(back_populates="check_plans")
 
@@ -163,3 +170,20 @@ class CheckPlanData(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     data: dict = Field(sa_type=JSON(), nullable=False)
+
+
+class PlatformSetting(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key: str = Field(nullable=False, unique=True, index=True)
+    value: str = Field(default="", nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class AdminAuditLog(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    admin_user_id: int = Field(nullable=False, index=True)
+    action: str = Field(nullable=False)
+    target_type: str = Field(nullable=False)
+    target_id: str = Field(nullable=False)
+    details: dict = Field(sa_type=JSON(), default_factory=dict, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)

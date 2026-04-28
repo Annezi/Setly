@@ -12,6 +12,7 @@ class UserLogin(BaseModel):
     """Схема входа."""
     email: EmailStr
     password: str
+    totp_code: str | None = None
 
 
 class PasswordRecoveryRequest(BaseModel):
@@ -31,6 +32,8 @@ class UserResponse(BaseModel):
     email_is_verified: bool
     profile_photo_url: str
     profile_bg_url: str
+    is_admin: bool = False
+    totp_enabled: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -70,9 +73,21 @@ class UserRegisterResponse(BaseModel):
 class LoginResponse(BaseModel):
     """Ответ логина: пользователь + токен (как у register, чтобы не вызывать /me)."""
     user: UserResponse
-    access_token: str
+    access_token: str | None = None
     token_type: str = "bearer"
-    expires_in: int
+    expires_in: int | None = None
+    requires_2fa: bool = False
+
+
+class TotpSetupResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+    backup_codes: list[str]
+
+
+class TotpToggleRequest(BaseModel):
+    password: str
+    totp_code: str | None = None
 
 
 class MeLikesResponse(BaseModel):
