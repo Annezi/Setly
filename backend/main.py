@@ -1,29 +1,27 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
-from zoneinfo import ZoneInfoNotFoundError
-from sqlmodel import select
+from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 # Важно: загрузить .env до импорта api.user (который тянет auth). Иначе JWT_SECRET при импорте auth будет дефолтным → 401.
 from dotenv import load_dotenv
+from sqlmodel import select
+
 load_dotenv()
 # _env_file = Path(__file__).resolve().parent.parent / ".env"
 # load_dotenv(_env_file)
 
+from api.admin import router as admin_router
+from api.check_plan_data import router as check_plan_data_router
+from api.check_plans import router as check_plans_router
+from api.user import router as user_router
+from database.database import async_session_maker, create_tables
+from database.models import PasswordResetToken
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
-from database.database import create_tables
-from database.database import async_session_maker
-from database.models import PasswordResetToken
-from api.user import router as user_router
-from api.check_plans import router as check_plans_router
-from api.check_plan_data import router as check_plan_data_router
-from api.admin import router as admin_router
 
 # Директория для загружаемой статики (обложки чек-планов и т.д.)
 STORAGE_DIR = os.path.join(os.path.dirname(__file__), "storage")
@@ -31,6 +29,8 @@ STORAGE_DIR = os.path.join(os.path.dirname(__file__), "storage")
 # Повторные попытки подключения к БД при старте (интервал с, макс. попыток)
 DB_CONNECT_RETRY_INTERVAL = 2
 DB_CONNECT_RETRY_ATTEMPTS = 15
+
+
 def _resolve_app_timezone():
     tz_name = (os.getenv("APP_TIMEZONE") or "Europe/Moscow").strip() or "Europe/Moscow"
     try:
@@ -47,7 +47,8 @@ async def _cleanup_password_reset_tokens_once() -> None:
     async with async_session_maker() as session:
         rows_result = await session.execute(
             select(PasswordResetToken).where(
-                (PasswordResetToken.used_at.is_not(None)) | (PasswordResetToken.expires_at <= now)
+                (PasswordResetToken.used_at.is_not(None))
+                | (PasswordResetToken.expires_at <= now)
             )
         )
         rows = rows_result.scalars().all()
@@ -85,6 +86,7 @@ async def lifespan(app: FastAPI):
     await _cleanup_password_reset_tokens_once()
     cleanup_task = asyncio.create_task(_daily_reset_tokens_cleanup_worker())
     from auth import SECRET_KEY
+
     print(f"JWT_SECRET: set ({len(SECRET_KEY)} chars)", flush=True)
     try:
         yield
@@ -100,14 +102,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # С allow_credentials=True нельзя использовать "*" — нужны явные origins, иначе браузер может не отправлять Authorization
-_CORS_ORIGINS_STR = os.getenv("CORS_ORIGINS", "https://setly.space,http://localhost:3000")
+_CORS_ORIGINS_STR = os.getenv(
+    "CORS_ORIGINS", "https://setly.space, http://localhost:3000"
+)
 CORS_ORIGINS = [o.strip() for o in _CORS_ORIGINS_STR.split(",") if o.strip()]
 _DEFAULT_CORS_ORIGIN_REGEX = (
     r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
     r"|^https?://(?:\d{1,3}\.){3}\d{1,3}(:\d+)?$"
     r"|^https://([a-z0-9-]+\.)?setly\.space$"
 )
-CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX", _DEFAULT_CORS_ORIGIN_REGEX).strip() or _DEFAULT_CORS_ORIGIN_REGEX
+CORS_ORIGIN_REGEX = (
+    os.getenv("CORS_ORIGIN_REGEX", _DEFAULT_CORS_ORIGIN_REGEX).strip()
+    or _DEFAULT_CORS_ORIGIN_REGEX
+)
 
 app.add_middleware(
     CORSMiddleware,

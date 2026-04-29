@@ -1,43 +1,55 @@
+import asyncio
+import hashlib
 import os
 import re
-import uuid
-import hashlib
 import secrets
-from typing import Annotated, Optional
+import uuid
 from datetime import datetime, timedelta
-
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Request
-from sqlmodel import select
-
-from auth import get_current_user, hash_password, verify_password, create_access_token
-from database.database import get_session
-from database.models import User, UserLikes, UserCheckPlan, UserPinnedCheckPlan, CheckPlan
-from database.models import PasswordResetToken
-from sqlmodel.ext.asyncio.session import AsyncSession
-from rate_limit import enforce_rate_limit
-from emailing import send_password_recovery_email
+from typing import Annotated, Optional
 
 from api.schemas.user import (
-    UserCreate,
-    UserLogin,
-    UserResponse,
-    UserUpdate,
-    Token,
-    UserRegisterResponse,
-    LoginResponse,
-    MeLikesResponse,
-    MeCheckplansResponse,
-    LikeCreate,
     CheckplanCreate,
-    PinnedCheckplansOrderUpdate,
-    UserOgPreview,
-    UserPublicProfileResponse,
-    UserPublicCheckplansResponse,
-    PasswordRecoveryRequest,
+    EmailVerifyConfirm,
+    LikeCreate,
+    LoginResponse,
+    MeCheckplansResponse,
+    MeLikesResponse,
     PasswordRecoveryConfirm,
+    PasswordRecoveryRequest,
+    PinnedCheckplansOrderUpdate,
+    RecoveryOtpConfirm,
+    RecoveryOtpRequest,
+    Token,
     TotpSetupResponse,
     TotpToggleRequest,
+    UserCreate,
+    UserLogin,
+    UserOgPreview,
+    UserPublicCheckplansResponse,
+    UserPublicProfileResponse,
+    UserRegisterResponse,
+    UserResponse,
+    UserUpdate,
 )
+from auth import create_access_token, get_current_user, hash_password, verify_password
+from database.database import get_session
+from database.models import (
+    CheckPlan,
+    PasswordResetToken,
+    User,
+    UserCheckPlan,
+    UserLikes,
+    UserPinnedCheckPlan,
+)
+from emailing import (
+    send_email_verification_otp,
+    send_password_recovery_email,
+    send_recovery_otp_email,
+)
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from rate_limit import enforce_rate_limit, get_redis_client
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 from totp_utils import (
     decrypt_secret,
     encrypt_secret,
@@ -61,8 +73,14 @@ RATE_LIMITS = {
     "totp_setup": 8,
     "totp_enable": 10,
     "totp_disable": 8,
+    "verify_email_request": 5,
+    "verify_email_confirm": 10,
+    "recovery_otp_request": 8,
+    "recovery_otp_confirm": 10,
 }
-PASSWORD_RESET_TOKEN_TTL_MINUTES = int(os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "1440"))
+PASSWORD_RESET_TOKEN_TTL_MINUTES = int(
+    os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "1440")
+)
 
 
 def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
@@ -75,7 +93,9 @@ def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
     if u.startswith(("http://", "https://")):
         return u
     api_public_url = (
-        os.getenv("API_PUBLIC_URL") or os.getenv("PUBLIC_API_URL") or "https://api.setly.space"
+        os.getenv("API_PUBLIC_URL")
+        or os.getenv("PUBLIC_API_URL")
+        or "https://api.setly.space"
     ).rstrip("/")
     if u.startswith("/storage/"):
         return f"{api_public_url}{u}"
@@ -84,6 +104,8 @@ def _sanitize_profile_photo_url(raw: Optional[str]) -> str:
     if u.startswith("/"):
         return f"{api_public_url}{u}"
     return f"{api_public_url}/storage/{u}"
+
+
 PASSWORD_MIN_LENGTH = 6
 PASSWORD_ALLOWED = re.compile(r"^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;':\",./<>?`~\\]*$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", re.IGNORECASE)
@@ -101,7 +123,11 @@ def _is_safe_profile_media_url(value: Optional[str]) -> bool:
     low = u.lower()
     if low.startswith("javascript:") or low.startswith("data:"):
         return False
-    return low.startswith("https://") or low.startswith("http://localhost") or u.startswith("/storage/")
+    return (
+        low.startswith("https://")
+        or low.startswith("http://localhost")
+        or u.startswith("/storage/")
+    )
 
 
 def _normalize_nickname(value: str) -> str:
@@ -125,7 +151,11 @@ def _hash_reset_token(token: str) -> str:
 
 
 def _public_site_url() -> str:
-    site = (os.getenv("NEXT_PUBLIC_SITE_URL") or os.getenv("SITE_URL") or "https://setly.space").strip()
+    site = (
+        os.getenv("NEXT_PUBLIC_SITE_URL")
+        or os.getenv("SITE_URL")
+        or "https://setly.space"
+    ).strip()
     return site.rstrip("/")
 
 
@@ -134,7 +164,8 @@ async def _cleanup_expired_reset_tokens(session: AsyncSession) -> None:
     now = datetime.utcnow()
     rows_result = await session.execute(
         select(PasswordResetToken).where(
-            (PasswordResetToken.used_at.is_not(None)) | (PasswordResetToken.expires_at <= now)
+            (PasswordResetToken.used_at.is_not(None))
+            | (PasswordResetToken.expires_at <= now)
         )
     )
     rows = rows_result.scalars().all()
@@ -242,7 +273,9 @@ async def login(
         provided = (data.totp_code or "").strip().upper()
         backup_code_hash = hash_backup_code(provided)
         if backup_code_hash in backup_codes_hash:
-            user.totp_backup_codes_hash = [c for c in backup_codes_hash if c != backup_code_hash]
+            user.totp_backup_codes_hash = [
+                c for c in backup_codes_hash if c != backup_code_hash
+            ]
             session.add(user)
             await session.commit()
         elif not verify_totp_code(secret, data.totp_code):
@@ -265,7 +298,9 @@ async def password_recovery_request(
     data: PasswordRecoveryRequest,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    await enforce_rate_limit(request, "recovery_request", RATE_LIMITS["recovery_request"])
+    await enforce_rate_limit(
+        request, "recovery_request", RATE_LIMITS["recovery_request"]
+    )
     await _cleanup_expired_reset_tokens(session)
 
     email = str(data.email).strip().lower()
@@ -343,7 +378,9 @@ async def setup_totp(
     backup_codes = generate_backup_codes()
     current_user.totp_secret_encrypted = encrypt_secret(secret)
     current_user.totp_enabled = False
-    current_user.totp_backup_codes_hash = [hash_backup_code(code) for code in backup_codes]
+    current_user.totp_backup_codes_hash = [
+        hash_backup_code(code) for code in backup_codes
+    ]
     session.add(current_user)
     await session.commit()
     return TotpSetupResponse(
@@ -362,14 +399,22 @@ async def enable_totp(
 ):
     await enforce_rate_limit(request, "totp_enable", RATE_LIMITS["totp_enable"])
     if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
+        )
     if not verify_password(data.password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password"
+        )
     if not current_user.totp_secret_encrypted:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Run 2FA setup first")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Run 2FA setup first"
+        )
     secret = decrypt_secret(current_user.totp_secret_encrypted)
     if not verify_totp_code(secret, data.totp_code or ""):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid TOTP code")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid TOTP code"
+        )
     current_user.totp_enabled = True
     session.add(current_user)
     await session.commit()
@@ -385,9 +430,13 @@ async def disable_totp(
 ):
     await enforce_rate_limit(request, "totp_disable", RATE_LIMITS["totp_disable"])
     if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
+        )
     if not verify_password(data.password, current_user.password_hash):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password"
+        )
     current_user.totp_enabled = False
     current_user.totp_secret_encrypted = ""
     current_user.totp_backup_codes_hash = []
@@ -402,7 +451,9 @@ async def password_recovery_confirm(
     data: PasswordRecoveryConfirm,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    await enforce_rate_limit(request, "recovery_confirm", RATE_LIMITS["recovery_confirm"])
+    await enforce_rate_limit(
+        request, "recovery_confirm", RATE_LIMITS["recovery_confirm"]
+    )
     await _cleanup_expired_reset_tokens(session)
     token = str(data.token or "").strip()
     next_password = str(data.password or "").replace(" ", "")
@@ -428,7 +479,9 @@ async def password_recovery_confirm(
             detail="Ссылка недействительна или истекла",
         )
 
-    user_result = await session.execute(select(User).where(User.id == token_row.user_id))
+    user_result = await session.execute(
+        select(User).where(User.id == token_row.user_id)
+    )
     user = user_result.scalar_one_or_none()
     if user is None:
         raise HTTPException(
@@ -513,7 +566,9 @@ async def public_profile_full(
     )
 
 
-@router.get("/public-profile/{user_id}/checkplans", response_model=UserPublicCheckplansResponse)
+@router.get(
+    "/public-profile/{user_id}/checkplans", response_model=UserPublicCheckplansResponse
+)
 async def public_profile_checkplans(
     user_id: int,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -591,10 +646,14 @@ async def me_update(
     if data.new_password is not None:
         password_change_requested = len(str(data.new_password).replace(" ", "")) > 0
 
-    needs_current_password = nickname_changed or email_changed or password_change_requested
+    needs_current_password = (
+        nickname_changed or email_changed or password_change_requested
+    )
     if needs_current_password:
         current_pwd = str(data.current_password or "")
-        if not current_pwd or not verify_password(current_pwd, current_user.password_hash):
+        if not current_pwd or not verify_password(
+            current_pwd, current_user.password_hash
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Спокойно. Пароли не совпадают",
@@ -642,7 +701,9 @@ async def me_update(
 # ---------- /me/save-image/{category} ----------
 
 # Директория storage (та же, что в main.py)
-_STORAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "storage")
+_STORAGE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "storage"
+)
 _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 
@@ -650,19 +711,27 @@ _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 async def me_save_image(
     category: str,
     current_user: Annotated[User, Depends(get_current_user)],
-    file: Annotated[UploadFile, File(..., description="Файл изображения (поле form: file)")],
+    file: Annotated[
+        UploadFile, File(..., description="Файл изображения (поле form: file)")
+    ],
 ):
     """Сохранить изображение в категорию (файл сохраняется в storage/{category}/). Возвращает url сохранённого файла."""
     category = (category or "").strip()
     if not category:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="category required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="category required"
+        )
     # Безопасное имя папки: только буквы, цифры, дефис, подчёркивание
     safe_category = "".join(c if c.isalnum() or c in "-_" else "_" for c in category)
     if not safe_category:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid category")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="invalid category"
+        )
 
     if not file.filename:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="file required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="file required"
+        )
 
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in _ALLOWED_EXTENSIONS:
@@ -681,7 +750,11 @@ async def me_save_image(
         f.write(content)
 
     # Публичный URL API для ссылки на картинку (в проде: https://api.setly.space, в dev — свой хост)
-    api_public_url = (os.getenv("API_PUBLIC_URL") or os.getenv("PUBLIC_API_URL") or "https://api.setly.space").rstrip("/")
+    api_public_url = (
+        os.getenv("API_PUBLIC_URL")
+        or os.getenv("PUBLIC_API_URL")
+        or "https://api.setly.space"
+    ).rstrip("/")
     url = f"{api_public_url}/storage/{safe_category}/{unique_name}"
     return {"ok": True, "url": url, "path": f"/storage/{safe_category}/{unique_name}"}
 
@@ -711,7 +784,9 @@ async def me_likes_add(
     """Добавить лайк чеклисту."""
     cid = (data.checklist_id or "").strip()
     if not cid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="checklist_id required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="checklist_id required"
+        )
     result = await session.execute(
         select(UserLikes).where(
             UserLikes.user_id == current_user.id,
@@ -734,7 +809,9 @@ async def me_likes_remove(
     """Убрать лайк с чеклиста."""
     cid = (checklist_id or "").strip()
     if not cid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="checklist_id required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="checklist_id required"
+        )
     result = await session.execute(
         select(UserLikes).where(
             UserLikes.user_id == current_user.id,
@@ -781,7 +858,9 @@ async def me_checkplans_add(
     """Добавить чек-план пользователю."""
     sid = (data.id_str or "").strip()
     if not sid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required"
+        )
     result = await session.execute(
         select(CheckPlan).where(
             CheckPlan.author_id == current_user.id,
@@ -804,7 +883,9 @@ async def me_checkplans_remove(
     """Удалить чек-план у пользователя."""
     sid = (id_str or "").strip()
     if not sid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required"
+        )
     result = await session.execute(
         select(UserCheckPlan).where(
             UserCheckPlan.user_id == current_user.id,
@@ -827,11 +908,17 @@ async def me_checkplans_pin(
     """Закрепить свой чек-план (максимум 6)."""
     sid = (id_str or "").strip()
     if not sid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required")
-    plan_result = await session.execute(select(CheckPlan).where(CheckPlan.id_str == sid))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required"
+        )
+    plan_result = await session.execute(
+        select(CheckPlan).where(CheckPlan.id_str == sid)
+    )
     plan = plan_result.scalar_one_or_none()
     if plan is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="CheckPlan not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="CheckPlan not found"
+        )
     if plan.author_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -848,7 +935,9 @@ async def me_checkplans_pin(
         return {"ok": True, "message": "already pinned"}
 
     count_result = await session.execute(
-        select(UserPinnedCheckPlan.id).where(UserPinnedCheckPlan.user_id == current_user.id)
+        select(UserPinnedCheckPlan.id).where(
+            UserPinnedCheckPlan.user_id == current_user.id
+        )
     )
     pinned_count = len(count_result.all())
     if pinned_count >= MAX_PINNED_CHECKPLANS:
@@ -870,7 +959,9 @@ async def me_checkplans_unpin(
     """Открепить свой чек-план."""
     sid = (id_str or "").strip()
     if not sid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="id_str required"
+        )
     result = await session.execute(
         select(UserPinnedCheckPlan).where(
             UserPinnedCheckPlan.user_id == current_user.id,
@@ -898,7 +989,9 @@ async def me_checkplans_pinned_order(
             detail=f"Достигнут максимум закреплённых чек-планов: {MAX_PINNED_CHECKPLANS}",
         )
     rows_result = await session.execute(
-        select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.user_id == current_user.id)
+        select(UserPinnedCheckPlan).where(
+            UserPinnedCheckPlan.user_id == current_user.id
+        )
     )
     rows = rows_result.scalars().all()
     existing_set = {str(r.id_str) for r in rows}
@@ -919,3 +1012,171 @@ async def me_checkplans_pinned_order(
         session.add(row)
     await session.commit()
     return {"ok": True}
+
+
+# ---------- Email verification ----------
+
+
+@router.post("/verify-email/request")
+async def verify_email_request(
+    request: Request,
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Отправить OTP-код для подтверждения адреса электронной почты."""
+    await enforce_rate_limit(
+        request, "verify_email_request", RATE_LIMITS["verify_email_request"]
+    )
+    if current_user.email_is_verified:
+        return {"ok": True, "already_verified": True}
+
+    otp = secrets.token_hex(3).upper()  # 6 hex chars, e.g. "A3F1C9"
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+
+    redis = get_redis_client()
+    redis_key = f"setly:verify_email:{current_user.id}"
+    await redis.set(redis_key, otp_hash, ex=600)
+
+    await asyncio.get_event_loop().run_in_executor(
+        None, send_email_verification_otp, current_user.email, otp
+    )
+    return {"ok": True, "already_verified": False}
+
+
+@router.post("/verify-email/confirm")
+async def verify_email_confirm(
+    request: Request,
+    data: EmailVerifyConfirm,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Подтвердить адрес электронной почты по OTP-коду."""
+    await enforce_rate_limit(
+        request, "verify_email_confirm", RATE_LIMITS["verify_email_confirm"]
+    )
+    if current_user.email_is_verified:
+        return {"ok": True}
+
+    redis = get_redis_client()
+    redis_key = f"setly:verify_email:{current_user.id}"
+    stored_hash = await redis.get(redis_key)
+    if stored_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Код не найден или истёк",
+        )
+
+    candidate_hash = hashlib.sha256(data.otp.strip().upper().encode()).hexdigest()
+    if candidate_hash != stored_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный код",
+        )
+
+    await redis.delete(redis_key)
+    current_user.email_is_verified = True
+    session.add(current_user)
+    await session.commit()
+    return {"ok": True}
+
+
+# ---------- Password recovery via OTP ----------
+
+
+@router.post("/recovery/otp/request")
+async def recovery_otp_request(
+    request: Request,
+    data: RecoveryOtpRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Запросить OTP-код для сброса пароля (без ссылки на почту)."""
+    await enforce_rate_limit(
+        request, "recovery_otp_request", RATE_LIMITS["recovery_otp_request"]
+    )
+
+    email = str(data.email).strip().lower()
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if user is None:
+        await _anti_enumeration_dummy_work(session, email)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Данная почта не зарегистрирована на Setly",
+        )
+
+    otp = secrets.token_hex(3).upper()  # 6 hex chars
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+
+    redis = get_redis_client()
+    redis_key = f"setly:recovery_otp:{user.id}"
+    await redis.set(redis_key, otp_hash, ex=600)
+
+    await asyncio.get_event_loop().run_in_executor(
+        None, send_recovery_otp_email, user.email, otp
+    )
+    return {"ok": True, "user_id": user.id}
+
+
+@router.post("/recovery/otp/confirm")
+async def recovery_otp_confirm(
+    request: Request,
+    data: RecoveryOtpConfirm,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Подтвердить OTP и получить токен сброса пароля."""
+    await enforce_rate_limit(
+        request, "recovery_otp_confirm", RATE_LIMITS["recovery_otp_confirm"]
+    )
+
+    email = str(data.email).strip().lower()
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден",
+        )
+
+    redis = get_redis_client()
+    redis_key = f"setly:recovery_otp:{user.id}"
+    stored_hash = await redis.get(redis_key)
+    if stored_hash is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Код не найден или истёк",
+        )
+
+    candidate_hash = hashlib.sha256(data.otp.strip().upper().encode()).hexdigest()
+    if candidate_hash != stored_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Неверный код",
+        )
+
+    await redis.delete(redis_key)
+
+    # Invalidate any existing active reset tokens for this user
+    now = datetime.utcnow()
+    active_tokens_result = await session.execute(
+        select(PasswordResetToken).where(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+        )
+    )
+    for row in active_tokens_result.scalars().all():
+        row.used_at = now
+        session.add(row)
+
+    # Issue a new short-lived password reset token
+    raw_token = secrets.token_urlsafe(48)
+    token_hash = _hash_reset_token(raw_token)
+    expires_at = _calculate_reset_expires_at(now)
+    reset_row = PasswordResetToken(
+        user_id=user.id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    session.add(reset_row)
+    await session.commit()
+
+    return {"ok": True, "token": raw_token, "expires_at": expires_at.isoformat()}

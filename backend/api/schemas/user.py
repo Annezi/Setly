@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 class UserCreate(BaseModel):
     """Схема регистрации пользователя."""
+
     email: EmailStr
     password: str = Field(..., min_length=6)
     nickname: str | None = None
@@ -10,6 +11,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     """Схема входа."""
+
     email: EmailStr
     password: str
     totp_code: str | None = None
@@ -26,6 +28,7 @@ class PasswordRecoveryConfirm(BaseModel):
 
 class UserResponse(BaseModel):
     """Публичные данные пользователя в ответах."""
+
     id: int
     email: str
     nickname: str | None
@@ -40,6 +43,7 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     """Обновление профиля (только перечисленные поля)."""
+
     profile_photo_url: str | None = None
     profile_bg_url: str | None = None
     nickname: str | None = None
@@ -50,6 +54,7 @@ class UserUpdate(BaseModel):
 
 class Token(BaseModel):
     """Ответ с токенами."""
+
     access_token: str
     token_type: str = "bearer"
     expires_in: int  # секунды до истечения access_token
@@ -57,6 +62,7 @@ class Token(BaseModel):
 
 class TokenPayload(BaseModel):
     """Полезная нагрузка JWT (sub = user_id)."""
+
     sub: int
     exp: int
     type: str = "access"
@@ -64,6 +70,7 @@ class TokenPayload(BaseModel):
 
 class UserRegisterResponse(BaseModel):
     """Ответ регистрации: пользователь + токен."""
+
     user: UserResponse
     access_token: str
     token_type: str = "bearer"
@@ -72,6 +79,7 @@ class UserRegisterResponse(BaseModel):
 
 class LoginResponse(BaseModel):
     """Ответ логина: пользователь + токен (как у register, чтобы не вызывать /me)."""
+
     user: UserResponse
     access_token: str | None = None
     token_type: str = "bearer"
@@ -130,3 +138,16 @@ class UserOgPreview(BaseModel):
 
     nickname: str = ""
     profile_photo_url: str = ""
+
+
+class EmailVerifyConfirm(BaseModel):
+    otp: str
+
+
+class RecoveryOtpRequest(BaseModel):
+    email: str
+
+
+class RecoveryOtpConfirm(BaseModel):
+    email: str
+    otp: str
