@@ -164,9 +164,11 @@ export const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
 				{showReadOnlyLinkColumn && (
 					<div className={styles.whereToGoLinkWrap}>
 						<div className={`${styles.whereToGoLinkCell} ${styles.whereToGoLinkCellReadOnly}`}>
-							<span className={`subinfo ${styles.whereToGoLinkInput} ${styles.whereToGoLinkInputReadOnly}`} style={{ color: "var(--grayscale-dark-gray)" }}>
-								{hasLink ? linkValue : "—"}
-							</span>
+							{!(isPreview && hasLink) && (
+								<span className={`subinfo ${styles.whereToGoLinkInput} ${styles.whereToGoLinkInputReadOnly}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+									{hasLink ? linkValue : "—"}
+								</span>
+							)}
 							{hasLink && (
 								<button
 									type="button"

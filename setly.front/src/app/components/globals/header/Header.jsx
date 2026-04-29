@@ -81,6 +81,10 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
     router.push('/account');
   }, [closeMobileMenu, router]);
 
+  const closeMobileMenuSimple = useCallback(() => {
+    setMobileMenuOpen(false);
+  }, []);
+
   const updateAccountMenuPosition = useCallback(() => {
     const el = accountMenuWrapRef.current;
     if (el) {
@@ -378,7 +382,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
                       <ul className={styles.sidePanelNavList}>
                         {NAV_ITEMS.map((item) => (
                           <li key={item.id} className={styles.sidePanelNavItem}>
-                            {renderNavLink(item, styles.sidePanelNavLink, closeMobileMenu)}
+                            {renderNavLink(item, styles.sidePanelNavLink, closeMobileMenuSimple)}
                           </li>
                         ))}
                       </ul>

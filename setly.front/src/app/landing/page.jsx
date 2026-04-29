@@ -4,13 +4,22 @@ import { Footer } from "@/app/components/globals/footer/Footer";
 import WelcomeScreen from "@/app/components/blocks/main/welcome-screen/welcome-screen";
 import ScrollReveal from "@/app/components/globals/scroll-reveal/scroll-reveal";
 
+function SectionFallback({ minHeight }) {
+  return (
+    <div style={{ minHeight, borderRadius: 16 }} aria-busy="true" aria-label="Загрузка секции">
+      <div style={{ height: 32, width: "40%", marginBottom: 16 }} />
+      <div style={{ height: minHeight - 48 }} />
+    </div>
+  );
+}
+
 const ThreeSteps = dynamic(
   () => import("@/app/components/blocks/main/three-steps/three-steps"),
-  { loading: () => <div style={{ minHeight: 280 }} aria-hidden /> }
+  { loading: () => <SectionFallback minHeight={280} /> }
 );
 const IdealWay = dynamic(
   () => import("@/app/components/blocks/main/ideal-way/ideal-way"),
-  { loading: () => <div style={{ minHeight: 280 }} aria-hidden /> }
+  { loading: () => <SectionFallback minHeight={280} /> }
 );
 
 export default function LandingPage() {

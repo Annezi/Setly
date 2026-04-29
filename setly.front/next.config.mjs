@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: __dirname,
+  reactStrictMode: false,
   reactCompiler: process.env.NODE_ENV === "production",
   poweredByHeader: false,
   compress: true,

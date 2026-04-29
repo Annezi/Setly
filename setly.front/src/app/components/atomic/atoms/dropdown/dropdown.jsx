@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, useId } from "react";
 import styles from "./dropdown.module.css";
 import DropdownItem from "../dropdown-item/dropdown-item";
 
@@ -60,7 +60,7 @@ export default function Dropdown({
     const [internalSelectedIndex, setInternalSelectedIndex] = useState(defaultSelectedIndex);
     const buttonRef = useRef(null);
     const [menuInlineStyle, setMenuInlineStyle] = useState(undefined);
-    const dropdownInstanceIdRef = useRef(`dropdown-${Math.random().toString(36).slice(2)}`);
+    const dropdownInstanceId = useId();
 
     const isControlled = typeof selectedIndex === "number";
     const currentIndex = isControlled ? selectedIndex : internalSelectedIndex;
@@ -101,16 +101,16 @@ export default function Dropdown({
         if (typeof window === "undefined") return undefined;
         const handleAnotherDropdownOpen = (event) => {
             const openedId = event?.detail?.id;
-            if (!openedId || openedId === dropdownInstanceIdRef.current) return;
+            if (!openedId || openedId === dropdownInstanceId) return;
             setIsOpen(false);
         };
         window.addEventListener("setly:dropdown-open", handleAnotherDropdownOpen);
         return () => window.removeEventListener("setly:dropdown-open", handleAnotherDropdownOpen);
-    }, []);
+    }, [dropdownInstanceId]);
 
     useEffect(() => {
         if (!isOpen || typeof window === "undefined") return;
-        const id = dropdownInstanceIdRef.current;
+        const id = dropdownInstanceId;
         const rafId = window.requestAnimationFrame(() => {
             window.dispatchEvent(
                 new CustomEvent("setly:dropdown-open", {
@@ -119,7 +119,7 @@ export default function Dropdown({
             );
         });
         return () => window.cancelAnimationFrame(rafId);
-    }, [isOpen]);
+    }, [isOpen, dropdownInstanceId]);
 
     const resolvedIcon = useMemo(() => (
         icon != null
@@ -140,7 +140,6 @@ export default function Dropdown({
     useEffect(() => {
         if (typeof window === "undefined") return undefined;
         if (!isOpen || !mobileAdaptiveMenu) {
-            setMenuInlineStyle(undefined);
             return undefined;
         }
 
@@ -266,7 +265,7 @@ export default function Dropdown({
             {isPanelVisible && (
                 <div 
                     className={menuClassName}
-                    style={menuInlineStyle}
+                    style={isOpen ? menuInlineStyle : undefined}
                     role={hasCustomContent ? null : "listbox"}
                 >
                     {hasCustomContent

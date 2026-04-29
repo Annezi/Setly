@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import ImageWithSkeleton from "@/app/components/globals/image-with-skeleton";
 import { getAuth } from "@/app/lib/auth-storage";
 import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./our-community.module.css";
@@ -108,15 +109,15 @@ function CheckPlanCard({
                     {applyTypograf(location)}
                 </span>
             </div>
-            <div className={styles.cardImageWrapper}>
-                <Image
-                    src={imageSrc}
-                    alt={imageAlt}
-                    width={264}
-                    height={264}
-                    className={styles.cardImage}
-                />
-            </div>
+            <ImageWithSkeleton
+                wrapperClassName={styles.cardImageWrapper}
+                className={styles.cardImage}
+                src={imageSrc}
+                alt={imageAlt}
+                width={264}
+                height={264}
+                sizes="(max-width: 620px) 280px, (max-width: 950px) 335px, 264px"
+            />
             <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
             <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
             <div className={styles.cardFooter}>
@@ -160,6 +161,7 @@ const MOBILE_BREAKPOINT = 1200;
 export default function OurCommunity() {
     const router = useRouter();
     const isAuthenticated = typeof getAuth()?.user?.id !== "undefined";
+    const [portalsReady, setPortalsReady] = useState(false);
     const [showLoginToLikePopup, setShowLoginToLikePopup] = useState(false);
     const [loginToLikeClosing, setLoginToLikeClosing] = useState(false);
     const [carouselIndex, setCarouselIndex] = useState(0);
@@ -191,6 +193,11 @@ export default function OurCommunity() {
     const isTransitioning = toIndex !== null;
 
     const isMobileView = () => typeof window !== "undefined" && window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches;
+
+    useEffect(() => {
+        const id = requestAnimationFrame(() => setPortalsReady(true));
+        return () => cancelAnimationFrame(id);
+    }, []);
 
     useEffect(() => {
         if (!isTransitioning) return;
@@ -360,7 +367,7 @@ export default function OurCommunity() {
                     </div>
                 </div>
             </section>
-            {typeof document !== "undefined" &&
+            {portalsReady &&
                 showLoginToLikePopup &&
                 createPortal(
                     <LoginToLikePopup

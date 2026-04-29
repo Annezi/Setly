@@ -1,4 +1,18 @@
 "use client";
+// @refresh reset
+
+if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
+	const hotModule = typeof module !== "undefined" ? module : null;
+	if (hotModule?.hot) {
+		if (window.__setlyCreateCheckplanForceReloadAfterHmr) {
+			window.__setlyCreateCheckplanForceReloadAfterHmr = false;
+			window.location.reload();
+		}
+		hotModule.hot.dispose(() => {
+			window.__setlyCreateCheckplanForceReloadAfterHmr = true;
+		});
+	}
+}
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import Link from "next/link";

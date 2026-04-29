@@ -65,14 +65,11 @@ export default function Login() {
           });
           if (meRes.ok) user = await meRes.json();
         }
-        if (!user) {
-          user = {
-            id: 0,
-            email: emailTrimmed,
-            nickname: null,
-            email_is_verified: false,
-            profile_photo_url: "",
-          };
+        // Не подставляем "пустого" пользователя: это вызывает петлю
+        // /login -> /account -> /login, т.к. аккаунт считает user.id=0 невалидным.
+        if (!user?.id) {
+          setErrorType("email_not_found");
+          return;
         }
         setAuth(user, access_token, expires_in);
         router.push("/account");

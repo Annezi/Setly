@@ -114,6 +114,9 @@ export default function Article({ articleId }) {
                 alt=""
                 width={335}
                 height={338}
+                priority
+                fetchPriority="high"
+                sizes="(max-width: 900px) 92vw, 335px"
                 className={styles.heroImage}
               />
             </div>

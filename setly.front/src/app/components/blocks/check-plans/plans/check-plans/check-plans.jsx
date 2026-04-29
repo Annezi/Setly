@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import ImageWithSkeleton, {
+  shouldUseNextImageOptimization,
+} from "@/app/components/globals/image-with-skeleton";
 import { applyTypograf } from "@/app/lib/typograf";
 import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import styles from "./check-plans.module.css";
@@ -18,7 +21,6 @@ const MAX_VISIBLE_CARDS = 3;
 
 /** Аватар по умолчанию, если бэкенд не вернул avatarSrc */
 const DEFAULT_AVATAR = "/img/main/setlypic.png?v=2";
-
 function formatLikes(n) {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
   return String(n);
@@ -45,6 +47,7 @@ export function PlanCard({
   const { isLiked, toggle, getLikeCount } = useLikedChecklists();
   const liked = isLiked(cardId);
   const likes = getLikeCount(cardId);
+  const useOptimizedImage = shouldUseNextImageOptimization(imageSrc);
   const previewHref = `/preview-checkplan/${encodeURIComponent(
     buildCheckplanPublicSegment({ title, planDbId, id_str: String(cardId) })
   )}`;
@@ -80,16 +83,16 @@ export function PlanCard({
           {location}
         </span>
       </div>
-      <div className={styles.cardImageWrapper}>
-        <Image
-          src={imageSrc}
-          alt={imageAlt || title || ""}
-          width={264}
-          height={264}
-          className={styles.cardImage}
-          unoptimized={typeof imageSrc === "string" && imageSrc.startsWith("http")}
-        />
-      </div>
+      <ImageWithSkeleton
+        wrapperClassName={styles.cardImageWrapper}
+        className={styles.cardImage}
+        src={imageSrc}
+        alt={imageAlt || title || ""}
+        width={264}
+        height={264}
+        sizes="(max-width: 620px) 280px, (max-width: 950px) 335px, 264px"
+        unoptimized={!useOptimizedImage}
+      />
       <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
       <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
       <div className={styles.cardFooter}>

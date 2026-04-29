@@ -337,7 +337,16 @@ export default function Settings() {
     }
   }, [user?.id, deletePassword, router]);
 
-  if (!authChecked) return null;
+  if (!authChecked) {
+    return (
+      <div className={styles.wrapper} aria-busy="true" aria-label="Загрузка настроек">
+        <div className={styles.titleBlock}>
+          <div style={{ height: 44 }} />
+        </div>
+        <div style={{ minHeight: 420 }} />
+      </div>
+    );
+  }
 
   const goBack = () => router.push("/account");
 

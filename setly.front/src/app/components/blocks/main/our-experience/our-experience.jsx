@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import ImageWithSkeleton from "@/app/components/globals/image-with-skeleton";
 import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
 import { ARTICLES_LIST } from "@/data/articles-data";
 import { applyTypograf } from "@/app/lib/typograf";
@@ -67,15 +68,15 @@ function ExperienceCard({ id, slug, imageSrc, imageAlt, title, description, read
                         {readTime}
                     </span>
                 </div>
-                <div className={styles.cardImageWrap}>
-                    <Image
-                        src={imageSrc}
-                        alt={imageAlt}
-                        width={264}
-                        height={264}
-                        className={styles.cardImage}
-                    />
-                </div>
+                <ImageWithSkeleton
+                    wrapperClassName={styles.cardImageWrap}
+                    className={styles.cardImage}
+                    src={imageSrc}
+                    alt={imageAlt}
+                    width={264}
+                    height={264}
+                    sizes="(max-width: 620px) 280px, (max-width: 950px) 335px, 264px"
+                />
                 <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
                 <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(description)}</p>
             </article>

@@ -5,6 +5,15 @@ import WelcomeScreen from "@/app/components/blocks/main/welcome-screen/welcome-s
 import ScrollReveal from "@/app/components/globals/scroll-reveal/scroll-reveal";
 import { shareMetadataBundle } from "@/app/lib/og-helpers";
 
+function SectionFallback({ minHeight }) {
+  return (
+    <div style={{ minHeight, borderRadius: 16 }} aria-busy="true" aria-label="Загрузка секции">
+      <div style={{ height: 32, width: "40%", marginBottom: 16 }} />
+      <div style={{ height: minHeight - 48 }} />
+    </div>
+  );
+}
+
 export const metadata = shareMetadataBundle({
   fullTitle: true,
   segmentTitle: "Setly - чекпланы для планирования путешествий",
@@ -15,19 +24,19 @@ export const metadata = shareMetadataBundle({
 
 const ThreeSteps = dynamic(
 	() => import("@/app/components/blocks/main/three-steps/three-steps"),
-	{ loading: () => <div style={{ minHeight: 280 }} aria-hidden /> }
+	{ loading: () => <SectionFallback minHeight={280} /> }
 );
 const IdealWay = dynamic(
 	() => import("@/app/components/blocks/main/ideal-way/ideal-way"),
-	{ loading: () => <div style={{ minHeight: 280 }} aria-hidden /> }
+	{ loading: () => <SectionFallback minHeight={280} /> }
 );
 const OurCommunity = dynamic(
 	() => import("@/app/components/blocks/main/our-community/our-community"),
-	{ loading: () => <div style={{ minHeight: 360 }} aria-hidden /> }
+	{ loading: () => <SectionFallback minHeight={360} /> }
 );
 const OurExperience = dynamic(
 	() => import("@/app/components/blocks/main/our-experience/our-experience"),
-	{ loading: () => <div style={{ minHeight: 320 }} aria-hidden /> }
+	{ loading: () => <SectionFallback minHeight={320} /> }
 );
 
 export default function MainPage() {

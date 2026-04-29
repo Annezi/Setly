@@ -16,6 +16,9 @@ import { CHECK_PLANS_SORT_ITEMS, sortCheckPlansByIndex } from "@/app/lib/checkpl
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 import { autoScrollViewportByPointer, createViewportAutoScrollController } from "@/app/lib/drag-auto-scroll";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
+import ImageWithSkeleton, {
+  shouldUseNextImageOptimization,
+} from "@/app/components/globals/image-with-skeleton";
 import styles from "./personal-check-plans.module.css";
 
 const API_PREFIX = "/api/user";
@@ -82,6 +85,7 @@ function PersonalPlanCard({
   const isPublic = visibility === "public";
   const liked = isLiked(plan.id);
   const likes = isPublic ? getLikeCount(plan.id) : 0;
+  const useOptimizedImage = shouldUseNextImageOptimization(plan.imageSrc);
 
   return (
     <>
@@ -153,16 +157,16 @@ function PersonalPlanCard({
           {plan.location}
         </span>
       </div>
-      <div className={styles.cardImageWrapper}>
-        <Image
-          src={plan.imageSrc}
-          alt={plan.imageAlt || plan.title || ""}
-          width={264}
-          height={264}
-          className={styles.cardImage}
-          unoptimized={plan.imageSrc.startsWith("http")}
-        />
-      </div>
+      <ImageWithSkeleton
+        wrapperClassName={styles.cardImageWrapper}
+        className={styles.cardImage}
+        src={plan.imageSrc}
+        alt={plan.imageAlt || plan.title || ""}
+        width={264}
+        height={264}
+        sizes="(max-width: 620px) 280px, (max-width: 900px) 335px, 264px"
+        unoptimized={!useOptimizedImage}
+      />
       <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(plan.title)}</h3>
       <p className={`${styles.cardDescription} subinfo`}>{applyTypograf(plan.description)}</p>
       <div className={styles.cardFooter}>
@@ -355,7 +359,7 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
       return [];
     }
       return isGuestView ? [] : getPersonalCheckPlans(userId);
-  }, [apiIdStrs, apiPlans, userId]);
+  }, [apiIdStrs, apiPlans, userId, isGuestView]);
 
   const persistPinnedOrder = useCallback(async (nextPinnedOrder, prevPinnedOrder) => {
     if (!token) return;

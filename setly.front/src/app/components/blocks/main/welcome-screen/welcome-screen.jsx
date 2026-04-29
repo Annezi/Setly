@@ -30,6 +30,9 @@ export default function WelcomeScreen() {
 									alt="Легко"
 									width={208}
 									height={52}
+									priority
+									fetchPriority="high"
+									sizes="(max-width: 800px) 50vw, 208px"
 									className={styles.titleImage}
 								/>
 							</span>
@@ -43,6 +46,9 @@ export default function WelcomeScreen() {
 									alt="Путешествуй"
 									width={412}
 									height={73}
+									priority
+									fetchPriority="high"
+									sizes="(max-width: 800px) 70vw, 412px"
 									className={`${styles.titleImage} ${styles.titleImageSecond}`}
 								/>
 							</span>

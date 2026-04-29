@@ -1896,19 +1896,32 @@
 	justify-content: flex-end;
 }
 
-/* В предпросмотре без ссылки во втором столбце — только иконка не нужна; текст ссылки скрыт по умолчанию */
+/* В предпросмотре URL-текст не показываем: остается только кнопка-стрелка. */
 .wrapperPreview .whereToGoLinkInputReadOnly {
 	display: none;
 }
 
-/* Предпросмотр: есть ссылка — показываем поле и URL */
-.wrapperPreview .whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkInputReadOnly {
-	display: block;
+.wrapperPreview .whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkCellReadOnly {
+	justify-content: flex-end;
+	position: relative;
+	padding: 0;
+	width: 44px;
+	min-width: 44px;
 }
 
-.wrapperPreview .whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkCellReadOnly {
-	justify-content: flex-start;
-	position: relative;
+/* Предпросмотр: основное текстовое поле занимает все свободное место строки. */
+.wrapperPreview .whereToGoRowReadOnlyPreview .whereToGoDescCell {
+	flex: 1 1 0%;
+	min-width: 0;
+	max-width: none;
+}
+
+/* Предпросмотр: колонка ссылки не растягивается и прижимается вправо. */
+.wrapperPreview .whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkWrap {
+	flex: 0 0 44px;
+	width: 44px;
+	min-width: 44px;
+	margin-left: auto;
 }
 
 /* Предпросмотр: только текст — ячейка описания на всю доступную ширину ряда */
@@ -2849,7 +2862,18 @@
 	}
 
 	.whereToGoRow.whereToGoRowReadOnlyPreview.whereToGoRowReadOnlyPreviewWithLink {
-		grid-template-rows: auto 8px auto;
+		grid-template-rows: auto;
+	}
+
+	.whereToGoRow.whereToGoRowReadOnlyPreview.whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkWrap {
+		grid-row: 1;
+		justify-self: end;
+		width: 44px;
+		min-width: 44px;
+	}
+
+	.whereToGoRow.whereToGoRowReadOnlyPreview.whereToGoRowReadOnlyPreviewWithLink .whereToGoDescCell {
+		padding-right: 52px;
 	}
 
 	.whereToGoRow.whereToGoRowReadOnlyPreview.whereToGoRowReadOnlyPreviewNoLink {

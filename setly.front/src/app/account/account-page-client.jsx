@@ -106,9 +106,14 @@ export default function AccountPageClient() {
     });
 
     if (isOwnPublicProfile && auth?.token) {
-      setUser(auth.user);
+      const ownProfileRafId = requestAnimationFrame(() => {
+        setUser(auth.user);
+      });
       refreshUser(auth.token, setUser, router);
-      return () => cancelAnimationFrame(rafId);
+      return () => {
+        cancelAnimationFrame(rafId);
+        cancelAnimationFrame(ownProfileRafId);
+      };
     }
 
     apiFetch(`/api/user/public-profile/${encodeURIComponent(profileUserId)}/full`, {
@@ -198,7 +203,12 @@ export default function AccountPageClient() {
   useEffect(() => {
     if (!authChecked || !profileOwnerId) return;
     const cachedCount = readCachedCreatedPlansCount(profileOwnerId);
-    if (cachedCount != null) setCreatedPlansCount(cachedCount);
+    let cacheRafId = 0;
+    if (cachedCount != null) {
+      cacheRafId = requestAnimationFrame(() => {
+        setCreatedPlansCount(cachedCount);
+      });
+    }
     if (isGuestView) return;
     const endpoint = `${API_PREFIX}/me/checkplans`;
     apiFetch(endpoint, { method: 'GET', token })
@@ -209,9 +219,30 @@ export default function AccountPageClient() {
         writeCachedCreatedPlansCount(profileOwnerId, count);
       })
       .catch(() => setCreatedPlansCount(0));
+    return () => {
+      if (cacheRafId) cancelAnimationFrame(cacheRafId);
+    };
   }, [authChecked, profileOwnerId, isGuestView, token]);
 
-  if (!authChecked) return null;
+  if (!authChecked) {
+    return (
+      <>
+        <Header />
+        <main>
+          <div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+            <div style={{ maxWidth: 1045, margin: "0 auto", width: "100%", padding: "12px 0" }} aria-busy="true" aria-label="Загрузка профиля">
+              <div style={{ minHeight: 200 }} />
+              <div style={{ minHeight: 120 }} />
+              <div style={{ minHeight: 420 }} />
+            </div>
+          </div>
+        </main>
+        <div className="main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
+          <Footer />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
