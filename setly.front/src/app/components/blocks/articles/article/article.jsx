@@ -10,6 +10,7 @@ import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
 import OurExperience from '@/app/components/blocks/main/our-experience/our-experience';
 import ScrollReveal from '@/app/components/globals/scroll-reveal/scroll-reveal';
+import ErrorStateSection from '@/app/components/globals/error-state/error-state-section';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import { getAuth } from '@/app/lib/auth-storage';
@@ -75,12 +76,12 @@ export default function Article({ articleId }) {
             </Link>
           </ScrollReveal>
           <ScrollReveal delay={90}>
-            <div className={styles.notFound}>
-              <p className={`${styles.notFoundText} title_2`}>Статья не найдена</p>
-              <Link href="/articles" className={`${styles.notFoundLink} subinfo`}>
-                Вернуться к списку статей
-              </Link>
-            </div>
+            <ErrorStateSection
+              title="Статья не найдена"
+              buttonText="Вернуться к списку статей"
+              onButtonClick={() => router.push('/articles')}
+              titleId="article-not-found-title"
+            />
           </ScrollReveal>
         </main>
         <ScrollReveal delay={130}>

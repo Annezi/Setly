@@ -19,9 +19,14 @@
     box-sizing: border-box;
 }
 
-.dropdownItem span {
+/* Полная ширина родителя + явное центрирование текста (перебивает глобальные .subinfo и внешние правила) */
+.dropdownItemText {
     display: block;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-self: stretch;
     line-height: 1.25;
     text-align: center !important;
     white-space: normal;

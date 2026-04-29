@@ -12,6 +12,7 @@ import {
 	parseCheckplanUrlSegment,
 } from "@/app/lib/slug";
 import styles from "../create-checkplan-edit-phantom.module.css";
+import ErrorStateSection from "@/app/components/globals/error-state/error-state-section";
 
 /** Редактировать план может только автор (совпадение author_id и id в сессии). */
 function isCheckplanOwner(plan, authUserId) {
@@ -180,16 +181,13 @@ export default function EditCheckplanPage() {
 		return (
 			<div className="container createCheckplanPage">
 				<Header />
-				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms", padding: "2rem", textAlign: "center" }}>
-					<p>{error || "План не найден"}</p>
-					<button
-						type="button"
-						onClick={() => router.push(fromAccount ? "/account" : "/check-plans")}
-						className="subinfo"
-						style={{ marginTop: "1rem", textDecoration: "underline" }}
-					>
-						{fromAccount ? "В личный кабинет" : "Вернуться к чек-планам"}
-					</button>
+				<div className="main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+					<ErrorStateSection
+						title={error || "План не найден"}
+						buttonText="Вернуться к чек-планам"
+						onButtonClick={() => router.push("/check-plans")}
+						titleId="checkplan-not-found-title"
+					/>
 				</div>
 				<div className="createCheckplanPageFooterWrap main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
 					<Footer />

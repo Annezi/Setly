@@ -26,22 +26,11 @@ from api.schemas.check_plan import (
 import uuid
 
 from auth import get_current_user, get_current_user_optional
+from api.check_plan_access import can_read_check_plan
 
 router = APIRouter(prefix="/check-plans", tags=["check-plans"])
 
 _RE_UUID32_HEX = re.compile(r"^[a-fA-F0-9]{32}$")
-
-
-def _can_read_plan(plan: CheckPlan, current_user: User | None) -> bool:
-    if plan.is_hidden_by_admin:
-        return current_user is not None and current_user.is_admin
-    if plan.moderation_status == "rejected":
-        return current_user is not None and (current_user.is_admin or plan.author_id == current_user.id)
-    visibility = (plan.visibility or "public").strip().lower()
-    if visibility == "private":
-        return current_user is not None and plan.author_id == current_user.id
-    # link и public доступны по прямой ссылке (GET /check-plans/{id_str})
-    return True
 
 
 async def _find_check_plan_and_author(
@@ -280,7 +269,7 @@ async def get_check_plan(
             detail="CheckPlan not found",
         )
     plan, author = pair
-    if not _can_read_plan(plan, current_user):
+    if not can_read_check_plan(plan, current_user):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",
@@ -471,7 +460,7 @@ async def copy_check_plan(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",
         )
-    if not _can_read_plan(plan, current_user):
+    if not can_read_check_plan(plan, current_user):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="CheckPlan not found",
@@ -613,7 +602,8 @@ async def create_checkplan_custom(
         location="",
         title=data.checkplan_name,
         description="",
-        visibility="private",
+        # «По ссылке»: открыт без входа; в каталог — только после «Опубликовать» (public).
+        visibility="link",
         initial_likes=0,
         check_plan_data_id=checkplan_data_id,
         filter_tag=data.travel_type,

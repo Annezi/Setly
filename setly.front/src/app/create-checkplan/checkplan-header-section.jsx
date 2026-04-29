@@ -158,8 +158,11 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 											hasValue={datesRange[0] != null && datesRange[1] != null}
 											mobileAdaptiveMenu
 											mobileAdaptiveBreakpoint={900}
-											mobileFullWidthBreakpoint={0}
+											mobileFullWidthBreakpoint={900}
 											mobileAdaptiveNoHeightClamp
+											menuMatchContainerSelector="[data-main-info-card]"
+											mobileAlignToContainerLeft
+											mobileAlignPanelToTriggerIfWide
 											dropdownMenuClassName={styles.datesDropdownMenu}
 										/>
 									)}
@@ -182,6 +185,7 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 											mobileAdaptiveMenu
 											mobileAdaptiveBreakpoint={899}
 											mobileFullWidthBreakpoint={768}
+											mobileAdaptiveNoHeightClamp
 											menuMatchContainerSelector="[data-main-info-card]"
 											mobileAlignToContainerLeft
 											dropdownMenuClassName={styles.cardInfoDropdownMenu}

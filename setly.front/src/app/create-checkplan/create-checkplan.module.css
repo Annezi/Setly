@@ -377,14 +377,19 @@
 	border-radius: 4px;
 }
 
-/* Строка: подпись слева, дропдаун на всю оставшуюся ширину, содержимое по левому краю, иконка справа, отступы 12px */
+/*
+ * Сетка: фиксированная колонка под иконку+подпись — иначе «Даты:» / «Место:» / «Тип:»
+ * дают разную ширину лейбла и капсулы дропдауна получаются разной ширины.
+ */
 .cardDropdownRow {
-	display: flex;
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr);
 	align-items: center;
 	width: 100%;
 	min-height: 34px;
+	min-width: 0;
 	height: 34px;
-	gap: 20px;
+	column-gap: 20px;
 }
 
 .cardDropdownLabel {
@@ -392,13 +397,16 @@
 	align-items: center;
 	gap: 6px;
 	flex-shrink: 0;
+	min-width: 0;
+	justify-self: start;
 }
 
 .cardDropdown {
-	flex: 1;
 	min-width: 0;
+	width: 100%;
 	display: flex;
-	justify-content: flex-end;
+	justify-content: stretch;
+	align-items: center;
 }
 
 /* В режиме просмотра: правая колонка выравнивается по левому краю контейнера */
@@ -411,19 +419,29 @@
 }
 
 /* В режиме просмотра: левая колонка (лейбл) фиксированной ширины 80px */
+.cardReadOnly .cardDropdownRow {
+	grid-template-columns: 80px minmax(0, 1fr);
+}
+
 .cardReadOnly .cardDropdownLabel {
 	width: 80px;
 	min-width: 80px;
 }
 
-.cardDropdown>div {
+/* Обёртка Dropdown на всю ширину правой колонки — все триггеры одинаковой ширины */
+.cardDropdown > div {
 	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 }
 
-/* Кнопка-триггер дропдауна: 212×34 px по макету, не влияет на кнопки внутри контента (например, календарь) */
+/* Триггеры «Даты / Место / Тип / Люди»: одна ширина (колонка карточки), не max-content */
 .cardDropdown > div > button {
-	width: 212px;
-	max-width: 212px;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
 	height: 34px;
 	min-height: 34px;
 	padding: 0 12px;
@@ -433,20 +451,45 @@
 	align-items: center;
 	justify-content: space-between;
 	border-radius: 40px;
+	box-sizing: border-box;
 }
 
-.cardInfoDropdownMenu {
-	width: 212px;
-	min-width: 212px;
-	max-width: 212px;
+/*
+ * Ширина панели = колонке триггера (absolute). Без !important: у fixed из JS inline задаётся
+ * ширина карточки; !important + width:100% ломает fixed (100% = viewport и панель вылезает вправо).
+ */
+.cardInfoDropdownMenu.component-blur {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
-/* Дропдаун «Даты»: фиксируем меню под ширину календаря, без обрезания контента */
-.datesDropdownMenu {
-	width: max-content !important;
-	min-width: 335px !important;
-	max-width: 400px !important;
-	overflow: visible !important;
+/* Пункты списка (Тип, Люди, Место): текст на всю ширину кнопки и по центру */
+.cardInfoDropdownMenu button {
+	justify-content: center !important;
+	align-items: center !important;
+}
+
+.cardInfoDropdownMenu button span:first-of-type {
+	display: block !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	min-width: 0 !important;
+	flex: 1 1 auto !important;
+	text-align: center !important;
+	justify-content: center !important;
+}
+
+/*
+ * Дропдаун «Даты» (календарь): на десктопе max-content. Без !important — на мобилке inline из Dropdown
+ * задаёт ширину панели по карточке; иначе max-content перебивает fix и панель вылезает.
+ */
+.datesDropdownMenu.component-blur {
+	width: max-content;
+	min-width: min(335px, calc(100vi - 24px));
+	max-width: min(400px, calc(100vi - 24px));
+	overflow: visible;
 }
 
 /* Только у кнопки-триггера: текст слева; плейсхолдер — серый, выбранное значение — тёмно-серый */
@@ -468,25 +511,24 @@
 	color: var(--grayscale-dark-gray);
 }
 
-/* Дропдаун «Даты»: на мобильных календарь центрируем по экрану и уменьшаем масштаб */
 @media (max-width: 768px) {
-	.datesDropdownMenu {
-		width: fit-content !important;
-		min-width: 0 !important;
-		max-width: min(400px, calc(100vw - 32px)) !important;
-		overflow-x: auto !important;
-		overflow-y: visible !important;
-		transform: none !important;
+	.datesDropdownMenu.component-blur {
+		min-width: 0;
+		max-width: min(400px, calc(100vi - 32px));
+		overflow-x: hidden;
+		overflow-y: visible;
 	}
 }
 
-/* Дропдаун «Место»: поиск + список, ширина как кнопка (212px), высота списка до 300px */
+/* Дропдаун «Место»: колонка на всю ширину панели (иначе скролл «плавает» и не у правого края) */
 .locationDropdownContent {
 	display: flex;
 	flex-direction: column;
+	align-items: stretch;
 	gap: 4px;
 	width: 100%;
 	min-width: 0;
+	box-sizing: border-box;
 }
 
 .locationDropdownSearch {
@@ -507,9 +549,14 @@
 .locationDropdownList {
 	display: flex;
 	flex-direction: column;
+	align-items: stretch;
 	gap: 4px;
+	width: 100%;
+	min-width: 0;
 	max-height: 300px;
 	overflow-y: auto;
+	overflow-x: hidden;
+	box-sizing: border-box;
 }
 
 .locationDropdownEmpty {
@@ -1063,6 +1110,13 @@
 /* Маркер на обёртке блока: один селектор вместо дублей .textBlockWrap / .whereToGoBlockWrap / .budgetTableWrap */
 .contentBlockToolbarHost:hover .textBlockToolbar {
 	opacity: 1;
+}
+
+/* Мобильная версия: нет устойчивого hover — кнопки вверх/вниз/удалить блока всегда видны */
+@media (max-width: 768px) {
+	.contentBlockToolbarHost .textBlockToolbar {
+		opacity: 1;
+	}
 }
 
 .textBlockToolbarBtn {
@@ -1842,9 +1896,26 @@
 	justify-content: flex-end;
 }
 
-/* В предпросмотре: только иконка ссылки, текст ссылки скрыт; переход по клику на иконку */
+/* В предпросмотре без ссылки во втором столбце — только иконка не нужна; текст ссылки скрыт по умолчанию */
 .wrapperPreview .whereToGoLinkInputReadOnly {
 	display: none;
+}
+
+/* Предпросмотр: есть ссылка — показываем поле и URL */
+.wrapperPreview .whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkInputReadOnly {
+	display: block;
+}
+
+.wrapperPreview .whereToGoRowReadOnlyPreviewWithLink .whereToGoLinkCellReadOnly {
+	justify-content: flex-start;
+	position: relative;
+}
+
+/* Предпросмотр: только текст — ячейка описания на всю доступную ширину ряда */
+.wrapperPreview .whereToGoRowReadOnlyPreviewNoLink .whereToGoDescCell {
+	flex: 1 1 0%;
+	min-width: 0;
+	max-width: none;
 }
 
 .wrapperPreview .whereToGoReadOnlyText {
@@ -1978,16 +2049,14 @@
 	border-radius: 500px;
 }
 
-/* Обёртка кнопки «Добавить» для выпадающего меню блоков */
-.toolbarAddWrap {
-	position: relative;
-	display: inline-flex;
-}
-
-/* Обёртка кнопки «Ещё» (Vector) для выпадающего меню чек-плана */
+/* Обёртки «Добавить» / «Ещё»: в строке ПК после «Сохранить» (order 2) */
+.toolbarAddWrap,
 .toolbarMoreWrap {
 	position: relative;
 	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	order: 2;
 }
 
 /* Выпадающее меню «Добавить блок»: сверху от кнопки, по центру, анимация плавного появления снизу */
@@ -2355,17 +2424,6 @@
 	object-fit: contain;
 }
 
-/* Плашка навменю: прозрачный фон (виден фон тулбара) */
-.toolbarGroup {
-	display: flex;
-	align-items: center;
-	gap: 20px;
-	height: 44px;
-	padding: 4px 4px 4px 4px;
-	border-radius: 100px;
-	background: transparent;
-}
-
 /* На десктопе: иконки и кнопка «Сохранить» в одну строку (order задаёт порядок) */
 .toolbarIconsRow {
 	display: contents;
@@ -2377,10 +2435,6 @@
 
 .toolbarButtonQuestion {
 	order: 0;
-}
-
-.toolbarGroup {
-	order: 2;
 }
 
 .saveButton {
@@ -2686,7 +2740,7 @@
 	}
 }
 
-/* 769px: вертикальная раскладка полей «Куда сходить» / «Полезные контакты», чтобы не было переполнения */
+/* 769px: сетка «Куда сходить» / «Полезные контакты» — ручка по центру между полями, ссылка + удаление в один ряд */
 @media (max-width: 769px) {
 
 	.whereToGoBlockWrap,
@@ -2700,26 +2754,106 @@
 		padding: 1px;
 	}
 
+	/*
+	 * Три строки: описание | узкая полоса под иконку перетаскивания | ссылка + удаление.
+	 * Иконка только во 2-й строке — по центру между полями; если бы тянуть на 1 / -1,
+	 * центр уезжает внутрь высокого многострочного описания.
+	 */
 	.whereToGoRow {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 12px;
+		display: grid;
+		grid-template-columns: 11px minmax(0, 1fr);
+		/* Узкая полоса между полями одного пункта; иконка 18px может слегка выходить за дорожку */
+		grid-template-rows: auto 8px auto;
+		column-gap: 12px;
+		row-gap: 0;
+		align-items: start;
 		min-width: 0;
 		max-width: 100%;
+		width: 100%;
+		box-sizing: border-box;
+		overflow: visible;
+	}
+
+	/* Колонка кнопки 44px; 12px — column-gap между полем ссылки и кнопкой */
+	.whereToGoRow.whereToGoRowCanRemove {
+		grid-template-columns: 11px minmax(0, 1fr) 44px;
+	}
+
+	.whereToGoRowDragHandle,
+	.whereToGoRowLeadSpacer {
+		grid-column: 1;
+		grid-row: 2;
+		align-self: center;
+		justify-self: center;
+		position: relative;
+		z-index: 1;
 	}
 
 	.whereToGoDescCell {
-		flex: 0 0 auto;
-		width: 100%;
+		grid-column: 2;
+		grid-row: 1;
+		flex: none;
+		width: auto;
 		min-width: 0;
-		max-width: 100%;
+		max-width: none;
+	}
+
+	.whereToGoRow.whereToGoRowCanRemove .whereToGoDescCell {
+		grid-column: 2 / 4;
 	}
 
 	.whereToGoLinkWrap {
-		flex: 0 0 auto;
-		width: 100%;
+		grid-column: 2;
+		grid-row: 3;
+		flex: none;
+		width: auto;
 		min-width: 0;
-		max-width: 100%;
+		max-width: none;
+	}
+
+	.whereToGoRowDeleteCell {
+		grid-column: 3;
+		grid-row: 3;
+		align-self: center;
+		justify-self: center;
+		width: 44px;
+		min-width: 44px;
+		flex: none;
+		overflow: visible;
+	}
+
+	.whereToGoRow:not(.whereToGoRowCanRemove) .whereToGoRowDeleteCell {
+		display: none;
+	}
+
+	.whereToGoRowDeleteCell.whereToGoRowDeleteCellVisible {
+		flex: none;
+		width: 44px;
+		min-width: 44px;
+		max-width: 44px;
+	}
+
+	/* Предпросмотр read-only: колонка под ручку не рендерится — одна колонка, текст у левого края */
+	.whereToGoRow.whereToGoRowReadOnlyPreview {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.whereToGoRow.whereToGoRowReadOnlyPreview .whereToGoDescCell {
+		grid-column: 1;
+		grid-row: 1;
+	}
+
+	.whereToGoRow.whereToGoRowReadOnlyPreview .whereToGoLinkWrap {
+		grid-column: 1;
+		grid-row: 3;
+	}
+
+	.whereToGoRow.whereToGoRowReadOnlyPreview.whereToGoRowReadOnlyPreviewWithLink {
+		grid-template-rows: auto 8px auto;
+	}
+
+	.whereToGoRow.whereToGoRowReadOnlyPreview.whereToGoRowReadOnlyPreviewNoLink {
+		grid-template-rows: auto;
 	}
 
 	.whereToGoLinkCell {
@@ -2729,25 +2863,6 @@
 		box-sizing: border-box;
 		padding-left: 16px;
 		padding-right: 0;
-	}
-
-	/* В предпросмотре на мобильном: два поля в один ряд */
-	.wrapperPreview .whereToGoRow {
-		flex-direction: row;
-		align-items: center;
-	}
-
-	.wrapperPreview .whereToGoDescCell {
-		flex: 1 1 0%;
-		min-width: 0;
-		width: auto;
-		max-width: none;
-	}
-
-	.wrapperPreview .whereToGoLinkWrap {
-		flex: 0 0 auto;
-		width: auto;
-		max-width: none;
 	}
 }
 
@@ -2829,31 +2944,6 @@
 		min-width: 0;
 	}
 
-	/* На узких экранах делаем дропдауны компактнее и не вываливающимися за карточку */
-	.cardDropdown button {
-		width: 188px;
-		max-width: 188px;
-	}
-
-	.cardInfoDropdownMenu {
-		width: 188px;
-		min-width: 188px;
-		max-width: 188px;
-	}
-
-	.cardInfoDropdownMenu button {
-		justify-content: center !important;
-	}
-
-	.cardInfoDropdownMenu button span:first-of-type {
-		justify-content: center !important;
-		text-align: center !important;
-	}
-
-	.locationDropdownContent {
-		align-items: center;
-	}
-
 	.locationDropdownSearch,
 	.locationDropdownEmpty,
 	.locationDropdownList button span {
@@ -2887,7 +2977,7 @@
 		max-width: 100%;
 	}
 
-	/* Блоки «Куда сходить» / «Полезные контакты»: двойное поле друг под другом, без переполнения */
+	/* Блоки «Куда сходить» / «Полезные контакты»: сетка задаётся в max-width: 769px */
 	.whereToGoBlockWrap,
 	.whereToGoBlock {
 		min-width: 0;
@@ -2897,31 +2987,6 @@
 
 	.whereToGoBlockWrap {
 		padding: 1px;
-	}
-
-	.whereToGoRow {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 12px;
-		min-width: 0;
-		max-width: 100%;
-		box-sizing: border-box;
-	}
-
-	.whereToGoDescCell {
-		flex: 0 0 auto;
-		width: 100%;
-		min-width: 0;
-		max-width: 100%;
-		box-sizing: border-box;
-	}
-
-	.whereToGoLinkWrap {
-		flex: 0 0 auto;
-		width: 100%;
-		min-width: 0;
-		max-width: 100%;
-		box-sizing: border-box;
 	}
 
 	.whereToGoLinkCell {
@@ -2938,57 +3003,31 @@
 	}
 
 	.whereToGoLinkCellReadOnly {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 8px;
-		min-height: auto;
-		padding: 12px 16px;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+		min-height: 44px;
+		padding: 0 12px 0 16px;
+		box-sizing: border-box;
 	}
 
 	.whereToGoLinkCellReadOnly .whereToGoLinkInputReadOnly {
-		padding: 0;
+		padding: 10px 34px 10px 0;
 	}
 
 	.whereToGoLinkCellReadOnly .whereToGoLinkIconBtn {
-		position: static;
-		transform: none;
-		align-self: flex-end;
-	}
-
-	/* В режиме предпросмотра на мобильном: два поля в один ряд (не столбец), только иконка ссылки */
-	.wrapperPreview .whereToGoRow {
-		flex-direction: row;
-		align-items: center;
-	}
-
-	.wrapperPreview .whereToGoDescCell {
-		flex: 1 1 0%;
-		min-width: 0;
-		width: auto;
-		max-width: none;
-	}
-
-	.wrapperPreview .whereToGoLinkWrap {
-		flex: 0 0 auto;
-		width: auto;
-		max-width: none;
-	}
-
-	.wrapperPreview .whereToGoLinkInputReadOnly {
-		display: none;
+		position: absolute;
+		right: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		align-self: unset;
 	}
 
 	.wrapperPreview .whereToGoLinkCellReadOnly {
-		flex-direction: row;
-		justify-content: flex-end;
-		align-items: center;
 		min-height: 44px;
-		padding: 0;
+		height: 44px;
+		padding-left: 16px;
 		padding-right: 0;
-	}
-
-	.wrapperPreview .whereToGoLinkCellReadOnly .whereToGoLinkIconBtn {
-		align-self: center;
 	}
 
 	.whereToGoLinkInput {
@@ -3048,85 +3087,69 @@
 		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 	}
 
+	/* Три слота 44×44; без flex-grow — иначе строка растягивается по высоте ячейки тулбара (~52px) */
 	.toolbarIconsRow {
 		display: flex;
 		flex-direction: row;
-		align-items: stretch;
-		justify-content: space-between;
-		gap: 8px;
+		align-items: center;
+		justify-content: space-evenly;
 		order: 0;
-		flex: 1 1 0;
-		min-height: 0;
+		flex: 0 0 44px;
 		width: 100%;
 		height: 44px;
+		min-height: 44px;
+		max-height: 44px;
+		min-width: 0;
+		box-sizing: border-box;
 	}
 
-	/* Мобильная: отключаем .component-blur у кнопок управления (чтобы не было другого цвета) */
 	.toolbarIconsRow .toolbarButtonQuestion.component-blur,
-	.toolbarIconsRow .toolbarGroup.component-blur,
-	.toolbarIconsRow .toolbarGroup .toolbarAddWrap.component-blur,
-	.toolbarIconsRow .toolbarGroup .toolbarButtonTransparent {
+	.toolbarIconsRow .toolbarButtonTransparent.component-blur {
 		backdrop-filter: none !important;
 		-webkit-backdrop-filter: none !important;
 	}
 
-	/* Мобильная: три кнопки одинакового размера, разделены, выровнены */
 	.toolbarIconsRow .toolbarButtonQuestion,
-	.toolbarIconsRow .toolbarGroup {
-		flex: 1 1 0;
-		min-width: 0;
+	.toolbarIconsRow .toolbarAddWrap,
+	.toolbarIconsRow .toolbarMoreWrap {
+		flex: 0 0 44px;
+		width: 44px;
 		height: 44px;
+		min-width: 44px;
 		min-height: 44px;
+		max-height: 44px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: transparent;
-		border-radius: 100px;
-	}
-
-	.toolbarIconsRow .toolbarButtonQuestion:hover,
-	.toolbarIconsRow .toolbarButtonQuestion:active,
-	.toolbarIconsRow .toolbarGroup:hover,
-	.toolbarIconsRow .toolbarGroup:active {
-		background: transparent;
-	}
-
-	.toolbarIconsRow .toolbarGroup {
-		flex: 2 1 0;
+		box-sizing: border-box;
 		padding: 0;
-		gap: 8px;
-	}
-
-	.toolbarIconsRow .toolbarGroup .toolbarAddWrap,
-	.toolbarIconsRow .toolbarGroup .toolbarMoreWrap,
-	.toolbarIconsRow .toolbarGroup .toolbarButtonTransparent {
-		flex: 1 1 0;
-		min-width: 0;
-		height: 44px;
-		min-height: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 100px;
-		background: transparent;
-	}
-
-	.toolbarIconsRow .toolbarGroup .toolbarAddWrap button,
-	.toolbarIconsRow .toolbarGroup .toolbarMoreWrap button {
-		width: 100%;
-		height: 44px;
-		min-height: 44px;
+		margin: 0;
 		background: transparent;
 		border-radius: 100px;
+		overflow: hidden;
 	}
 
-	.toolbarIconsRow .toolbarGroup .toolbarAddWrap button:hover,
-	.toolbarIconsRow .toolbarGroup .toolbarAddWrap button:active,
-	.toolbarIconsRow .toolbarGroup .toolbarMoreWrap button:hover,
-	.toolbarIconsRow .toolbarGroup .toolbarMoreWrap button:active,
-	.toolbarIconsRow .toolbarGroup .toolbarButtonTransparent:hover,
-	.toolbarIconsRow .toolbarGroup .toolbarButtonTransparent:active {
-		background: transparent;
+	.toolbarIconsRow .toolbarButtonQuestion {
+		border-radius: 100px;
+		-webkit-appearance: none;
+		appearance: none;
+	}
+
+	.toolbarIconsRow .toolbarAddWrap .toolbarButtonTransparent,
+	.toolbarIconsRow .toolbarMoreWrap .toolbarButtonTransparent {
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
+		max-height: 44px;
+		flex-shrink: 0;
+		box-sizing: border-box;
+		padding: 0;
+		margin: 0;
+		border: none;
+		border-radius: 100px;
+		-webkit-appearance: none;
+		appearance: none;
 	}
 
 	.toolbarSaveWrap {
@@ -3244,11 +3267,12 @@
 	}
 
 	.whereToGoRowCanRemove .whereToGoRowDeleteCell {
-		flex: 0 0 56px;
-		width: 56px;
-		min-width: 56px;
+		flex: none;
+		width: 44px;
+		min-width: 44px;
+		max-width: 44px;
 		overflow: visible;
-		align-self: flex-start;
+		align-self: center;
 	}
 
 	.whereToGoLinkCellWithDelete .whereToGoLinkDeleteWrap {

@@ -23,6 +23,7 @@ export const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 	moveContentBlockDown,
 	onRequestRemoveContentBlock,
 	readOnly = false,
+	isPreview = false,
 }) {
 	const canMoveUp = index > 0;
 	const canMoveDown = index < totalCount - 1;
@@ -224,6 +225,7 @@ export const UsefulContactsBlockCard = memo(function UsefulContactsBlockCard({
 										rowlistIsDropTarget={d != null && d.sectionKey === key && d.fromIndex !== d.overIndex && d.overIndex === ri}
 										rowlistShiftTransition={d != null && d.sectionKey === key}
 										readOnly={readOnly}
+										isPreview={isPreview}
 									/>
 										);
 									})}

@@ -212,28 +212,30 @@ export function CalendarContent({ value, onChange, onClose }) {
                             />
                         </button>
                         {monthMenuOpen && (
-                            <div className={styles.selectMenu} role="listbox">
-                                {monthLabels.map((label, idx) => (
-                                    <button
-                                        key={label}
-                                        type="button"
-                                        role="option"
-                                        aria-selected={idx === currentMonth.getMonth()}
-                                        className={`${styles.selectMenuItem} ${
-                                            idx === currentMonth.getMonth()
-                                                ? styles.selectMenuItemSelected
-                                                : ""
-                                        }`}
-                                        onClick={() => {
-                                            setViewMonthDate(
-                                                new Date(currentMonth.getFullYear(), idx, 1)
-                                            );
-                                            setMonthMenuOpen(false);
-                                        }}
-                                    >
-                                        <span className={styles.selectMenuItemText}>{label}</span>
-                                    </button>
-                                ))}
+                            <div className={styles.selectMenuClip} role="presentation">
+                                <div className={styles.selectMenuScroll} role="listbox">
+                                    {monthLabels.map((label, idx) => (
+                                        <button
+                                            key={label}
+                                            type="button"
+                                            role="option"
+                                            aria-selected={idx === currentMonth.getMonth()}
+                                            className={`${styles.selectMenuItem} ${
+                                                idx === currentMonth.getMonth()
+                                                    ? styles.selectMenuItemSelected
+                                                    : ""
+                                            }`}
+                                            onClick={() => {
+                                                setViewMonthDate(
+                                                    new Date(currentMonth.getFullYear(), idx, 1)
+                                                );
+                                                setMonthMenuOpen(false);
+                                            }}
+                                        >
+                                            <span className={styles.selectMenuItemText}>{label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -259,28 +261,30 @@ export function CalendarContent({ value, onChange, onClose }) {
                             />
                         </button>
                         {yearMenuOpen && (
-                            <div className={styles.selectMenu} role="listbox">
-                                {yearOptions.map((year) => (
-                                    <button
-                                        key={year}
-                                        type="button"
-                                        role="option"
-                                        aria-selected={year === currentMonth.getFullYear()}
-                                        className={`${styles.selectMenuItem} ${
-                                            year === currentMonth.getFullYear()
-                                                ? styles.selectMenuItemSelected
-                                                : ""
-                                        }`}
-                                        onClick={() => {
-                                            setViewMonthDate(
-                                                new Date(year, currentMonth.getMonth(), 1)
-                                            );
-                                            setYearMenuOpen(false);
-                                        }}
-                                    >
-                                        <span className={styles.selectMenuItemText}>{year}</span>
-                                    </button>
-                                ))}
+                            <div className={styles.selectMenuClip} role="presentation">
+                                <div className={styles.selectMenuScroll} role="listbox">
+                                    {yearOptions.map((year) => (
+                                        <button
+                                            key={year}
+                                            type="button"
+                                            role="option"
+                                            aria-selected={year === currentMonth.getFullYear()}
+                                            className={`${styles.selectMenuItem} ${
+                                                year === currentMonth.getFullYear()
+                                                    ? styles.selectMenuItemSelected
+                                                    : ""
+                                            }`}
+                                            onClick={() => {
+                                                setViewMonthDate(
+                                                    new Date(year, currentMonth.getMonth(), 1)
+                                                );
+                                                setYearMenuOpen(false);
+                                            }}
+                                        >
+                                            <span className={styles.selectMenuItemText}>{year}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>

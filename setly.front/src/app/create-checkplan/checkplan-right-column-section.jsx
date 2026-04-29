@@ -339,6 +339,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 							moveContentBlockDown={moveContentBlockDown}
 							onRequestRemoveContentBlock={onRequestRemoveContentBlock}
 							readOnly={readOnly}
+							isPreview={isPreview}
 						/>
 					);
 				}
@@ -354,6 +355,7 @@ export const RightColumnSection = memo(function RightColumnSection({
 							moveContentBlockDown={moveContentBlockDown}
 							onRequestRemoveContentBlock={onRequestRemoveContentBlock}
 							readOnly={readOnly}
+							isPreview={isPreview}
 						/>
 					);
 				}

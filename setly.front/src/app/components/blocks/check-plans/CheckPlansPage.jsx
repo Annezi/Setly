@@ -14,6 +14,7 @@ import { apiFetch } from "@/app/lib/api";
 import { getAuth } from "@/app/lib/auth-storage";
 import { mapFlatCheckPlanCardFromApi, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
+import ErrorStateSection from "@/app/components/globals/error-state/error-state-section";
 
 const Search = dynamic(() => import("./search/search").then((m) => m.default), {
 	ssr: false,
@@ -284,7 +285,17 @@ export function CheckPlansPage() {
         return (
             <>
                 <Header />
-                <main style={{ padding: "2rem", textAlign: "center" }}>Не удалось загрузить каталог: {error}</main>
+                <div className="container main-page-reveal__item" style={{ "--reveal-delay": "60ms" }}>
+                    <ErrorStateSection
+                        title="Не удалось загрузить каталог"
+                        description={error}
+                        buttonText="Обновить страницу"
+                        onButtonClick={() => {
+                            if (typeof window !== "undefined") window.location.reload();
+                        }}
+                        titleId="check-plans-catalog-error-title"
+                    />
+                </div>
                 <Footer />
             </>
         );

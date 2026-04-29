@@ -1,7 +1,6 @@
 "use client";
 
 import styles from "./dropdown-item.module.css";
-import { useState } from 'react';
 
 export default function DropdownItem({
     text = "Пункт",
@@ -21,7 +20,7 @@ export default function DropdownItem({
             onClick={onClick}
             {...props}
         >
-            <span className="subinfo ">{text}</span>
+            <span className={`subinfo ${styles.dropdownItemText}`}>{text}</span>
         </button>
     );
 }

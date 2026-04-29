@@ -82,6 +82,7 @@ export const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
 	rowlistIsDropTarget = false,
 	rowlistShiftTransition = false,
 	readOnly = false,
+	isPreview = false,
 }) {
 	const descTextareaRef = useRef(null);
 	const [rowHover, setRowHover] = useState(false);
@@ -133,10 +134,17 @@ export const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
 		[onRowlistDragHandlePointerDown, sectionKey, rowIndex]
 	);
 
+	const hasLink = linkValue.length > 0;
+	/* В предпросмотре без ссылки второй столбец не показываем — текст тянется на ширину ряда */
+	const showReadOnlyLinkColumn = !readOnly || !isPreview || hasLink;
+	const previewNoLinkRow = readOnly && isPreview && !hasLink;
+	const previewWithLinkRow = readOnly && isPreview && hasLink;
+
 	if (readOnly) {
+		const previewReadOnlyRow = readOnly && isPreview;
 		return (
 			<div
-				className={`${styles.whereToGoRow} ${rowlistShiftTransition ? styles.budgetTableRowShiftable : ""} ${rowlistIsDropTarget ? styles.budgetTableRowDropTarget : ""}`}
+				className={`${styles.whereToGoRow} ${previewReadOnlyRow ? styles.whereToGoRowReadOnlyPreview : ""} ${previewNoLinkRow ? styles.whereToGoRowReadOnlyPreviewNoLink : ""} ${previewWithLinkRow ? styles.whereToGoRowReadOnlyPreviewWithLink : ""} ${rowlistShiftTransition ? styles.budgetTableRowShiftable : ""} ${rowlistIsDropTarget ? styles.budgetTableRowDropTarget : ""}`}
 				data-rowlist-row-index={rowIndex}
 				style={{
 					...(rowlistDragShiftPx !== 0 ? { transform: `translateY(${rowlistDragShiftPx}px)` } : {}),
@@ -144,7 +152,7 @@ export const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
 					pointerEvents: rowlistIsDragSource ? "none" : undefined,
 				}}
 			>
-				<div className={styles.whereToGoRowLeadSpacer} aria-hidden />
+				{!(readOnly && isPreview) && <div className={styles.whereToGoRowLeadSpacer} aria-hidden />}
 				<div className={styles.whereToGoDescCell}>
 					<span className={`paragraph ${styles.whereToGoPrefix}`} style={{ color: "var(--grayscale-dark-gray)" }} aria-hidden>
 						{prefix}
@@ -153,23 +161,25 @@ export const WhereToGoSectionRow = memo(function WhereToGoSectionRow({
 						{userText || "—"}
 					</span>
 				</div>
-				<div className={styles.whereToGoLinkWrap}>
-					<div className={`${styles.whereToGoLinkCell} ${styles.whereToGoLinkCellReadOnly}`}>
-						<span className={`subinfo ${styles.whereToGoLinkInput} ${styles.whereToGoLinkInputReadOnly}`} style={{ color: "var(--grayscale-dark-gray)" }}>
-							{row.link?.trim() || "—"}
-						</span>
-						{row.link?.trim() && (
-							<button
-								type="button"
-								className={styles.whereToGoLinkIconBtn}
-								aria-label="Открыть ссылку"
-								onClick={openLink}
-							>
-								<img src="/icons/system/LinkArrow.svg" alt="" width={14} height={14} className={styles.whereToGoLinkArrow} />
-							</button>
-						)}
+				{showReadOnlyLinkColumn && (
+					<div className={styles.whereToGoLinkWrap}>
+						<div className={`${styles.whereToGoLinkCell} ${styles.whereToGoLinkCellReadOnly}`}>
+							<span className={`subinfo ${styles.whereToGoLinkInput} ${styles.whereToGoLinkInputReadOnly}`} style={{ color: "var(--grayscale-dark-gray)" }}>
+								{hasLink ? linkValue : "—"}
+							</span>
+							{hasLink && (
+								<button
+									type="button"
+									className={styles.whereToGoLinkIconBtn}
+									aria-label="Открыть ссылку"
+									onClick={openLink}
+								>
+									<img src="/icons/system/LinkArrow.svg" alt="" width={14} height={14} className={styles.whereToGoLinkArrow} />
+								</button>
+							)}
+						</div>
 					</div>
-				</div>
+				)}
 			</div>
 		);
 	}
@@ -267,6 +277,7 @@ export const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 	moveContentBlockDown,
 	onRequestRemoveContentBlock,
 	readOnly = false,
+	isPreview = false,
 }) {
 	const canMoveUp = index > 0;
 	const canMoveDown = index < totalCount - 1;
@@ -445,6 +456,7 @@ export const WhereToGoBlockCard = memo(function WhereToGoBlockCard({
 										rowlistIsDropTarget={d != null && d.sectionKey === key && d.fromIndex !== d.overIndex && d.overIndex === ri}
 										rowlistShiftTransition={d != null && d.sectionKey === key}
 										readOnly={readOnly}
+										isPreview={isPreview}
 									/>
 										);
 									})}

@@ -4,9 +4,10 @@
     border-radius: 20px;
     box-sizing: border-box;
     width: 100%;
-    max-width: min(400px, calc(100vw - 32px));
+    max-width: min(400px, 100%);
     border: 1px solid var(--grayscale-primary-gray);
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+    min-width: 0;
 }
 
 .calendarNav {
@@ -27,6 +28,17 @@
     background: transparent;
     cursor: pointer;
     padding: 0;
+    transition: background-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+
+.calendarNavButton:hover:not(:disabled) {
+    background: var(--halftone-60-primary-gray);
+    transform: scale(1.08);
+}
+
+.calendarNavButton:active:not(:disabled) {
+    transform: scale(0.92);
+    opacity: 0.9;
 }
 
 .calendarNavButton:focus-visible {
@@ -67,6 +79,15 @@
     padding: 4px 8px;
     border-radius: 8px;
     margin: 0;
+    transition: background-color 0.2s ease, transform 0.15s ease, color 0.2s ease;
+}
+
+.headerSelectTrigger:hover {
+    background: var(--halftone-60-primary-gray);
+}
+
+.headerSelectTrigger:active {
+    transform: scale(0.97);
 }
 
 .headerSelectTrigger:focus {
@@ -90,15 +111,24 @@
     display: block;
 }
 
-/* Выпадающее меню всегда под триггером (вниз) */
-.selectMenu {
+/* Внешняя оболочка: обрезает скролл по закруглению, чтобы трек не вылезал за радиус */
+.selectMenuClip {
     position: absolute;
     left: 50%;
     top: calc(100% + 8px);
     bottom: auto;
     transform: translateX(-50%);
     z-index: 20;
-    min-width: min(200px, calc(100vw - 48px));
+    min-width: min(200px, calc(100vi - 48px));
+    max-width: min(280px, calc(100vi - 24px));
+    max-height: min(280px, 50vh);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+}
+
+.selectMenuScroll {
     max-height: min(280px, 50vh);
     overflow-y: auto;
     overflow-x: hidden;
@@ -110,9 +140,29 @@
     -webkit-backdrop-filter: blur(24px);
     backdrop-filter: blur(24px);
     isolation: isolate;
-    border-radius: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--grayscale-light-gray) transparent;
+}
+
+/* Скроллбар визуально вписан в скругление (отступ трека от края) */
+.selectMenuScroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.selectMenuScroll::-webkit-scrollbar-track {
+    margin: 10px 0;
+    background: transparent;
+}
+
+.selectMenuScroll::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background: var(--grayscale-light-gray);
+}
+
+.selectMenuScroll::-webkit-scrollbar-thumb:hover {
+    background: var(--grayscale-gray);
 }
 
 .selectMenuItem {
@@ -132,7 +182,7 @@
     padding: 8px 16px;
     text-align: center;
     box-sizing: border-box;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.12s ease;
 }
 
 .selectMenuItem:focus {
@@ -149,7 +199,7 @@
 }
 
 .selectMenuItem:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
 }
 
 .selectMenuItemText {
@@ -203,6 +253,24 @@
     padding: 0;
     box-sizing: border-box;
     border-radius: 0;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.dayCell:not(:disabled):not(.dayCellInRange):not(.dayCellSelected):hover {
+    background: var(--halftone-60-primary-gray);
+}
+
+.dayCell:not(:disabled):active {
+    transform: scale(0.94);
+}
+
+.dayCellInRange:not(:disabled):hover {
+    background: var(--grayscale-light-gray);
+}
+
+.dayCellSelected:not(:disabled):hover {
+    background: var(--accent-blue);
+    filter: brightness(1.05);
 }
 
 .dayCellEmpty {
@@ -234,7 +302,8 @@
 
 @media (max-width: 768px) {
     .calendarWrap {
-        width: min(400px, calc(100vw - 32px));
+        width: 100%;
+        max-width: min(400px, 100%);
         padding: 14px;
     }
 

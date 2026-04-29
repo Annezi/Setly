@@ -8,6 +8,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from auth import get_current_user, get_current_user_optional
+from api.check_plan_access import can_read_check_plan
 from database.database import get_session
 from database.models import CheckPlan, CheckPlanData, CheckPlanDataStaff, User
 from api.schemas.check_plan_data import (
@@ -17,14 +18,6 @@ from api.schemas.check_plan_data import (
 )
 
 router = APIRouter(prefix="/checkplan-data", tags=["checkplan-data"])
-
-
-def _can_read_plan(plan: CheckPlan, current_user: User | None) -> bool:
-    visibility = (plan.visibility or "public").strip().lower()
-    if visibility == "private":
-        return current_user is not None and plan.author_id == current_user.id
-    # link и public доступны по прямой ссылке
-    return True
 
 
 async def _require_current_user_is_author_of_plan_data(
@@ -166,7 +159,7 @@ async def get_check_plan_data(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No check plan references this data",
         )
-    can_read = any(_can_read_plan(plan, current_user) for plan in plans)
+    can_read = any(can_read_check_plan(plan, current_user) for plan in plans)
     if not can_read:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

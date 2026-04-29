@@ -49,6 +49,11 @@ export default function Dropdown({
     mobileAdaptiveHorizontalScroll = false,
     menuMatchContainerSelector = "",
     mobileAlignToContainerLeft = false,
+    /**
+     * На узком вьюпорте: если карточка шире панели (календарь max 400px), левый край панели = левый край кнопки;
+     * иначе — по центру экрана. Для дропдауна «Даты» с календарём.
+     */
+    mobileAlignPanelToTriggerIfWide = false,
     ...props
 }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -156,17 +161,47 @@ export default function Dropdown({
             const top = rect.bottom + 12;
             const viewportHeight = window.innerHeight || 0;
             const maxHeight = Math.max(180, viewportHeight - top - 16);
-            const containerWidth = containerRect?.width;
+            const pad = mobileViewportSidePadding;
+            const maxPanelW = Math.max(140, viewportWidth - pad * 2);
+            /** Совпадает с max-width календаря в calendar.module.css */
+            const mobileCalendarPanelMaxW = 400;
+
+            /** Центр по горизонтали или выравнивание по кнопке, если карточка шире панели */
+            const fixedPanelFromContainer = () => {
+                let rawW = containerRect ? Math.min(containerRect.width, maxPanelW) : maxPanelW;
+                if (mobileAlignPanelToTriggerIfWide) {
+                    rawW = Math.min(rawW, mobileCalendarPanelMaxW);
+                }
+                const widthPx = Math.max(140, rawW);
+                const containerWiderThanPanel =
+                    Boolean(containerRect) && containerRect.width > widthPx;
+                const leftPx =
+                    mobileAlignPanelToTriggerIfWide && containerWiderThanPanel
+                        ? Math.max(pad, Math.min(rect.left, viewportWidth - widthPx - pad))
+                        : Math.max(pad, Math.round((viewportWidth - widthPx) / 2));
+                return {
+                    position: "fixed",
+                    top: `${top}px`,
+                    left: `${leftPx}px`,
+                    width: `${widthPx}px`,
+                    minWidth: `${widthPx}px`,
+                    maxWidth: `${widthPx}px`,
+                    transform: "none",
+                    ...(mobileAdaptiveNoHeightClamp ? {} : { maxHeight: `${maxHeight}px`, overflowY: "auto" }),
+                    ...(mobileAdaptiveHorizontalScroll ? { overflowX: "auto" } : {}),
+                };
+            };
 
             if (viewportWidth <= mobileFullWidthBreakpoint) {
-                const width = Math.max(
-                    140,
-                    containerWidth ?? (viewportWidth - mobileViewportSidePadding * 2)
-                );
+                if (containerRect) {
+                    setMenuInlineStyle(fixedPanelFromContainer());
+                    return;
+                }
+                const width = maxPanelW;
                 setMenuInlineStyle({
                     position: "fixed",
                     top: `${top}px`,
-                    left: containerRect ? `${containerRect.left}px` : `${mobileViewportSidePadding}px`,
+                    left: `${pad}px`,
                     width: `${width}px`,
                     minWidth: `${width}px`,
                     maxWidth: `${width}px`,
@@ -177,23 +212,18 @@ export default function Dropdown({
                 return;
             }
 
-            const baseWidth = containerWidth ?? undefined;
+            if (containerRect) {
+                setMenuInlineStyle(fixedPanelFromContainer());
+                return;
+            }
+
             setMenuInlineStyle({
                 position: "fixed",
                 top: `${top}px`,
-                left:
-                    mobileAlignToContainerLeft && containerRect
-                        ? `${containerRect.left}px`
-                        : "50%",
-                ...(baseWidth != null
-                    ? { width: `${baseWidth}px`, minWidth: `${baseWidth}px`, maxWidth: `${baseWidth}px` }
-                    : {}),
+                left: "50%",
                 ...(mobileAdaptiveNoHeightClamp ? {} : { maxHeight: `${maxHeight}px`, overflowY: "auto" }),
                 ...(mobileAdaptiveHorizontalScroll ? { overflowX: "auto", maxWidth: `calc(100vw - ${mobileViewportSidePadding * 2}px)` } : {}),
-                transform:
-                    mobileAlignToContainerLeft && containerRect
-                        ? "none"
-                        : "translateX(-50%)",
+                transform: "translateX(-50%)",
             });
         };
 
@@ -214,6 +244,7 @@ export default function Dropdown({
         mobileAdaptiveHorizontalScroll,
         menuMatchContainerSelector,
         mobileAlignToContainerLeft,
+        mobileAlignPanelToTriggerIfWide,
     ]);
 
     return (

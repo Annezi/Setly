@@ -195,33 +195,31 @@ export const BottomBarSection = memo(function BottomBarSection({
 					<button type="button" className={`${styles.toolbarButtonQuestion} `} aria-label="Помощь" onClick={onQuestionClick}>
 						<Image src="/icons/system/QuestionSign.svg" alt="" width={20} height={20} className={styles.toolbarNavIcon} />
 					</button>
-					<div className={`${styles.toolbarGroup} `}>
-						<div ref={toolbarAddWrapRef} className={styles.toolbarAddWrap}>
-							<button
-								ref={triggerButtonRef}
-								type="button"
-								className={styles.toolbarButtonTransparent}
-								aria-label="Добавить блок"
-								aria-expanded={addBlockMenuOpen}
-								aria-haspopup="menu"
-								onClick={handleAddButtonClick}
-							>
-								<Image src="/icons/system/CrossMiniDark.svg" alt="" width={20} height={20} className={styles.toolbarNavIcon} />
-							</button>
-						</div>
-						<div ref={moreMenuWrapRef} className={styles.toolbarMoreWrap}>
-							<button
-								ref={moreMenuTriggerRef}
-								type="button"
-								className={styles.toolbarButtonTransparent}
-								aria-label="Ещё"
-								aria-expanded={moreMenuOpen}
-								aria-haspopup="menu"
-								onClick={handleMoreButtonClick}
-							>
-								<Image src="/icons/system/Vector.svg" alt="" width={20} height={20} className={styles.toolbarNavIcon} />
-							</button>
-						</div>
+					<div ref={toolbarAddWrapRef} className={styles.toolbarAddWrap}>
+						<button
+							ref={triggerButtonRef}
+							type="button"
+							className={styles.toolbarButtonTransparent}
+							aria-label="Добавить блок"
+							aria-expanded={addBlockMenuOpen}
+							aria-haspopup="menu"
+							onClick={handleAddButtonClick}
+						>
+							<Image src="/icons/system/CrossMiniDark.svg" alt="" width={20} height={20} className={styles.toolbarNavIcon} />
+						</button>
+					</div>
+					<div ref={moreMenuWrapRef} className={styles.toolbarMoreWrap}>
+						<button
+							ref={moreMenuTriggerRef}
+							type="button"
+							className={styles.toolbarButtonTransparent}
+							aria-label="Ещё"
+							aria-expanded={moreMenuOpen}
+							aria-haspopup="menu"
+							onClick={handleMoreButtonClick}
+						>
+							<Image src="/icons/system/Vector.svg" alt="" width={20} height={20} className={styles.toolbarNavIcon} />
+						</button>
 					</div>
 				</div>
 				<div className={styles.toolbarSaveWrap}>
