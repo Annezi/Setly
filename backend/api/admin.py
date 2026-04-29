@@ -14,7 +14,17 @@ from api.schemas.admin import (
 )
 from auth import create_access_token, require_admin, verify_password
 from database.database import get_session
-from database.models import AdminAuditLog, CheckPlan, PlatformSetting, User
+from database.models import (
+    AdminAuditLog,
+    CheckPlan,
+    CheckPlanData,
+    PasswordResetToken,
+    PlatformSetting,
+    User,
+    UserCheckPlan,
+    UserLikes,
+    UserPinnedCheckPlan,
+)
 from emailing import send_admin_otp_email
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -57,6 +67,60 @@ async def _write_audit(
             details=details or {},
         )
     )
+
+
+async def _delete_checkplan_with_related(
+    session: AsyncSession,
+    plan: CheckPlan,
+) -> None:
+    plan_id_str = plan.id_str
+    data_id = int(plan.check_plan_data_id or 0)
+
+    like_rows = (
+        await session.execute(
+            select(UserLikes).where(UserLikes.checklist_id == plan_id_str)
+        )
+    ).scalars().all()
+    for row in like_rows:
+        await session.delete(row)
+
+    pinned_rows = (
+        await session.execute(
+            select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.id_str == plan_id_str)
+        )
+    ).scalars().all()
+    for row in pinned_rows:
+        await session.delete(row)
+
+    user_plan_rows = (
+        await session.execute(
+            select(UserCheckPlan).where(UserCheckPlan.id_str == plan_id_str)
+        )
+    ).scalars().all()
+    for row in user_plan_rows:
+        await session.delete(row)
+
+    await session.delete(plan)
+    await session.flush()
+
+    if data_id > 0:
+        data_links_count = int(
+            (
+                await session.execute(
+                    select(func.count())
+                    .select_from(CheckPlan)
+                    .where(CheckPlan.check_plan_data_id == data_id)
+                )
+            ).one()[0]
+        )
+        if data_links_count == 0:
+            data_row = (
+                await session.execute(
+                    select(CheckPlanData).where(CheckPlanData.id == data_id)
+                )
+            ).scalar_one_or_none()
+            if data_row is not None:
+                await session.delete(data_row)
 
 
 @router.post("/otp/request")
@@ -173,6 +237,86 @@ async def admin_block_user(
     return {"ok": True}
 
 
+@router.delete("/users/{user_id}")
+async def admin_delete_user(
+    user_id: int,
+    request: Request,
+    admin_user: Annotated[User, Depends(require_admin)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(
+        request, "admin_auth_sensitive", RATE_LIMITS["admin_auth_sensitive"]
+    )
+    if user_id == admin_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя удалить текущего администратора",
+        )
+
+    target = (
+        await session.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    plans = (
+        await session.execute(select(CheckPlan).where(CheckPlan.author_id == user_id))
+    ).scalars().all()
+    deleted_plans = len(plans)
+    for plan in plans:
+        await _delete_checkplan_with_related(session, plan)
+
+    own_likes = (
+        await session.execute(select(UserLikes).where(UserLikes.user_id == user_id))
+    ).scalars().all()
+    for row in own_likes:
+        await session.delete(row)
+
+    own_pins = (
+        await session.execute(
+            select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.user_id == user_id)
+        )
+    ).scalars().all()
+    for row in own_pins:
+        await session.delete(row)
+
+    own_user_plans = (
+        await session.execute(
+            select(UserCheckPlan).where(UserCheckPlan.user_id == user_id)
+        )
+    ).scalars().all()
+    for row in own_user_plans:
+        await session.delete(row)
+
+    reset_tokens = (
+        await session.execute(
+            select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+        )
+    ).scalars().all()
+    for row in reset_tokens:
+        await session.delete(row)
+
+    authored_audit_rows = (
+        await session.execute(
+            select(AdminAuditLog).where(AdminAuditLog.admin_user_id == user_id)
+        )
+    ).scalars().all()
+    for row in authored_audit_rows:
+        await session.delete(row)
+
+    await session.delete(target)
+    await _write_audit(
+        session,
+        admin_user.id,
+        "user.delete",
+        "user",
+        str(user_id),
+        {"deleted_checkplans": deleted_plans},
+    )
+    await session.commit()
+    return {"ok": True}
+
+
 @router.get("/content/checkplans", response_model=AdminCheckPlansResponse)
 async def admin_checkplans(
     page: int = Query(default=1, ge=1),
@@ -233,6 +377,34 @@ async def admin_moderate_checkplan(
             "moderation_status": data.moderation_status,
             "is_hidden_by_admin": data.is_hidden_by_admin,
         },
+    )
+    await session.commit()
+    return {"ok": True}
+
+
+@router.delete("/content/checkplans/{id_str}")
+async def admin_delete_checkplan(
+    id_str: str,
+    request: Request,
+    admin_user: Annotated[User, Depends(require_admin)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(
+        request, "admin_auth_sensitive", RATE_LIMITS["admin_auth_sensitive"]
+    )
+    plan = (
+        await session.execute(select(CheckPlan).where(CheckPlan.id_str == id_str))
+    ).scalar_one_or_none()
+    if plan is None:
+        raise HTTPException(status_code=404, detail="CheckPlan not found")
+
+    await _delete_checkplan_with_related(session, plan)
+    await _write_audit(
+        session,
+        admin_user.id,
+        "content.checkplan.delete",
+        "checkplan",
+        id_str,
     )
     await session.commit()
     return {"ok": True}

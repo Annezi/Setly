@@ -17,8 +17,6 @@ const NAV_ITEMS = [
   { id: 'about', label: 'О нас', href: '/about' },
 ];
 
-const isAccountPage = (path) => path === '/account' || /^\/u\/[^/]+$/.test(path);
-
 export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigation = false }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [storageAuth, setStorageAuth] = useState(null);
@@ -27,13 +25,12 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
   const [logoutPopupOpen, setLogoutPopupOpen] = useState(false);
   const [accountMenuPosition, setAccountMenuPosition] = useState({ top: 0, left: 0 });
   const accountMenuWrapRef = useRef(null);
+  const accountMenuCloseTimeoutRef = useRef(null);
   const mobileMenuTriggerRef = useRef(null);
   const sidePanelRef = useRef(null);
   const [portalsReady, setPortalsReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const onAccountPage = isAccountPage(pathname);
-  const onOwnAccountPage = pathname === '/account';
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setPortalsReady(true));
@@ -96,11 +93,26 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
     }
   }, []);
 
-  const handleAccountMenuToggle = useCallback((e) => {
-    e?.preventDefault?.();
-    if (!accountMenuOpen) updateAccountMenuPosition();
-    setAccountMenuOpen((prev) => !prev);
-  }, [accountMenuOpen, updateAccountMenuPosition]);
+  const clearAccountMenuCloseTimeout = useCallback(() => {
+    if (accountMenuCloseTimeoutRef.current) {
+      clearTimeout(accountMenuCloseTimeoutRef.current);
+      accountMenuCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleAccountMenuHoverStart = useCallback(() => {
+    clearAccountMenuCloseTimeout();
+    updateAccountMenuPosition();
+    setAccountMenuOpen(true);
+  }, [clearAccountMenuCloseTimeout, updateAccountMenuPosition]);
+
+  const handleAccountMenuHoverEnd = useCallback(() => {
+    clearAccountMenuCloseTimeout();
+    accountMenuCloseTimeoutRef.current = setTimeout(() => {
+      setAccountMenuOpen(false);
+      accountMenuCloseTimeoutRef.current = null;
+    }, 180);
+  }, [clearAccountMenuCloseTimeout]);
 
   const handleLogoutFromMenu = useCallback(() => {
     setAccountMenuOpen(false);
@@ -114,7 +126,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
   }, [router]);
 
   useEffect(() => {
-    if (!onAccountPage || !accountMenuOpen) return;
+    if (!accountMenuOpen) return;
     const h = (e) => {
       const inWrap = accountMenuWrapRef.current?.contains(e.target);
       const menuEl = document.querySelector(`.${styles.accountDropdownMenuPortal}`);
@@ -122,7 +134,22 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
-  }, [onAccountPage, accountMenuOpen]);
+  }, [accountMenuOpen]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const syncPosition = () => updateAccountMenuPosition();
+    window.addEventListener('resize', syncPosition);
+    window.addEventListener('scroll', syncPosition, true);
+    return () => {
+      window.removeEventListener('resize', syncPosition);
+      window.removeEventListener('scroll', syncPosition, true);
+    };
+  }, [accountMenuOpen, updateAccountMenuPosition]);
+
+  useEffect(() => {
+    return () => clearAccountMenuCloseTimeout();
+  }, [clearAccountMenuCloseTimeout]);
 
   const renderNavLink = (item, buttonClass, onClick) => {
     const isActive = item.id === activeNavId;
@@ -200,7 +227,7 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
               >
                 <span className={styles.headerAuthButtonText}>Войти</span>
               </button>
-            ) : onOwnAccountPage ? (
+            ) : (
               <span ref={accountMenuWrapRef} className={styles.accountMenuWrap}>
                 <ProfilePhoto
                   src={user?.profile_photo_url ?? user?.avatarPath}
@@ -208,20 +235,14 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
                   hideUploadOnHover
                   size={44}
                   className={styles.headerProfilePhoto}
-                  onClick={handleAccountMenuToggle}
+                  onClick={handleProfileClick}
+                  onMouseEnter={handleAccountMenuHoverStart}
+                  onMouseLeave={handleAccountMenuHoverEnd}
                   aria-label="Меню аккаунта"
                   aria-haspopup="menu"
                   aria-expanded={accountMenuOpen}
                 />
               </span>
-            ) : (
-              <ProfilePhoto
-                src={user?.profile_photo_url ?? user?.avatarPath}
-                href="/account"
-                hideUploadOnHover
-                size={44}
-                className={styles.headerProfilePhoto}
-              />
             )}
           </span>
 
@@ -256,13 +277,16 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
         </div>
       </div>
 
-      {/* Выпадающее меню аккаунта (только на /account) */}
-      {portalsReady && onOwnAccountPage && isLoggedIn && accountMenuOpen &&
+      {/* Выпадающее меню аккаунта */}
+      {portalsReady && isLoggedIn &&
         createPortal(
           <div
-            className={`component-blur ${styles.accountDropdownMenu} ${styles.accountDropdownMenuPortal}`}
+            className={`component-blur ${styles.accountDropdownMenu} ${styles.accountDropdownMenuPortal} ${accountMenuOpen ? styles.accountDropdownMenuOpen : ''}`}
             role="menu"
             style={{ top: accountMenuPosition.top, left: accountMenuPosition.left }}
+            onMouseEnter={handleAccountMenuHoverStart}
+            onMouseLeave={handleAccountMenuHoverEnd}
+            aria-hidden={!accountMenuOpen}
           >
             <button
               type="button"

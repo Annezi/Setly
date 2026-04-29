@@ -3,8 +3,11 @@
 import { useCallback, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
+import RoundButton from "../../../atomic/atoms/buttons-round/buttons-round";
 import Input from "../../../atomic/molecules/input/input";
+import PublicImage from "@/app/components/globals/public-image";
 import { apiFetch } from "@/app/lib/api";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./recovery.module.css";
 
 const API_PREFIX = "/api/user";
@@ -81,6 +84,12 @@ export default function Recovery() {
     const handleLoginClick = useCallback(() => {
         router.push("/login");
     }, [router]);
+
+    const handleBackToEmailStep = useCallback(() => {
+        setStep("email");
+        setOtp("");
+        setOtpError(null);
+    }, []);
 
     const handleSubmit = useCallback(
         async (e) => {
@@ -177,11 +186,44 @@ export default function Recovery() {
         return (
             <div className={styles.wrapper}>
                 <div className={styles.content}>
+                    <div
+                        className={styles.backRow}
+                        role="button"
+                        tabIndex={0}
+                        onClick={handleBackToEmailStep}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleBackToEmailStep();
+                            }
+                        }}
+                        aria-label="Назад"
+                    >
+                        <RoundButton
+                            variant="white"
+                            icon={
+                                <PublicImage
+                                    src="/icons/system/ArrowLeft.svg"
+                                    alt=""
+                                    width={12}
+                                    height={12}
+                                    style={{ color: "var(--grayscale-dark-gray)" }}
+                                />
+                            }
+                            aria-hidden
+                        />
+                        <span className={`subinfo ${styles.backRowText}`}>
+                            Назад
+                        </span>
+                    </div>
+
                     <h1 className={`${styles.title} title_1`}>
                         Восстановление пароля
                     </h1>
                     <p className={`${styles.description} paragraph`}>
-                        Введите код, который мы отправили на вашу почту
+                        {applyTypograf(
+                            'Введите код, который мы отправили на вашу почту. Если письма нет, проверьте папку "Спам"',
+                        )}
                     </p>
 
                     <p
@@ -219,7 +261,7 @@ export default function Recovery() {
                             </div>
                         </div>
 
-                        <div className={styles.submitButton}>
+                        <div className={styles.submitButton} style={{ marginTop: 24 }}>
                             <Button
                                 color="white"
                                 Text={
@@ -231,34 +273,7 @@ export default function Recovery() {
                         </div>
                     </form>
 
-                    <div className={styles.bottomRow} style={{ marginTop: 12 }}>
-                        <span
-                            className="subtitle_2 linkStub"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                                setStep("email");
-                                setOtp("");
-                                setOtpError(null);
-                            }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    setStep("email");
-                                    setOtp("");
-                                    setOtpError(null);
-                                }
-                            }}
-                            style={{
-                                color: "var(--grayscale-white)",
-                                cursor: "pointer",
-                            }}
-                        >
-                            ← Назад
-                        </span>
-                    </div>
-
-                    <div className={styles.bottomRow} style={{ marginTop: 8 }}>
+                    <div className={styles.bottomRow} style={{ marginTop: 60 }}>
                         {cooldown > 0 ? (
                             <span
                                 className="subinfo"

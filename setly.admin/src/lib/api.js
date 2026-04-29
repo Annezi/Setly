@@ -110,6 +110,12 @@ export function blockUser(userId, isBlocked) {
     });
 }
 
+export function deleteUser(userId) {
+    return apiRequest(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+    });
+}
+
 // ── Content / CheckPlans ─────────────────────────────────────────────────────
 
 export function fetchCheckPlans(
@@ -131,6 +137,12 @@ export function moderateCheckPlan(idStr, moderationStatus, isHiddenByAdmin) {
             moderation_status: moderationStatus,
             is_hidden_by_admin: isHiddenByAdmin,
         }),
+    });
+}
+
+export function deleteCheckPlan(idStr) {
+    return apiRequest(`/api/admin/content/checkplans/${idStr}`, {
+        method: "DELETE",
     });
 }
 

@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import useAdminGuard from "@/lib/useAdminGuard";
-import { fetchCheckPlans, moderateCheckPlan } from "@/lib/api";
+import { fetchCheckPlans, moderateCheckPlan, deleteCheckPlan } from "@/lib/api";
 
 const LIMIT = 20;
+const MIN_COL_WIDTH = 80;
 
 const MODERATION_OPTIONS = [
   { value: "", label: "Все" },
@@ -82,6 +83,15 @@ export default function ContentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
+  const [colWidths, setColWidths] = useState({
+    id: 120,
+    title: 280,
+    author: 150,
+    visibility: 150,
+    moderation: 160,
+    hidden: 120,
+    actions: 300,
+  });
 
   const loadItems = useCallback(async (pg, srch, modFilter) => {
     setLoading(true);
@@ -145,7 +155,47 @@ export default function ContentPage() {
     }
   }
 
+  async function handleDeleteCheckPlan(item) {
+    const confirmed = window.confirm(
+      `Удалить чек-план "${item.title || item.id_str}"?\n\nБудет удален сам чек-план и его содержимое без возможности восстановления.`
+    );
+    if (!confirmed) return;
+    setActionLoading(`${item.id_str}-delete`);
+    try {
+      await deleteCheckPlan(item.id_str);
+      setItems((prev) => prev.filter((i) => i.id_str !== item.id_str));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      alert("Ошибка: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const totalPages = Math.ceil(total / LIMIT);
+  const columns = [
+    { key: "id", label: "ID" },
+    { key: "title", label: "Заголовок" },
+    { key: "author", label: "Автор" },
+    { key: "visibility", label: "Видимость" },
+    { key: "moderation", label: "Статус" },
+    { key: "hidden", label: "Скрыт" },
+    { key: "actions", label: "Действия" },
+  ];
+
+  const handleResizeStart = useCallback((colKey, startX) => {
+    const startWidth = colWidths[colKey];
+    const onMouseMove = (e) => {
+      const nextWidth = Math.max(MIN_COL_WIDTH, startWidth + (e.clientX - startX));
+      setColWidths((prev) => ({ ...prev, [colKey]: nextWidth }));
+    };
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }, [colWidths]);
 
   if (authLoading) {
     return (
@@ -276,12 +326,18 @@ export default function ContentPage() {
 
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <colgroup>
+                {columns.map((c) => (
+                  <col key={c.key} style={{ width: colWidths[c.key] }} />
+                ))}
+              </colgroup>
               <thead>
                 <tr style={{ background: "var(--color-bg)" }}>
-                  {["ID", "Заголовок", "Автор", "Видимость", "Статус", "Скрыт", "Действия"].map((h) => (
+                  {columns.map((c) => (
                     <th
-                      key={h}
+                      key={c.key}
                       style={{
+                        position: "relative",
                         padding: "12px 14px",
                         textAlign: "left",
                         fontWeight: 600,
@@ -291,9 +347,25 @@ export default function ContentPage() {
                         letterSpacing: "0.04em",
                         borderBottom: "1px solid var(--color-border)",
                         whiteSpace: "nowrap",
+                        width: colWidths[c.key],
                       }}
                     >
-                      {h}
+                      {c.label}
+                      <span
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleResizeStart(c.key, e.clientX);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          width: 8,
+                          height: "100%",
+                          cursor: "col-resize",
+                          userSelect: "none",
+                        }}
+                      />
                     </th>
                   ))}
                 </tr>
@@ -381,6 +453,14 @@ export default function ContentPage() {
                               bg={item.is_hidden_by_admin ? "#ebf8ff" : "#f7fafc"}
                               borderColor={item.is_hidden_by_admin ? "#bee3f8" : "#e2e8f0"}
                               onClick={() => handleToggleHide(item)}
+                              disabled={isActing}
+                            />
+                            <ActionBtn
+                              label={actionLoading === `${item.id_str}-delete` ? "Удаление..." : "Удалить"}
+                              color="#e53e3e"
+                              bg="#fff5f5"
+                              borderColor="#fed7d7"
+                              onClick={() => handleDeleteCheckPlan(item)}
                               disabled={isActing}
                             />
                           </div>

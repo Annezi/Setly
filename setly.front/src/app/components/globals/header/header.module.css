@@ -251,7 +251,26 @@
 .accountDropdownMenuPortal {
   position: fixed;
   z-index: 1000;
+  transform: translate(-50%, -8px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.24s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.3s;
+  will-change: opacity, transform;
+}
+
+.accountDropdownMenuOpen {
   transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity 0.24s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
 }
 
 .accountDropdownMenuItem {

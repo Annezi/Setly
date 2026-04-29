@@ -4,10 +4,13 @@ import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "../../../atomic/atoms/buttons/buttons";
+import RoundButton from "../../../atomic/atoms/buttons-round/buttons-round";
 import Input from "../../../atomic/molecules/input/input";
 import Checkbox from "../../../atomic/atoms/checkbox/checkbox";
+import PublicImage from "@/app/components/globals/public-image";
 import { setAuth } from "@/app/lib/auth-storage";
 import { apiFetch } from "@/app/lib/api";
+import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./registration.module.css";
 
 const API_PREFIX = "/api/user";
@@ -209,6 +212,12 @@ export default function Registration() {
         if (value) setShowAgreeError(false);
     }, []);
 
+    const handleBackToRegistrationForm = useCallback(() => {
+        setStep("form");
+        setVerifyOtp("");
+        setVerifyError(null);
+    }, []);
+
     // --- Handlers: step 2 ---
     async function handleVerifySubmit(e) {
         e?.preventDefault?.();
@@ -254,11 +263,44 @@ export default function Registration() {
                 style={{ "--reveal-delay": "60ms" }}
             >
                 <div className={styles.content}>
+                    <div
+                        className={styles.backRow}
+                        role="button"
+                        tabIndex={0}
+                        onClick={handleBackToRegistrationForm}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                handleBackToRegistrationForm();
+                            }
+                        }}
+                        aria-label="Назад"
+                    >
+                        <RoundButton
+                            variant="white"
+                            icon={
+                                <PublicImage
+                                    src="/icons/system/ArrowLeft.svg"
+                                    alt=""
+                                    width={12}
+                                    height={12}
+                                    style={{ color: "var(--grayscale-dark-gray)" }}
+                                />
+                            }
+                            aria-hidden
+                        />
+                        <span className={`subinfo ${styles.backRowText}`}>
+                            Назад
+                        </span>
+                    </div>
+
                     <h1 className={`${styles.title} title_1`}>
                         Подтверждение почты
                     </h1>
                     <p className={`${styles.description} paragraph`}>
-                        Мы отправили код на вашу почту. Введите его ниже.
+                        {applyTypograf(
+                            'Введите код, который мы отправили на вашу почту. Если письма нет, проверьте папку "Спам"',
+                        )}
                     </p>
 
                     <p
@@ -298,7 +340,7 @@ export default function Registration() {
                             </div>
                         </div>
 
-                        <div className={styles.submitButton}>
+                        <div className={styles.submitButton} style={{ marginTop: 24 }}>
                             <Button
                                 color="white"
                                 Text={
@@ -310,7 +352,7 @@ export default function Registration() {
                         </div>
                     </form>
 
-                    <div className={styles.loginRow} style={{ marginTop: 12 }}>
+                    <div className={styles.loginRow} style={{ marginTop: 60 }}>
                         {cooldown > 0 ? (
                             <span
                                 className="subinfo"

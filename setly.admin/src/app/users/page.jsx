@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import useAdminGuard from "@/lib/useAdminGuard";
-import { fetchUsers, blockUser } from "@/lib/api";
+import { fetchUsers, blockUser, deleteUser } from "@/lib/api";
 
 const LIMIT = 20;
+const MIN_COL_WIDTH = 80;
 
 function Badge({ children, color, bg }) {
   return (
@@ -38,6 +39,15 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
+  const [colWidths, setColWidths] = useState({
+    id: 110,
+    email: 260,
+    nickname: 180,
+    role: 130,
+    status: 150,
+    totp: 110,
+    actions: 240,
+  });
 
   const loadUsers = useCallback(
     async (pg, srch) => {
@@ -80,7 +90,47 @@ export default function UsersPage() {
     }
   }
 
+  async function handleDelete(user) {
+    const confirmed = window.confirm(
+      `Удалить пользователя ${user.email}?\n\nБудут удалены аккаунт, его чек-планы и связанные данные без возможности восстановления.`
+    );
+    if (!confirmed) return;
+    setActionLoading(`delete-${user.id}`);
+    try {
+      await deleteUser(user.id);
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      setTotal((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      alert("Ошибка: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   const totalPages = Math.ceil(total / LIMIT);
+  const columns = [
+    { key: "id", label: "ID" },
+    { key: "email", label: "Email" },
+    { key: "nickname", label: "Никнейм" },
+    { key: "role", label: "Роль" },
+    { key: "status", label: "Статус" },
+    { key: "totp", label: "TOTP" },
+    { key: "actions", label: "Действия" },
+  ];
+
+  const handleResizeStart = useCallback((colKey, startX) => {
+    const startWidth = colWidths[colKey];
+    const onMouseMove = (e) => {
+      const nextWidth = Math.max(MIN_COL_WIDTH, startWidth + (e.clientX - startX));
+      setColWidths((prev) => ({ ...prev, [colKey]: nextWidth }));
+    };
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }, [colWidths]);
 
   if (authLoading) {
     return (
@@ -201,12 +251,18 @@ export default function UsersPage() {
 
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <colgroup>
+                {columns.map((c) => (
+                  <col key={c.key} style={{ width: colWidths[c.key] }} />
+                ))}
+              </colgroup>
               <thead>
                 <tr style={{ background: "var(--color-bg)" }}>
-                  {["ID", "Email", "Никнейм", "Роль", "Статус", "TOTP", "Действия"].map((h) => (
+                  {columns.map((c) => (
                     <th
-                      key={h}
+                      key={c.key}
                       style={{
+                        position: "relative",
                         padding: "12px 16px",
                         textAlign: "left",
                         fontWeight: 600,
@@ -216,9 +272,25 @@ export default function UsersPage() {
                         letterSpacing: "0.04em",
                         borderBottom: "1px solid var(--color-border)",
                         whiteSpace: "nowrap",
+                        width: colWidths[c.key],
                       }}
                     >
-                      {h}
+                      {c.label}
+                      <span
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleResizeStart(c.key, e.clientX);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          width: 8,
+                          height: "100%",
+                          cursor: "col-resize",
+                          userSelect: "none",
+                        }}
+                      />
                     </th>
                   ))}
                 </tr>
@@ -293,7 +365,7 @@ export default function UsersPage() {
                       <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
                         <button
                           onClick={() => handleBlock(user)}
-                          disabled={actionLoading === user.id}
+                          disabled={actionLoading === user.id || actionLoading === `delete-${user.id}`}
                           style={{
                             padding: "6px 14px",
                             background: user.is_blocked ? "#f0fff4" : "#fff5f5",
@@ -303,7 +375,7 @@ export default function UsersPage() {
                             fontSize: 13,
                             fontWeight: 600,
                             cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                            opacity: actionLoading === user.id ? 0.6 : 1,
+                            opacity: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? 0.6 : 1,
                             whiteSpace: "nowrap",
                             transition: "opacity 0.15s",
                           }}
@@ -313,6 +385,26 @@ export default function UsersPage() {
                             : user.is_blocked
                             ? "Разблокировать"
                             : "Заблокировать"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user)}
+                          disabled={actionLoading === user.id || actionLoading === `delete-${user.id}`}
+                          style={{
+                            marginLeft: 8,
+                            padding: "6px 14px",
+                            background: "#fff5f5",
+                            color: "#e53e3e",
+                            border: "1px solid #fed7d7",
+                            borderRadius: "var(--radius-sm)",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? "not-allowed" : "pointer",
+                            opacity: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? 0.6 : 1,
+                            whiteSpace: "nowrap",
+                            transition: "opacity 0.15s",
+                          }}
+                        >
+                          {actionLoading === `delete-${user.id}` ? "Удаление..." : "Удалить"}
                         </button>
                       </td>
                     </tr>
