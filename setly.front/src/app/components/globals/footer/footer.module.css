@@ -1,11 +1,14 @@
 .wrapper {
 	position: relative;
-	width: 100%;
+	width: 100vw;
+	margin-left: calc(50% - 50vw);
+	margin-right: calc(50% - 50vw);
 	min-height: 840px;
 	display: flex;
 	align-items: flex-end;
 	justify-content: center;
-	overflow: hidden;
+	overflow-x: hidden;
+	overflow-y: hidden;
 }
 
 .bg {
@@ -18,11 +21,16 @@
 	background-size: auto;
 	background-position: center -20px;
 	background-repeat: no-repeat;
+	z-index: 1;
+}
+
+.orbsLayer {
+	z-index: 0;
 }
 
 .content {
 	position: relative;
-	z-index: 1;
+	z-index: 2;
 	width: 100%;
 	max-width: 1400px;
 	transform: translateY(50px);
@@ -91,8 +99,6 @@
 @media (max-width: 1300px) {
 	.wrapper {
 		width: 100vw;
-		margin-left: calc(50% - 50vw);
-		margin-right: calc(50% - 50vw);
 	}
 
 	.bg {
@@ -112,8 +118,6 @@
 	.wrapper {
 		width: 100vw;
 		min-height: 800px;
-		margin-left: calc(50% - 50vw);
-		margin-right: calc(50% - 50vw);
 	}
 
 	.bg {
@@ -132,13 +136,12 @@
 @media (max-width: 1000px) {
 	.wrapper {
 		width: 100vw;
-		margin-left: calc(50% - 50vw);
-		margin-right: calc(50% - 50vw);
 		min-height: 670px;
 		display: flex;
 		align-items: flex-end;
 		justify-content: center;
-		overflow: hidden;
+		overflow-x: hidden;
+		overflow-y: hidden;
 	}
 
 	.bg {

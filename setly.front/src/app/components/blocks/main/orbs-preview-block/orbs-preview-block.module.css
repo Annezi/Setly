@@ -1,5 +1,6 @@
 .block {
 	position: relative;
+	isolation: isolate;
 	box-sizing: border-box;
 	border-radius: 20px;
 	overflow: hidden;
@@ -8,23 +9,27 @@
 	justify-content: center;
 	height: 690px;
 	margin-top: 20px;
-	padding-top: 200px;
+	padding: 200px 20px 40px;
+	background: radial-gradient(circle at 50% -10%, #ffffff 0%, #f6f8ff 40%, #e8eeff 100%);
 	color: var(--grayscale-white);
 }
 
-.backgroundImage {
-	object-fit: cover;
-	object-position: center;
-	z-index: 0;
-}
-
-.orbsLayer {
+.block::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(circle at 34% 70%, rgba(22, 83, 255, 0.46) 0%, rgba(22, 83, 255, 0.06) 50%, transparent 74%),
+		radial-gradient(circle at 84% 28%, rgba(123, 176, 255, 0.4) 0%, rgba(123, 176, 255, 0.04) 48%, transparent 70%),
+		radial-gradient(circle at 75% 92%, rgba(139, 82, 255, 0.24) 0%, rgba(139, 82, 255, 0.03) 44%, transparent 68%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0.01) 0%, rgba(13, 33, 92, 0.12) 100%);
 	z-index: 1;
+	pointer-events: none;
 }
 
 .content {
 	position: relative;
-	z-index: 2;
+	z-index: 3;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -38,12 +43,16 @@
 	font-weight: 400;
 	line-height: 1.2;
 	color: var(--grayscale-white);
-	margin: 0;
+	margin: 0 0 35px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	margin-bottom: 35px;
+}
+
+.title,
+.subinfo {
+	text-shadow: 0 2px 18px rgba(5, 12, 40, 0.3);
 }
 
 .titleLine {
@@ -75,16 +84,19 @@
 }
 
 .subinfo {
-	margin: 0;
+	margin: 0 0 65px;
 	max-width: 600px;
 	font-size: 14px;
 	line-height: 1.5;
 	color: var(--grayscale-white);
-	margin-bottom: 65px;
 }
 
-/* Мобильное устройство: ширина < 800px — каждое слово заголовка на отдельной строке */
 @media (max-width: 800px) {
+	.block {
+		height: 447px;
+		padding: 20px;
+	}
+
 	.title {
 		font-size: 40px;
 	}
@@ -102,37 +114,30 @@
 
 	.titlePart .titleImageWrap {
 		display: flex;
-		text-align: center;
 		align-items: center;
 		justify-content: center;
 	}
 
-	/* Первое изображение на мобильном */
 	.titleLine:first-child .titleImage {
 		width: 129px;
 		height: 33px;
 		margin-top: 0;
 	}
 
-	/* Второе изображение на мобильном */
 	.titleLine:last-child .titleImage {
 		margin-bottom: -10px;
 		width: 255px;
 		height: 45px;
 	}
-	.block {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 447px;
-		padding: 20px;
-	}
+
 	.subinfo {
 		margin-bottom: 21px;
 	}
+
 	.titleImage {
 		margin: 0;
 	}
+
 	.content {
 		padding: 20px 0;
 	}

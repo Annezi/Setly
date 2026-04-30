@@ -4,25 +4,16 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import AnimatedOrbs from "@/app/components/blocks/main/animated-orbs/animated-orbs";
-import styles from "./welcome-screen.module.css";
+import styles from "./orbs-preview-block.module.css";
 
-export default function WelcomeScreen() {
+export default function OrbsPreviewBlock() {
 	const router = useRouter();
 
 	return (
-		<section className={styles.block} aria-label="Приветственный экран">
-			<Image
-				src="/img/main/welcome-banner.webp"
-				alt=""
-				fill
-				priority
-				fetchPriority="high"
-				sizes="(max-width: 800px) 100vw, 1400px"
-				className={styles.backgroundImage}
-			/>
-			<AnimatedOrbs className={styles.orbsLayer} />
+		<section className={styles.block} aria-label="Тест анимации кругов">
+			<AnimatedOrbs theme="light" />
 			<div className={styles.content}>
-				<h1 className={styles.title}>
+				<h2 className={styles.title}>
 					<span className={styles.titleLine}>
 						<span className={styles.titlePart}>Планируй</span>
 						<span className={styles.titlePart}>
@@ -32,8 +23,6 @@ export default function WelcomeScreen() {
 									alt="Легко"
 									width={208}
 									height={52}
-									priority
-									fetchPriority="high"
 									sizes="(max-width: 800px) 50vw, 208px"
 									className={styles.titleImage}
 								/>
@@ -48,8 +37,6 @@ export default function WelcomeScreen() {
 									alt="Путешествуй"
 									width={412}
 									height={73}
-									priority
-									fetchPriority="high"
 									sizes="(max-width: 800px) 70vw, 412px"
 									className={`${styles.titleImage} ${styles.titleImageSecond}`}
 								/>
@@ -57,7 +44,7 @@ export default function WelcomeScreen() {
 						</span>
 						<span className={styles.titlePart}>уверенно</span>
 					</span>
-				</h1>
+				</h2>
 				<p className={styles.subinfo}>
 					Скажи «пока» тревоге при планировании путешествий! Мы разработали
 					чек-планы, которые помогут ничего не упустить и отправиться в путь

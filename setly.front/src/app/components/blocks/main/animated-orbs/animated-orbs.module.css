@@ -1,0 +1,351 @@
+.root {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+	z-index: 0;
+}
+
+.orb {
+	position: absolute;
+	width: clamp(390px, 72vw, 1140px);
+	aspect-ratio: 1 / 1;
+	will-change: transform, opacity;
+	mix-blend-mode: screen;
+	opacity: 0.88;
+	filter: saturate(1.15) blur(0.5px);
+	animation-timing-function: ease-in-out;
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+}
+
+.image {
+	object-fit: contain;
+}
+
+.lightTheme .orb {
+	mix-blend-mode: normal;
+	opacity: 0.96;
+	filter: saturate(1.45) blur(1.2px);
+}
+
+.lightTheme .orb1 {
+	top: 8%;
+	left: -14%;
+}
+
+.lightTheme .orb2 {
+	top: -10%;
+	right: -6%;
+}
+
+.lightTheme .orb3 {
+	bottom: -35%;
+	left: -2%;
+}
+
+.lightTheme .orb4 {
+	bottom: -30%;
+	right: 8%;
+}
+
+.footerTheme .orb {
+	mix-blend-mode: screen;
+	opacity: 0.9;
+	filter: saturate(1.3) blur(1px);
+}
+
+.footerTheme .orb1 {
+	top: calc(6% + 100px);
+	left: 18%;
+	animation-name: driftFooter1;
+}
+
+.footerTheme .orb2 {
+	top: calc(-6% + 100px);
+	right: 14%;
+	animation-name: driftFooter2;
+}
+
+.footerTheme .orb3 {
+	bottom: calc(-42% - 100px);
+	left: 22%;
+	animation-name: driftFooter3;
+}
+
+.footerTheme .orb4 {
+	bottom: calc(-40% - 100px);
+	right: 18%;
+	animation-name: driftFooter4;
+}
+
+.orb1 {
+	top: -12%;
+	left: -6%;
+	z-index: 1;
+	animation-name: drift1;
+	animation-duration: 5.2s;
+	animation-delay: -2.5s;
+}
+
+.orb2 {
+	top: -8%;
+	right: -10%;
+	z-index: 2;
+	animation-name: drift2;
+	animation-duration: 5.9s;
+	animation-delay: -5s;
+}
+
+.orb3 {
+	bottom: -24%;
+	left: 12%;
+	z-index: 3;
+	animation-name: drift3;
+	animation-duration: 5.5s;
+	animation-delay: -3s;
+}
+
+.orb4 {
+	bottom: -20%;
+	right: 6%;
+	z-index: 4;
+	animation-name: drift4;
+	animation-duration: 6.3s;
+	animation-delay: -6s;
+}
+
+@keyframes drift1 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.92) rotate(-2deg);
+		opacity: 0.72;
+	}
+	24% {
+		transform: translate3d(12%, 7%, 0) scale(1.06) rotate(1deg);
+		opacity: 0.9;
+	}
+	57% {
+		transform: translate3d(-6%, 14%, 0) scale(1.18) rotate(-2deg);
+		opacity: 0.95;
+	}
+	81% {
+		transform: translate3d(-16%, -3%, 0) scale(1.1) rotate(2deg);
+		opacity: 0.84;
+	}
+	100% {
+		transform: translate3d(-12%, -12%, 0) scale(1.22) rotate(-1deg);
+		opacity: 0.8;
+	}
+}
+
+@keyframes drift2 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.9) rotate(1deg);
+		opacity: 0.86;
+	}
+	18% {
+		transform: translate3d(-10%, 5%, 0) scale(1.03) rotate(-1deg);
+		opacity: 0.91;
+	}
+	49% {
+		transform: translate3d(-20%, 12%, 0) scale(1.19) rotate(-3deg);
+		opacity: 0.98;
+	}
+	74% {
+		transform: translate3d(2%, -16%, 0) scale(1.08) rotate(2deg);
+		opacity: 0.83;
+	}
+	100% {
+		transform: translate3d(16%, -10%, 0) scale(1.05) rotate(2deg);
+		opacity: 0.76;
+	}
+}
+
+@keyframes drift3 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.97) rotate(-1deg);
+		opacity: 0.8;
+	}
+	31% {
+		transform: translate3d(-8%, -12%, 0) scale(1.12) rotate(1deg);
+		opacity: 0.9;
+	}
+	62% {
+		transform: translate3d(-16%, -18%, 0) scale(1.2) rotate(3deg);
+		opacity: 0.92;
+	}
+	86% {
+		transform: translate3d(10%, 5%, 0) scale(1.01) rotate(-3deg);
+		opacity: 0.82;
+	}
+	100% {
+		transform: translate3d(18%, 11%, 0) scale(0.94) rotate(-2deg);
+		opacity: 0.78;
+	}
+}
+
+@keyframes drift4 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.94) rotate(2deg);
+		opacity: 0.82;
+	}
+	22% {
+		transform: translate3d(9%, -7%, 0) scale(1.06) rotate(-1deg);
+		opacity: 0.88;
+	}
+	53% {
+		transform: translate3d(18%, -18%, 0) scale(1.21) rotate(-2deg);
+		opacity: 0.97;
+	}
+	79% {
+		transform: translate3d(-6%, 16%, 0) scale(1.09) rotate(2deg);
+		opacity: 0.84;
+	}
+	100% {
+		transform: translate3d(-18%, 13%, 0) scale(1.05) rotate(1deg);
+		opacity: 0.75;
+	}
+}
+
+@keyframes driftFooter1 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.92) rotate(-2deg);
+		opacity: 0.72;
+	}
+	24% {
+		transform: translate3d(10%, 6%, 0) scale(1.06) rotate(1deg);
+		opacity: 0.9;
+	}
+	57% {
+		transform: translate3d(-5%, 14%, 0) scale(1.18) rotate(-2deg);
+		opacity: 0.95;
+	}
+	81% {
+		transform: translate3d(-13%, 4%, 0) scale(1.1) rotate(2deg);
+		opacity: 0.84;
+	}
+	100% {
+		transform: translate3d(-10%, 12%, 0) scale(1.22) rotate(-1deg);
+		opacity: 0.8;
+	}
+}
+
+@keyframes driftFooter2 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.9) rotate(1deg);
+		opacity: 0.86;
+	}
+	18% {
+		transform: translate3d(-9%, 5%, 0) scale(1.03) rotate(-1deg);
+		opacity: 0.91;
+	}
+	49% {
+		transform: translate3d(-18%, 12%, 0) scale(1.19) rotate(-3deg);
+		opacity: 0.98;
+	}
+	74% {
+		transform: translate3d(3%, 6%, 0) scale(1.08) rotate(2deg);
+		opacity: 0.83;
+	}
+	100% {
+		transform: translate3d(14%, 10%, 0) scale(1.05) rotate(2deg);
+		opacity: 0.76;
+	}
+}
+
+@keyframes driftFooter3 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.97) rotate(-1deg);
+		opacity: 0.8;
+	}
+	31% {
+		transform: translate3d(-7%, 9%, 0) scale(1.12) rotate(1deg);
+		opacity: 0.9;
+	}
+	62% {
+		transform: translate3d(-14%, 16%, 0) scale(1.2) rotate(3deg);
+		opacity: 0.92;
+	}
+	86% {
+		transform: translate3d(11%, 7%, 0) scale(1.01) rotate(-3deg);
+		opacity: 0.82;
+	}
+	100% {
+		transform: translate3d(16%, 11%, 0) scale(0.94) rotate(-2deg);
+		opacity: 0.78;
+	}
+}
+
+@keyframes driftFooter4 {
+	0% {
+		transform: translate3d(0, 0, 0) scale(0.94) rotate(2deg);
+		opacity: 0.82;
+	}
+	22% {
+		transform: translate3d(8%, 5%, 0) scale(1.06) rotate(-1deg);
+		opacity: 0.88;
+	}
+	53% {
+		transform: translate3d(16%, 14%, 0) scale(1.21) rotate(-2deg);
+		opacity: 0.97;
+	}
+	79% {
+		transform: translate3d(-5%, 10%, 0) scale(1.09) rotate(2deg);
+		opacity: 0.84;
+	}
+	100% {
+		transform: translate3d(-16%, 13%, 0) scale(1.05) rotate(1deg);
+		opacity: 0.75;
+	}
+}
+
+@media (max-width: 800px) {
+	.orb {
+		width: clamp(330px, 112.5vw, 660px);
+		opacity: 0.82;
+	}
+
+	.footerTheme .orb {
+		opacity: 0.84;
+	}
+
+	.footerTheme .orb1 {
+		top: calc(10% + 100px);
+		left: -12%;
+	}
+
+	.footerTheme .orb2 {
+		top: calc(2% + 100px);
+		right: -18%;
+	}
+
+	.footerTheme .orb3 {
+		bottom: calc(-36% - 100px);
+		left: -8%;
+	}
+
+	.footerTheme .orb4 {
+		bottom: calc(-34% - 100px);
+		right: -12%;
+	}
+
+	.orb1 {
+		top: -18%;
+		left: -18%;
+	}
+
+	.orb2 {
+		top: -20%;
+		right: -16%;
+	}
+
+	.orb3 {
+		bottom: -30%;
+		left: -14%;
+	}
+
+	.orb4 {
+		bottom: -28%;
+		right: -12%;
+	}
+}

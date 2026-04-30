@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import PublicImage from '@/app/components/globals/public-image';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
+import AnimatedOrbs from '@/app/components/blocks/main/animated-orbs/animated-orbs';
 import styles from './footer.module.css';
 
 export function Footer() {
     return (
         <footer className={styles.wrapper} role="contentinfo">
             <div className={styles.bg} aria-hidden />
+            <AnimatedOrbs theme="footer" className={styles.orbsLayer} />
             <div className={styles.content}>
                 <div className={styles.ctaBlock}>
                     <h2 className={`${styles.title} title_1 title_1-mobile`}>Мы в телеграме</h2>
