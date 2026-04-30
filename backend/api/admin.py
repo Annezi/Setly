@@ -6,10 +6,12 @@ from typing import Annotated
 
 from api.schemas.admin import (
     AdminAnalyticsResponse,
+    AdminCheckPlanItem,
     AdminCheckPlanModerationRequest,
     AdminCheckPlansResponse,
     AdminSettingItem,
     AdminUserBlockRequest,
+    AdminUserRoleRequest,
     AdminUsersResponse,
 )
 from auth import create_access_token, require_admin, verify_password
@@ -29,7 +31,8 @@ from emailing import send_admin_otp_email
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from rate_limit import enforce_rate_limit, get_redis_client
-from sqlmodel import func, select
+from sqlalchemy import func, or_
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -199,8 +202,12 @@ async def admin_users(
     total_stmt = select(func.count()).select_from(User)
     if search.strip():
         like = f"%{search.strip().lower()}%"
-        stmt = stmt.where(func.lower(User.email).like(like))
-        total_stmt = total_stmt.where(func.lower(User.email).like(like))
+        email_or_nick = or_(
+            func.lower(User.email).like(like),
+            func.lower(func.coalesce(User.nickname, "")).like(like),
+        )
+        stmt = stmt.where(email_or_nick)
+        total_stmt = total_stmt.where(email_or_nick)
     stmt = stmt.order_by(User.id.desc()).offset((page - 1) * limit).limit(limit)
     rows = (await session.execute(stmt)).scalars().all()
     total = int((await session.execute(total_stmt)).one()[0])
@@ -232,6 +239,41 @@ async def admin_block_user(
         "user",
         str(user_id),
         {"is_blocked": data.is_blocked},
+    )
+    await session.commit()
+    return {"ok": True}
+
+
+@router.patch("/users/{user_id}/role")
+async def admin_set_user_role(
+    user_id: int,
+    data: AdminUserRoleRequest,
+    request: Request,
+    admin_user: Annotated[User, Depends(require_admin)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    await enforce_rate_limit(
+        request, "admin_auth_sensitive", RATE_LIMITS["admin_auth_sensitive"]
+    )
+    if user_id == admin_user.id and not data.is_admin:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя снять права администратора с текущего аккаунта",
+        )
+    target = (
+        await session.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    target.is_admin = data.is_admin
+    session.add(target)
+    await _write_audit(
+        session,
+        admin_user.id,
+        "user.role.update",
+        "user",
+        str(user_id),
+        {"is_admin": data.is_admin},
     )
     await session.commit()
     return {"ok": True}
@@ -323,6 +365,7 @@ async def admin_checkplans(
     limit: int = Query(default=20, ge=1, le=100),
     search: str = Query(default=""),
     moderation_status: str | None = Query(default=None),
+    visibility: str | None = Query(default=None),
     _: Annotated[User, Depends(require_admin)] = None,
     session: Annotated[AsyncSession, Depends(get_session)] = None,
 ):
@@ -335,6 +378,9 @@ async def admin_checkplans(
     if moderation_status:
         stmt = stmt.where(CheckPlan.moderation_status == moderation_status)
         total_stmt = total_stmt.where(CheckPlan.moderation_status == moderation_status)
+    if visibility:
+        stmt = stmt.where(CheckPlan.visibility == visibility)
+        total_stmt = total_stmt.where(CheckPlan.visibility == visibility)
     stmt = (
         stmt.order_by(CheckPlan.last_update_time.desc())
         .offset((page - 1) * limit)
@@ -342,7 +388,30 @@ async def admin_checkplans(
     )
     rows = (await session.execute(stmt)).scalars().all()
     total = int((await session.execute(total_stmt)).one()[0])
-    return AdminCheckPlansResponse(items=rows, total=total, page=page, limit=limit)
+
+    author_ids = {r.author_id for r in rows}
+    nick_by_uid: dict[int, str | None] = {}
+    if author_ids:
+        user_rows = (
+            await session.execute(select(User).where(User.id.in_(author_ids)))
+        ).scalars().all()
+        nick_by_uid = {u.id: u.nickname for u in user_rows}
+
+    items = [
+        AdminCheckPlanItem(
+            id=r.id,
+            id_str=r.id_str,
+            title=r.title,
+            author_id=r.author_id,
+            author_nickname=nick_by_uid.get(r.author_id),
+            visibility=r.visibility,
+            moderation_status=r.moderation_status,
+            is_hidden_by_admin=r.is_hidden_by_admin,
+            last_update_time=r.last_update_time,
+        )
+        for r in rows
+    ]
+    return AdminCheckPlansResponse(items=items, total=total, page=page, limit=limit)
 
 
 @router.patch("/content/checkplans/{id_str}/moderation")

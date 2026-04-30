@@ -24,10 +24,16 @@ class AdminUserBlockRequest(BaseModel):
     is_blocked: bool
 
 
+class AdminUserRoleRequest(BaseModel):
+    is_admin: bool
+
+
 class AdminCheckPlanItem(BaseModel):
+    id: int
     id_str: str
     title: str
     author_id: int
+    author_nickname: str | None = None
     visibility: str
     moderation_status: str
     is_hidden_by_admin: bool

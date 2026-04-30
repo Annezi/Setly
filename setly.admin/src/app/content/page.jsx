@@ -2,11 +2,35 @@
 
 import { useEffect, useState, useCallback } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import ColumnResizeHandle from "@/components/ColumnResizeHandle";
 import useAdminGuard from "@/lib/useAdminGuard";
 import { fetchCheckPlans, moderateCheckPlan, deleteCheckPlan } from "@/lib/api";
+import { absolutePublicUrl, buildCheckplanPreviewPath, buildProfilePath } from "@/lib/publicLinks";
 
 const LIMIT = 20;
 const MIN_COL_WIDTH = 80;
+const DEFAULT_COL_WIDTH = MIN_COL_WIDTH;
+
+const thBase = {
+  position: "relative",
+  padding: "10px 22px 10px 8px",
+  textAlign: "center",
+  verticalAlign: "middle",
+  fontWeight: 600,
+  color: "var(--color-text-secondary)",
+  fontSize: 12,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  borderBottom: "1px solid var(--color-border)",
+  whiteSpace: "nowrap",
+};
+
+const tdBase = {
+  padding: "10px 6px",
+  borderBottom: "1px solid var(--color-border)",
+  textAlign: "center",
+  verticalAlign: "middle",
+};
 
 const MODERATION_OPTIONS = [
   { value: "", label: "Все" },
@@ -24,8 +48,16 @@ const MODERATION_LABELS = {
 const VISIBILITY_LABELS = {
   public: { label: "Публичный", color: "#38a169", bg: "#f0fff4" },
   private: { label: "Приватный", color: "#718096", bg: "#f7fafc" },
+  link: { label: "По ссылке", color: "#3182ce", bg: "#ebf8ff" },
   link_only: { label: "По ссылке", color: "#3182ce", bg: "#ebf8ff" },
 };
+
+const VISIBILITY_FILTER_OPTIONS = [
+  { value: "", label: "Все" },
+  { value: "public", label: "Публичный" },
+  { value: "link", label: "По ссылке" },
+  { value: "private", label: "Приватный" },
+];
 
 function Badge({ label, color, bg }) {
   return (
@@ -80,24 +112,25 @@ export default function ContentPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [moderationFilter, setModerationFilter] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
   const [colWidths, setColWidths] = useState({
-    id: 120,
-    title: 280,
-    author: 150,
-    visibility: 150,
-    moderation: 160,
-    hidden: 120,
-    actions: 300,
+    id: DEFAULT_COL_WIDTH,
+    title: DEFAULT_COL_WIDTH,
+    author: DEFAULT_COL_WIDTH,
+    visibility: DEFAULT_COL_WIDTH,
+    moderation: DEFAULT_COL_WIDTH,
+    hidden: DEFAULT_COL_WIDTH,
+    actions: DEFAULT_COL_WIDTH,
   });
 
-  const loadItems = useCallback(async (pg, srch, modFilter) => {
+  const loadItems = useCallback(async (pg, srch, modFilter, visFilter) => {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchCheckPlans(pg, LIMIT, srch, modFilter);
+      const data = await fetchCheckPlans(pg, LIMIT, srch, modFilter, visFilter);
       setItems(data.items);
       setTotal(data.total);
     } catch (err) {
@@ -108,8 +141,8 @@ export default function ContentPage() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading) loadItems(page, search, moderationFilter);
-  }, [authLoading, page, search, moderationFilter, loadItems]);
+    if (!authLoading) loadItems(page, search, moderationFilter, visibilityFilter);
+  }, [authLoading, page, search, moderationFilter, visibilityFilter, loadItems]);
 
   function handleSearch(e) {
     e.preventDefault();
@@ -117,8 +150,13 @@ export default function ContentPage() {
     setSearch(searchInput.trim());
   }
 
-  function handleFilterChange(val) {
+  function handleModerationFilterChange(val) {
     setModerationFilter(val);
+    setPage(1);
+  }
+
+  function handleVisibilityFilterChange(val) {
+    setVisibilityFilter(val);
     setPage(1);
   }
 
@@ -207,7 +245,7 @@ export default function ContentPage() {
 
   return (
     <AdminLayout>
-      <div style={{ maxWidth: 1400 }}>
+      <div style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--color-text)", marginBottom: 4 }}>
@@ -229,6 +267,7 @@ export default function ContentPage() {
             marginBottom: 20,
           }}
         >
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             {/* Search */}
             <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 260 }}>
@@ -281,30 +320,68 @@ export default function ContentPage() {
               </button>
             </form>
 
-            {/* Status filter tabs */}
-            <div style={{ display: "flex", gap: 4, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 4, border: "1px solid var(--color-border)" }}>
-              {MODERATION_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleFilterChange(opt.value)}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "none",
-                    background: moderationFilter === opt.value ? "#fff" : "transparent",
-                    color: moderationFilter === opt.value ? "var(--color-text)" : "var(--color-text-secondary)",
-                    fontWeight: moderationFilter === opt.value ? 600 : 400,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    boxShadow: moderationFilter === opt.value ? "var(--shadow-sm)" : "none",
-                    transition: "all 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            {/* Moderation status filter */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Статус модерации
+              </span>
+              <div style={{ display: "flex", gap: 4, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 4, border: "1px solid var(--color-border)" }}>
+                {MODERATION_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleModerationFilterChange(opt.value)}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: moderationFilter === opt.value ? "#fff" : "transparent",
+                      color: moderationFilter === opt.value ? "var(--color-text)" : "var(--color-text-secondary)",
+                      fontWeight: moderationFilter === opt.value ? 600 : 400,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      boxShadow: moderationFilter === opt.value ? "var(--shadow-sm)" : "none",
+                      transition: "all 0.15s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Visibility filter */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Видимость
+              </span>
+              <div style={{ display: "flex", gap: 4, background: "var(--color-bg)", borderRadius: "var(--radius-md)", padding: 4, border: "1px solid var(--color-border)" }}>
+                {VISIBILITY_FILTER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value === "" ? "all-vis" : opt.value}
+                    type="button"
+                    onClick={() => handleVisibilityFilterChange(opt.value)}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: visibilityFilter === opt.value ? "#fff" : "transparent",
+                      color: visibilityFilter === opt.value ? "var(--color-text)" : "var(--color-text-secondary)",
+                      fontWeight: visibilityFilter === opt.value ? 600 : 400,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      boxShadow: visibilityFilter === opt.value ? "var(--shadow-sm)" : "none",
+                      transition: "all 0.15s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           </div>
         </div>
 
@@ -324,8 +401,8 @@ export default function ContentPage() {
             </div>
           )}
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <div style={{ width: "100%", overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
               <colgroup>
                 {columns.map((c) => (
                   <col key={c.key} style={{ width: colWidths[c.key] }} />
@@ -337,34 +414,13 @@ export default function ContentPage() {
                     <th
                       key={c.key}
                       style={{
-                        position: "relative",
-                        padding: "12px 14px",
-                        textAlign: "left",
-                        fontWeight: 600,
-                        color: "var(--color-text-secondary)",
-                        fontSize: 12,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                        borderBottom: "1px solid var(--color-border)",
-                        whiteSpace: "nowrap",
+                        ...thBase,
                         width: colWidths[c.key],
                       }}
                     >
                       {c.label}
-                      <span
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleResizeStart(c.key, e.clientX);
-                        }}
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                          width: 8,
-                          height: "100%",
-                          cursor: "col-resize",
-                          userSelect: "none",
-                        }}
+                      <ColumnResizeHandle
+                        onMouseDown={(e) => handleResizeStart(c.key, e.clientX)}
                       />
                     </th>
                   ))}
@@ -375,8 +431,10 @@ export default function ContentPage() {
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i}>
                       {Array.from({ length: 7 }).map((_, j) => (
-                        <td key={j} style={{ padding: "14px", borderBottom: "1px solid var(--color-border)" }}>
-                          <div style={{ height: 14, background: "var(--color-border)", borderRadius: 4, width: j === 1 ? 180 : 90 }} />
+                        <td key={j} style={{ ...tdBase }}>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 24 }}>
+                            <div style={{ height: 14, background: "var(--color-border)", borderRadius: 4, width: j === 1 ? 72 : 56 }} />
+                          </div>
                         </td>
                       ))}
                     </tr>
@@ -402,31 +460,100 @@ export default function ContentPage() {
                         onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f4ff")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = idx % 2 === 0 ? "#fff" : "#fafbfc")}
                       >
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)", color: "var(--color-text-secondary)", fontFamily: "monospace", fontSize: 12 }}>
-                          {String(item.id_str).slice(0, 8)}...
+                        <td
+                          style={{
+                            ...tdBase,
+                            color: "var(--color-text-secondary)",
+                            fontFamily: "monospace",
+                            fontSize: 12,
+                            wordBreak: "break-all",
+                            whiteSpace: "normal",
+                          }}
+                        >
+                          {item.id_str}
                         </td>
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)", maxWidth: 240 }}>
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontWeight: 500 }}>
+                        <td style={{ ...tdBase, overflow: "hidden" }}>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", minWidth: 0 }}>
+                          <a
+                            href={absolutePublicUrl(
+                              buildCheckplanPreviewPath({
+                                id: item.id,
+                                id_str: item.id_str,
+                                title: item.title,
+                              })
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              maxWidth: "100%",
+                              fontWeight: 500,
+                              color: "var(--color-primary)",
+                              textDecoration: "none",
+                            }}
+                            title="Открыть превью чек-плана"
+                          >
                             {item.title || "—"}
-                          </span>
+                          </a>
+                          </div>
                         </td>
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)", fontFamily: "monospace", fontSize: 12, color: "var(--color-text-secondary)" }}>
-                          {String(item.author_id || "").slice(0, 8)}...
+                        <td style={{ ...tdBase, fontSize: 13, overflow: "hidden" }}>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", minWidth: 0 }}>
+                          {(() => {
+                            const href = (() => {
+                              const p = buildProfilePath(item.author_id, item.author_nickname);
+                              return p ? absolutePublicUrl(p) : null;
+                            })();
+                            const label =
+                              item.author_nickname?.trim() ||
+                              (item.author_id != null ? String(item.author_id) : "—");
+                            return href ? (
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: "var(--color-primary)",
+                                  textDecoration: "none",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  maxWidth: "100%",
+                                }}
+                                title="Профиль автора"
+                              >
+                                {label}
+                              </a>
+                            ) : (
+                              <span style={{ fontFamily: "monospace", fontSize: 12, color: "var(--color-text-secondary)" }}>
+                                {label}
+                              </span>
+                            );
+                          })()}
+                          </div>
                         </td>
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)" }}>
+                        <td style={tdBase}>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
                           <Badge label={visInfo.label} color={visInfo.color} bg={visInfo.bg} />
+                          </div>
                         </td>
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)" }}>
+                        <td style={tdBase}>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
                           <Badge label={modInfo.label} color={modInfo.color} bg={modInfo.bg} />
+                          </div>
                         </td>
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)" }}>
+                        <td style={tdBase}>
+                          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
                           {item.is_hidden_by_admin
                             ? <Badge label="Скрыт" color="#e53e3e" bg="#fff5f5" />
                             : <Badge label="Виден" color="#38a169" bg="#f0fff4" />
                           }
+                          </div>
                         </td>
-                        <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--color-border)" }}>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "nowrap" }}>
+                        <td style={tdBase}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", justifyContent: "center" }}>
                             {item.moderation_status !== "approved" && (
                               <ActionBtn
                                 label="Одобрить"

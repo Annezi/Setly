@@ -110,6 +110,13 @@ export function blockUser(userId, isBlocked) {
     });
 }
 
+export function updateUserRole(userId, isAdmin) {
+    return apiRequest(`/api/admin/users/${userId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_admin: isAdmin }),
+    });
+}
+
 export function deleteUser(userId) {
     return apiRequest(`/api/admin/users/${userId}`, {
         method: "DELETE",
@@ -123,10 +130,12 @@ export function fetchCheckPlans(
     limit = 20,
     search = "",
     moderationStatus = "",
+    visibility = "",
 ) {
     const params = new URLSearchParams({ page, limit });
     if (search) params.set("search", search);
     if (moderationStatus) params.set("moderation_status", moderationStatus);
+    if (visibility) params.set("visibility", visibility);
     return apiRequest(`/api/admin/content/checkplans?${params}`);
 }
 

@@ -5,6 +5,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // NEXT_PUBLIC_SITE_URL переопределяет основной сайт для ссылок из админки (по умолчанию https://setly.space в коде).
   output: "standalone",
   outputFileTracingRoot: __dirname,
   poweredByHeader: false,

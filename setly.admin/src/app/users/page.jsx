@@ -2,11 +2,36 @@
 
 import { useEffect, useState, useCallback } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import ColumnResizeHandle from "@/components/ColumnResizeHandle";
 import useAdminGuard from "@/lib/useAdminGuard";
-import { fetchUsers, blockUser, deleteUser } from "@/lib/api";
+import { fetchUsers, blockUser, deleteUser, updateUserRole } from "@/lib/api";
+import { absolutePublicUrl, buildProfilePath } from "@/lib/publicLinks";
 
 const LIMIT = 20;
 const MIN_COL_WIDTH = 80;
+/** Стартовая ширина каждого столбца — минимально возможная; расширение вручную через ручку. */
+const DEFAULT_COL_WIDTH = MIN_COL_WIDTH;
+
+const thBase = {
+  position: "relative",
+  padding: "10px 22px 10px 8px",
+  textAlign: "center",
+  verticalAlign: "middle",
+  fontWeight: 600,
+  color: "var(--color-text-secondary)",
+  fontSize: 12,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  borderBottom: "1px solid var(--color-border)",
+  whiteSpace: "nowrap",
+};
+
+const tdBase = {
+  padding: "10px 6px",
+  borderBottom: "1px solid var(--color-border)",
+  textAlign: "center",
+  verticalAlign: "middle",
+};
 
 function Badge({ children, color, bg }) {
   return (
@@ -40,13 +65,13 @@ export default function UsersPage() {
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
   const [colWidths, setColWidths] = useState({
-    id: 110,
-    email: 260,
-    nickname: 180,
-    role: 130,
-    status: 150,
-    totp: 110,
-    actions: 240,
+    id: DEFAULT_COL_WIDTH,
+    email: DEFAULT_COL_WIDTH,
+    nickname: DEFAULT_COL_WIDTH,
+    role: DEFAULT_COL_WIDTH,
+    status: DEFAULT_COL_WIDTH,
+    totp: DEFAULT_COL_WIDTH,
+    actions: DEFAULT_COL_WIDTH,
   });
 
   const loadUsers = useCallback(
@@ -82,6 +107,21 @@ export default function UsersPage() {
       await blockUser(user.id, !user.is_blocked);
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, is_blocked: !u.is_blocked } : u))
+      );
+    } catch (err) {
+      alert("Ошибка: " + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleRoleChange(user, isAdmin) {
+    if (user.is_admin === isAdmin) return;
+    setActionLoading(`role-${user.id}`);
+    try {
+      await updateUserRole(user.id, isAdmin);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, is_admin: isAdmin } : u))
       );
     } catch (err) {
       alert("Ошибка: " + err.message);
@@ -142,7 +182,7 @@ export default function UsersPage() {
 
   return (
     <AdminLayout>
-      <div style={{ maxWidth: 1200 }}>
+      <div style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--color-text)", marginBottom: 4 }}>
@@ -249,8 +289,8 @@ export default function UsersPage() {
             </div>
           )}
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <div style={{ width: "100%", overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
               <colgroup>
                 {columns.map((c) => (
                   <col key={c.key} style={{ width: colWidths[c.key] }} />
@@ -262,34 +302,13 @@ export default function UsersPage() {
                     <th
                       key={c.key}
                       style={{
-                        position: "relative",
-                        padding: "12px 16px",
-                        textAlign: "left",
-                        fontWeight: 600,
-                        color: "var(--color-text-secondary)",
-                        fontSize: 12,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                        borderBottom: "1px solid var(--color-border)",
-                        whiteSpace: "nowrap",
+                        ...thBase,
                         width: colWidths[c.key],
                       }}
                     >
                       {c.label}
-                      <span
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleResizeStart(c.key, e.clientX);
-                        }}
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                          width: 8,
-                          height: "100%",
-                          cursor: "col-resize",
-                          userSelect: "none",
-                        }}
+                      <ColumnResizeHandle
+                        onMouseDown={(e) => handleResizeStart(c.key, e.clientX)}
                       />
                     </th>
                   ))}
@@ -300,16 +319,25 @@ export default function UsersPage() {
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i}>
                       {Array.from({ length: 7 }).map((_, j) => (
-                        <td key={j} style={{ padding: "14px 16px", borderBottom: "1px solid var(--color-border)" }}>
+                        <td key={j} style={{ ...tdBase }}>
                           <div
                             style={{
-                              height: 14,
-                              background: "var(--color-border)",
-                              borderRadius: 4,
-                              width: j === 0 ? 60 : j === 1 ? 160 : j === 6 ? 80 : 100,
-                              animation: "pulse 1.5s infinite",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              minHeight: 24,
                             }}
-                          />
+                          >
+                            <div
+                              style={{
+                                height: 14,
+                                background: "var(--color-border)",
+                                borderRadius: 4,
+                                width: j === 0 ? 48 : j === 1 ? 80 : j === 6 ? 56 : 64,
+                                animation: "pulse 1.5s infinite",
+                              }}
+                            />
+                          </div>
                         </td>
                       ))}
                     </tr>
@@ -331,81 +359,164 @@ export default function UsersPage() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f4ff")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = idx % 2 === 0 ? "#fff" : "#fafbfc")}
                     >
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)", color: "var(--color-text-secondary)", fontFamily: "monospace", fontSize: 12 }}>
-                        {String(user.id).slice(0, 8)}...
+                      <td
+                        style={{
+                          ...tdBase,
+                          color: "var(--color-text-secondary)",
+                          fontFamily: "monospace",
+                          fontSize: 12,
+                          wordBreak: "break-all",
+                          whiteSpace: "normal",
+                        }}
+                      >
+                        {String(user.id)}
                       </td>
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)", maxWidth: 220 }}>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontWeight: 500 }}>
-                          {user.email}
-                        </span>
+                      <td style={{ ...tdBase, overflow: "hidden" }}>
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", minWidth: 0 }}>
+                        {(() => {
+                          const href = (() => {
+                            const p = buildProfilePath(user.id, user.nickname);
+                            return p ? absolutePublicUrl(p) : null;
+                          })();
+                          return href ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                maxWidth: "100%",
+                                fontWeight: 500,
+                                color: "var(--color-primary)",
+                                textDecoration: "none",
+                              }}
+                            >
+                              {user.email}
+                            </a>
+                          ) : (
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%", fontWeight: 500 }}>
+                              {user.email}
+                            </span>
+                          );
+                        })()}
+                        </div>
                       </td>
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
-                        <span style={{ color: user.nickname ? "var(--color-text)" : "var(--color-text-muted)" }}>
-                          {user.nickname || "—"}
-                        </span>
+                      <td style={{ ...tdBase, overflow: "hidden" }}>
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", minWidth: 0 }}>
+                        {(() => {
+                          const href = (() => {
+                            const p = buildProfilePath(user.id, user.nickname);
+                            return p ? absolutePublicUrl(p) : null;
+                          })();
+                          if (!user.nickname) {
+                            return <span style={{ color: "var(--color-text-muted)" }}>—</span>;
+                          }
+                          return href ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                color: "var(--color-primary)",
+                                textDecoration: "none",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                maxWidth: "100%",
+                              }}
+                            >
+                              {user.nickname}
+                            </a>
+                          ) : (
+                            <span style={{ color: "var(--color-text)" }}>{user.nickname}</span>
+                          );
+                        })()}
+                        </div>
                       </td>
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
-                        {user.is_admin
-                          ? <Badge color="#7c3aed" bg="#ede9fe">Админ</Badge>
-                          : <Badge color="var(--color-text-secondary)" bg="var(--color-bg)">Пользователь</Badge>
-                        }
+                      <td style={tdBase}>
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
+                        <select
+                          value={user.is_admin ? "admin" : "user"}
+                          onChange={(e) => handleRoleChange(user, e.target.value === "admin")}
+                          disabled={actionLoading === `role-${user.id}` || actionLoading === user.id || actionLoading === `delete-${user.id}`}
+                          style={{
+                            maxWidth: "100%",
+                            padding: "6px 10px",
+                            borderRadius: "var(--radius-sm)",
+                            border: "1px solid var(--color-border)",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            background: "#fff",
+                            color: "var(--color-text)",
+                            cursor: actionLoading === `role-${user.id}` ? "wait" : "pointer",
+                          }}
+                        >
+                          <option value="user">Пользователь</option>
+                          <option value="admin">Администратор</option>
+                        </select>
+                        </div>
                       </td>
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
+                      <td style={tdBase}>
                         {user.is_blocked
                           ? <Badge color="#e53e3e" bg="#fff5f5">Заблокирован</Badge>
                           : <Badge color="#38a169" bg="#f0fff4">Активен</Badge>
                         }
                       </td>
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
+                      <td style={tdBase}>
                         {user.totp_enabled
                           ? <Badge color="#38a169" bg="#f0fff4">Вкл</Badge>
                           : <Badge color="var(--color-text-muted)" bg="var(--color-bg)">Выкл</Badge>
                         }
                       </td>
-                      <td style={{ padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
-                        <button
-                          onClick={() => handleBlock(user)}
-                          disabled={actionLoading === user.id || actionLoading === `delete-${user.id}`}
-                          style={{
-                            padding: "6px 14px",
-                            background: user.is_blocked ? "#f0fff4" : "#fff5f5",
-                            color: user.is_blocked ? "#38a169" : "#e53e3e",
-                            border: `1px solid ${user.is_blocked ? "#c6f6d5" : "#fed7d7"}`,
-                            borderRadius: "var(--radius-sm)",
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                            opacity: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? 0.6 : 1,
-                            whiteSpace: "nowrap",
-                            transition: "opacity 0.15s",
-                          }}
-                        >
-                          {actionLoading === user.id
-                            ? "..."
-                            : user.is_blocked
-                            ? "Разблокировать"
-                            : "Заблокировать"}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user)}
-                          disabled={actionLoading === user.id || actionLoading === `delete-${user.id}`}
-                          style={{
-                            marginLeft: 8,
-                            padding: "6px 14px",
-                            background: "#fff5f5",
-                            color: "#e53e3e",
-                            border: "1px solid #fed7d7",
-                            borderRadius: "var(--radius-sm)",
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? "not-allowed" : "pointer",
-                            opacity: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? 0.6 : 1,
-                            whiteSpace: "nowrap",
-                            transition: "opacity 0.15s",
-                          }}
-                        >
-                          {actionLoading === `delete-${user.id}` ? "Удаление..." : "Удалить"}
-                        </button>
+                      <td style={tdBase}>
+                        <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleBlock(user)}
+                            disabled={actionLoading === user.id || actionLoading === `delete-${user.id}` || actionLoading?.startsWith("role-")}
+                            style={{
+                              padding: "6px 14px",
+                              background: user.is_blocked ? "#f0fff4" : "#fff5f5",
+                              color: user.is_blocked ? "#38a169" : "#e53e3e",
+                              border: `1px solid ${user.is_blocked ? "#c6f6d5" : "#fed7d7"}`,
+                              borderRadius: "var(--radius-sm)",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: actionLoading === user.id ? "not-allowed" : "pointer",
+                              opacity: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? 0.6 : 1,
+                              whiteSpace: "nowrap",
+                              transition: "opacity 0.15s",
+                            }}
+                          >
+                            {actionLoading === user.id
+                              ? "..."
+                              : user.is_blocked
+                              ? "Разблокировать"
+                              : "Заблокировать"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(user)}
+                            disabled={actionLoading === user.id || actionLoading === `delete-${user.id}` || actionLoading?.startsWith("role-")}
+                            style={{
+                              padding: "6px 14px",
+                              background: "#fff5f5",
+                              color: "#e53e3e",
+                              border: "1px solid #fed7d7",
+                              borderRadius: "var(--radius-sm)",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? "not-allowed" : "pointer",
+                              opacity: (actionLoading === user.id || actionLoading === `delete-${user.id}`) ? 0.6 : 1,
+                              whiteSpace: "nowrap",
+                              transition: "opacity 0.15s",
+                            }}
+                          >
+                            {actionLoading === `delete-${user.id}` ? "Удаление..." : "Удалить"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
