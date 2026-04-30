@@ -262,6 +262,7 @@ export default function Registration() {
                 className={`${styles.wrapper} main-page-reveal__item`}
                 style={{ "--reveal-delay": "60ms" }}
             >
+                <div className={styles.orbBackground} aria-hidden />
                 <div className={styles.content}>
                     <div
                         className={styles.backRow}
@@ -413,6 +414,7 @@ export default function Registration() {
             className={`${styles.wrapper} main-page-reveal__item`}
             style={{ "--reveal-delay": "60ms" }}
         >
+            <div className={styles.orbBackground} aria-hidden />
             <div className={styles.content}>
                 <h1 className={`${styles.title} title_1`}>Регистрация</h1>
                 <p className={`${styles.description} paragraph`}>

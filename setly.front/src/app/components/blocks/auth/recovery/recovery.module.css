@@ -3,11 +3,13 @@
   width: calc(100% + 40px);
   margin-left: -20px;
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background-image: image-set(
     url("/img/main/login-bg.webp") type("image/webp"),
     url("/img/main/login-bg.png") type("image/png")
   );
-  background-position: center bottom;
+  background-position: center calc(100% + 60px);
   background-size: auto 108%;
   background-repeat: no-repeat;
   display: flex;
@@ -16,7 +18,23 @@
   justify-content: center;
 }
 
+.orbBackground {
+  position: absolute;
+  left: 50%;
+  top: 70%;
+  transform: translate(-50%, -50%);
+  width: clamp(560px, 78vw, 1180px);
+  aspect-ratio: 1 / 1;
+  background: url("/img/main/animation/animLogin.svg") center / contain no-repeat;
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: 0;
+  animation: authOrbPulse 5.2s ease-in-out infinite;
+}
+
 .content {
+  position: relative;
+  z-index: 1;
   width: 338px;
   max-width: 100%;
   min-width: 280px;
@@ -115,10 +133,30 @@
   cursor: pointer;
 }
 
+@keyframes authOrbPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.84;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 0.98;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0.86;
+  }
+}
+
 @media (max-width: 800px) {
   .wrapper {
     height: calc(100vh - 76px);
     background-size: 300% 96%;
+  }
+
+  .orbBackground {
+    width: clamp(420px, 125vw, 760px);
+    top: 68%;
   }
 
   .title,

@@ -94,6 +94,7 @@ export default function Login() {
 
   return (
     <div className={styles.wrapper}>
+      <div className={styles.orbBackground} aria-hidden />
       <div className={styles.content}>
         <h1 className={`${styles.title} title_1`}>Войти в аккаунт</h1>
         <p className={`${styles.description} paragraph`}>

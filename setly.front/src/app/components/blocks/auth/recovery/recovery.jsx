@@ -185,6 +185,7 @@ export default function Recovery() {
     if (step === "otp") {
         return (
             <div className={styles.wrapper}>
+                <div className={styles.orbBackground} aria-hidden />
                 <div className={styles.content}>
                     <div
                         className={styles.backRow}
@@ -328,6 +329,7 @@ export default function Recovery() {
     // ── Render: step "email" ──────────────────────────────────────────────────
     return (
         <div className={styles.wrapper}>
+            <div className={styles.orbBackground} aria-hidden />
             <div className={styles.content}>
                 <h1 className={`${styles.title} title_1`}>
                     Восстановление пароля
