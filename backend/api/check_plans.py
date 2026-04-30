@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -27,6 +27,7 @@ import uuid
 
 from auth import get_current_user, get_current_user_optional
 from api.check_plan_access import can_read_check_plan
+from api.telegram_moderation import moderation_telegram_enabled, notify_checkplan_moderation_submitted
 
 router = APIRouter(prefix="/check-plans", tags=["check-plans"])
 
@@ -309,6 +310,7 @@ async def create_check_plan(
     data: CheckPlanCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
 ):
     """Создать чек-план."""
     check_plan_data_id = data.check_plan_data_id or 0
@@ -357,6 +359,11 @@ async def create_check_plan(
     session.add(plan)
     await session.commit()
     await session.refresh(plan)
+    if (
+        (plan.visibility or "").strip().lower() == "public"
+        and moderation_telegram_enabled()
+    ):
+        background_tasks.add_task(notify_checkplan_moderation_submitted, plan.id)
     author_result = await session.execute(select(User).where(User.id == plan.author_id))
     author = author_result.scalar_one_or_none()
     return _plan_to_response(plan, author=author)
@@ -368,6 +375,7 @@ async def update_check_plan(
     data: CheckPlanUpdate,
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: Annotated[User, Depends(get_current_user)],
+    background_tasks: BackgroundTasks,
 ):
     """Обновить чек-план (частично) по id_str. Только автор."""
     result = await session.execute(select(CheckPlan).where(CheckPlan.id_str == id_str))
@@ -382,6 +390,7 @@ async def update_check_plan(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only the author can update this check plan",
         )
+    old_visibility = (plan.visibility or "private").strip().lower()
     if data.image_src is not None:
         plan.image_src = _sanitize_image_url(data.image_src)
     if data.image_alt is not None:
@@ -410,9 +419,15 @@ async def update_check_plan(
         plan.traveler_tags = data.traveler_tags
     if data.season_tags is not None:
         plan.season_tags = data.season_tags
+    new_visibility = (plan.visibility or "private").strip().lower()
+    going_public = new_visibility == "public" and old_visibility != "public"
+    if going_public:
+        plan.moderation_status = "pending"
     session.add(plan)
     await session.commit()
     await session.refresh(plan)
+    if going_public and moderation_telegram_enabled():
+        background_tasks.add_task(notify_checkplan_moderation_submitted, plan.id)
     author_result = await session.execute(select(User).where(User.id == plan.author_id))
     author = author_result.scalar_one_or_none()
     return _plan_to_response(plan, author=author)

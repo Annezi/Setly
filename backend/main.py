@@ -16,6 +16,7 @@ load_dotenv()
 from api.admin import router as admin_router
 from api.check_plan_data import router as check_plan_data_router
 from api.check_plans import router as check_plans_router
+from api.telegram_webhook import router as telegram_webhook_router
 from api.user import router as user_router
 from database.database import async_session_maker, create_tables
 from database.models import PasswordResetToken
@@ -129,6 +130,7 @@ app.include_router(user_router, prefix="/api")
 app.include_router(check_plans_router, prefix="/api")
 app.include_router(check_plan_data_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(telegram_webhook_router, prefix="/api")
 app.mount("/storage", StaticFiles(directory=STORAGE_DIR), name="storage")
 
 
