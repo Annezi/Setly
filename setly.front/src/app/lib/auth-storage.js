@@ -3,7 +3,7 @@
  * Срок жизни — по expires_in с бэкенда (обычно 60 мин), сохраняем как expiresAt.
  */
 
-const AUTH_STORAGE_KEY = "setly_auth";
+const AUTH_STORAGE_KEY = "";
 
 /** Выбрать хранилище: localStorage, при ошибке — sessionStorage (на время сессии). */
 function getStorage() {
