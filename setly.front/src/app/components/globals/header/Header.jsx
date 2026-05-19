@@ -8,6 +8,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import ProfilePhoto from '@/app/components/atomic/atoms/profile-photo/profile-photo';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
 import { getAuth, clearAuth } from '@/app/lib/auth-storage';
+import {
+  getEmailVerificationPath,
+  isEmailVerified,
+} from '@/app/lib/email-verification';
 import styles from './header.module.css';
 
 const NAV_ITEMS = [
@@ -75,6 +79,11 @@ export function Header({ isLoggedIn: isLoggedInProp, user: userProp, hideNavigat
 
   const handleProfileClick = useCallback(() => {
     closeMobileMenu();
+    const auth = getAuth();
+    if (auth?.user && !isEmailVerified(auth.user)) {
+      router.push(getEmailVerificationPath());
+      return;
+    }
     router.push('/account');
   }, [closeMobileMenu, router]);
 

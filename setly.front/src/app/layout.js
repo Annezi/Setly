@@ -1,3 +1,4 @@
+import Script from "next/script";
 import "./globals.css";
 import DisableImageDrag from "./components/globals/DisableImageDrag";
 import ScrollToTop from "./components/globals/ScrollToTop";
@@ -104,22 +105,16 @@ const yandexMetrikaInitScript = `(function(m,e,t,r,i,k,a){
     for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
     k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
 })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=108769675', 'ym');
-ym(108769675, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});`;
+ym(108769675, 'init', {ssr:true, webvisor:false, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});`;
 
 export default function RootLayout({ children }) {
   return (
     <html lang="ru" prefix="og: http://ogp.me/ns#">
-      <head>
+      <body>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: websiteJsonLdHtml }}
         />
-        <script
-          type="text/javascript"
-          dangerouslySetInnerHTML={{ __html: yandexMetrikaInitScript }}
-        />
-      </head>
-      <body>
         <noscript>
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -136,6 +131,11 @@ export default function RootLayout({ children }) {
           <RoutePrefetcher />
           {children}
         </LikedChecklistsProvider>
+        <Script
+          id="yandex-metrika"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: yandexMetrikaInitScript }}
+        />
       </body>
     </html>
   );

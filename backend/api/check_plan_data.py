@@ -3,11 +3,11 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from auth import get_current_user, get_current_user_optional
+from auth import get_current_user, get_current_user_optional, require_email_verified
 from api.check_plan_access import can_read_check_plan
 from database.database import get_session
 from database.models import CheckPlan, CheckPlanData, CheckPlanDataStaff, User
@@ -119,7 +119,7 @@ def _days_from_dates(date_start: str, date_end: str) -> tuple[int, str]:
 
 @router.get("", response_model=list[CheckPlanDataResponse])
 async def list_check_plan_data(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Список записей CheckPlanData только текущего пользователя."""
@@ -170,11 +170,15 @@ async def get_check_plan_data(
 
 @router.post("", response_model=CheckPlanDataResponse, status_code=status.HTTP_201_CREATED)
 async def create_check_plan_data(
+    request: Request,
     data: CheckPlanDataCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Создать запись CheckPlanData. Тело запроса — объект карточки (CheckPlanDataStaff) напрямую."""
+    from rate_limit import enforce_rate_limit
+
+    await enforce_rate_limit(request, "checkplan_data_create", 60)
     item = CheckPlanData(data=data.model_dump())
     session.add(item)
     await session.commit()
@@ -187,7 +191,7 @@ async def update_check_plan_data(
     item_id: int,
     data: CheckPlanDataUpdate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     check_plan_id_str: str | None = None,
 ):
     """
@@ -274,7 +278,7 @@ async def update_check_plan_data(
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_check_plan_data(
     item_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Удалить запись CheckPlanData."""

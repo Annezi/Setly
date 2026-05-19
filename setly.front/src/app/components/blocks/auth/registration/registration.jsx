@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "../../../atomic/atoms/buttons/buttons";
 import Input from "../../../atomic/molecules/input/input";
 import Checkbox from "../../../atomic/atoms/checkbox/checkbox";
 import PageBackLink from "@/app/components/globals/page-back-link/page-back-link";
-import { setAuth } from "@/app/lib/auth-storage";
+import { getAuth, setAuth, updateAuthUser } from "@/app/lib/auth-storage";
+import {
+    isEmailVerified,
+    setPendingEmailVerification,
+} from "@/app/lib/email-verification";
 import { apiFetch } from "@/app/lib/api";
 import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./registration.module.css";
@@ -86,6 +90,19 @@ export default function Registration() {
     const [maskedEmail, setMaskedEmail] = useState("");
     const [cooldown, setCooldown] = useState(0);
     const cooldownRef = useRef(null);
+
+    useEffect(() => {
+        const auth = getAuth();
+        if (!auth?.token || !auth?.user?.id) return;
+        if (isEmailVerified(auth.user)) {
+            setPendingEmailVerification(false);
+            router.replace("/account");
+            return;
+        }
+        setPendingToken(auth.token);
+        setMaskedEmail(maskEmail(auth.user.email || ""));
+        setStep("verify");
+    }, [router]);
 
     // --- Derived ---
     const nicknameError = getNicknameError(nickname);
@@ -170,6 +187,7 @@ export default function Registration() {
                     const token = data.access_token;
                     const expiresIn = data.expires_in;
                     setAuth(data.user, token, expiresIn);
+                    setPendingEmailVerification(true);
                     setPendingToken(token);
                     setMaskedEmail(maskEmail(emailTrimmed.toLowerCase()));
 
@@ -234,6 +252,15 @@ export default function Registration() {
                 setVerifyError(d.detail || "Неверный код");
                 return;
             }
+            const meRes = await apiFetch(`${API_PREFIX}/me`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${pendingToken}` },
+            });
+            if (meRes.ok) {
+                const freshUser = await meRes.json();
+                updateAuthUser(freshUser);
+            }
+            setPendingEmailVerification(false);
             router.push("/account");
         } catch {
             setVerifyError("Не удалось проверить код");
@@ -354,26 +381,6 @@ export default function Registration() {
                         )}
                     </div>
 
-                    <div className={styles.loginRow} style={{ marginTop: 8 }}>
-                        <span
-                            className="subtitle_2 linkStub"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => router.push("/account")}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    router.push("/account");
-                                }
-                            }}
-                            style={{
-                                color: "var(--grayscale-white)",
-                                cursor: "pointer",
-                            }}
-                        >
-                            Пропустить
-                        </span>
-                    </div>
                 </div>
             </div>
         );

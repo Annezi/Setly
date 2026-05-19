@@ -25,9 +25,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# local env files (шаблон .env.example можно коммитить)
 .env
+.env.*
+!.env.example
+.env*.local
 
 # vercel
 .vercel

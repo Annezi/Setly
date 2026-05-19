@@ -1,43 +1,5 @@
 /* Страница статьи по макету Figma */
 
-.main {
-  width: 100%;
-  min-height: 100vh;
-  background-color: var(--grayscale-white);
-  padding-bottom: 40px;
-}
-
-/* Хлебные крошки: кнопка «Назад» */
-.breadcrumb {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 20px;
-  margin-top: 24px;
-  text-decoration: none;
-  color: var(--grayscale-dark-gray);
-}
-
-.breadcrumb:hover {
-  color: var(--grayscale-dark-gray);
-}
-
-.breadcrumbIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--grayscale-white);
-  box-shadow: 0 0 1px rgba(83, 83, 83, 0.25), 0 0 10px 4px rgba(209, 209, 209, 0.25);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.breadcrumbText {
-  color: var(--grayscale-dark-gray);
-}
-
 /* Hero: изображение слева, инфо справа */
 .hero {
   display: flex;
@@ -389,11 +351,6 @@
 }
 
 @media (max-width: 768px) {
-  .breadcrumb {
-    margin-left: 16px;
-    margin-top: 16px;
-  }
-
   .hero {
     margin-top: 24px;
     padding: 0;

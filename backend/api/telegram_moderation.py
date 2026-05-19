@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import traceback
 from datetime import datetime
+from functools import partial
 from html import escape as esc
 from typing import Any
 from urllib.parse import quote
@@ -22,6 +24,10 @@ from api.admin import _write_audit
 
 TELEGRAM_TEXT_LIMIT = 4096
 TELEGRAM_CAPTION_LIMIT = 1024
+TELEGRAM_PHOTO_MAX_BYTES = 10 * 1024 * 1024
+
+# Каталог загрузок API (тот же, что в main.py → /storage)
+STORAGE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage")
 
 # callback_data: a1/r1 = шаг подтверждения, a2/r2 = исполнение, c0 = отмена; :{plan_pk}
 _CB_APPROVE_1 = "a1:"  # запрос «уверены?» для одобрения
@@ -87,6 +93,74 @@ def resolve_image_url_for_telegram(url: str) -> str:
     if u.startswith("/"):
         return f"{api}{u}"
     return f"{api}/storage/{u}"
+
+
+def _mime_for_filename(name: str) -> str:
+    ext = os.path.splitext(name or "")[1].lower()
+    return {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }.get(ext, "image/jpeg")
+
+
+def _local_storage_path(image_ref: str) -> str | None:
+    """Путь к файлу в backend/storage, если image_ref указывает на /storage/…"""
+    u = (image_ref or "").strip()
+    if not u:
+        return None
+    rel: str | None = None
+    if "/storage/" in u:
+        rel = u.split("/storage/", 1)[1].split("?", 1)[0]
+    elif u.startswith("/storage/"):
+        rel = u[len("/storage/") :].split("?", 1)[0]
+    elif not u.startswith(("http://", "https://", "/img/", "/icons/")) and "/" not in u:
+        rel = u
+    if not rel:
+        return None
+    rel = rel.replace("\\", "/").strip("/")
+    if ".." in rel.split("/"):
+        return None
+    path = os.path.normpath(os.path.join(STORAGE_DIR, rel))
+    storage_root = os.path.normpath(STORAGE_DIR)
+    if not path.startswith(storage_root + os.sep) and path != storage_root:
+        return None
+    return path if os.path.isfile(path) else None
+
+
+def _load_photo_bytes(image_ref: str) -> tuple[str, bytes, str] | None:
+    """
+    Читает обложку с диска или скачивает по публичному URL (с нашего API/сайта).
+    Telegram часто не может сам скачать api.setly.space («failed to get HTTP URL content»).
+    """
+    local = _local_storage_path(image_ref)
+    if local:
+        with open(local, "rb") as f:
+            data = f.read()
+        name = os.path.basename(local)
+        return name, data, _mime_for_filename(name)
+
+    url = resolve_image_url_for_telegram(image_ref)
+    if not url:
+        return None
+    try:
+        resp = requests.get(url, timeout=45)
+    except Exception as e:
+        print(f"telegram photo download error: {e} url={url}", flush=True)
+        return None
+    if resp.status_code != 200 or not resp.content:
+        print(
+            f"telegram photo download HTTP {resp.status_code} for {url}",
+            flush=True,
+        )
+        return None
+    name = os.path.basename(url.split("?", 1)[0]) or "cover.jpg"
+    ct = (resp.headers.get("content-type") or "").split(";", 1)[0].strip()
+    if not ct.startswith("image/"):
+        ct = _mime_for_filename(name)
+    return name, resp.content, ct
 
 
 def _format_list_block(title: str, rows: list[Any], fmt_row) -> list[str]:
@@ -260,13 +334,27 @@ def _split_telegram_chunks(text: str, limit: int = TELEGRAM_TEXT_LIMIT) -> list[
     return chunks
 
 
-def _tg_post(method: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+def _tg_post(
+    method: str,
+    payload: dict[str, Any],
+    *,
+    files: dict[str, tuple] | None = None,
+) -> dict[str, Any] | None:
     token = _env_token()
     if not token:
         return None
     url = f"https://api.telegram.org/bot{token}/{method}"
     try:
-        r = requests.post(url, json=payload, timeout=90)
+        if files:
+            form: dict[str, Any] = {}
+            for key, value in payload.items():
+                if key == "reply_markup" and isinstance(value, dict):
+                    form[key] = json.dumps(value, ensure_ascii=False)
+                else:
+                    form[key] = value
+            r = requests.post(url, data=form, files=files, timeout=90)
+        else:
+            r = requests.post(url, json=payload, timeout=90)
         data = r.json()
         if not data.get("ok"):
             # Частая причина «крутится кнопка» — answerCallbackQuery не дошёл или токен от другого бота
@@ -278,8 +366,13 @@ def _tg_post(method: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
 
-async def _tg_post_async(method: str, payload: dict[str, Any]) -> dict[str, Any] | None:
-    return await asyncio.to_thread(_tg_post, method, payload)
+async def _tg_post_async(
+    method: str,
+    payload: dict[str, Any],
+    *,
+    files: dict[str, tuple] | None = None,
+) -> dict[str, Any] | None:
+    return await asyncio.to_thread(partial(_tg_post, method, payload, files=files))
 
 
 def _initial_keyboard(plan_pk: int) -> dict[str, Any]:
@@ -315,6 +408,31 @@ def _confirm_reject_keyboard(plan_pk: int) -> dict[str, Any]:
     }
 
 
+async def _send_photo_message(
+    chat_id: str,
+    caption: str,
+    keyboard: dict[str, Any],
+    photo_ref: str,
+) -> bool:
+    """Отправляет фото в Telegram (multipart), без зависимости от скачивания URL ботом."""
+    loaded = await asyncio.to_thread(_load_photo_bytes, photo_ref)
+    if not loaded:
+        return False
+    name, data, mime = loaded
+    if len(data) > TELEGRAM_PHOTO_MAX_BYTES:
+        print(f"telegram photo too large ({len(data)} bytes), skip", flush=True)
+        return False
+    payload = {
+        "chat_id": chat_id,
+        "caption": caption,
+        "parse_mode": "HTML",
+        "reply_markup": keyboard,
+    }
+    files = {"photo": (name, data, mime)}
+    res = await _tg_post_async("sendPhoto", payload, files=files)
+    return bool(res and res.get("ok"))
+
+
 async def _send_messages_for_checkplan(
     chat_id: str,
     caption_short: str,
@@ -328,21 +446,29 @@ async def _send_messages_for_checkplan(
         cap = caption_short
         if len(cap) > TELEGRAM_CAPTION_LIMIT:
             cap = cap[: TELEGRAM_CAPTION_LIMIT - 20] + "\n…(см. текст ниже)"
-        res = await _tg_post_async(
-            "sendPhoto",
-            {
-                "chat_id": chat_id,
-                "photo": photo_url,
-                "caption": cap,
-                "parse_mode": "HTML",
-                "reply_markup": keyboard,
-            },
-        )
-        if res and res.get("ok"):
+        if await _send_photo_message(chat_id, cap, keyboard, photo_url):
             await _send_chunked_html(chat_id, full_html, reply_markup=None)
             return
-        # fallback: отправить без фото
-        print("sendPhoto failed, falling back to text", flush=True)
+        # Запасной вариант: URL (если multipart не удался)
+        resolved = resolve_image_url_for_telegram(photo_url)
+        if resolved:
+            res = await _tg_post_async(
+                "sendPhoto",
+                {
+                    "chat_id": chat_id,
+                    "photo": resolved,
+                    "caption": cap,
+                    "parse_mode": "HTML",
+                    "reply_markup": keyboard,
+                },
+            )
+            if res and res.get("ok"):
+                await _send_chunked_html(chat_id, full_html, reply_markup=None)
+                return
+        print(
+            f"sendPhoto failed (ref={photo_url!r}, resolved={resolved!r}), falling back to text",
+            flush=True,
+        )
 
     await _tg_post_async(
         "sendMessage",

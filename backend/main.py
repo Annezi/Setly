@@ -109,7 +109,6 @@ _CORS_ORIGINS_STR = os.getenv(
 CORS_ORIGINS = [o.strip() for o in _CORS_ORIGINS_STR.split(",") if o.strip()]
 _DEFAULT_CORS_ORIGIN_REGEX = (
     r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
-    r"|^https?://(?:\d{1,3}\.){3}\d{1,3}(:\d+)?$"
     r"|^https://([a-z0-9-]+\.)?setly\.space$"
 )
 CORS_ORIGIN_REGEX = (

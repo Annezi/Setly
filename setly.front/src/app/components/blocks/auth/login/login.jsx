@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
 import Input from "../../../atomic/molecules/input/input";
 import { setAuth } from "@/app/lib/auth-storage";
+import {
+    getEmailVerificationPath,
+    isEmailVerified,
+    setPendingEmailVerification,
+} from "@/app/lib/email-verification";
 import { apiFetch } from "@/app/lib/api";
 import styles from "./login.module.css";
 import checkplanStyles from "@/app/create-checkplan/create-checkplan.module.css";
@@ -69,6 +74,12 @@ export default function Login() {
             if (!access_token || !user?.id) return;
             setAuth(user, access_token, expires_in);
             setShow2FAModal(false);
+            if (!isEmailVerified(user)) {
+                setPendingEmailVerification(true);
+                router.push(getEmailVerificationPath());
+                return;
+            }
+            setPendingEmailVerification(false);
             router.push("/account");
         },
         [router],

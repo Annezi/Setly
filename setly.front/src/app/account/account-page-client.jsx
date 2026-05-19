@@ -6,6 +6,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Header } from '@/app/components/globals/header/Header';
 import { Footer } from '@/app/components/globals/footer/Footer';
 import { getAuth, updateAuthUser, clearAuth } from '@/app/lib/auth-storage';
+import {
+  getEmailVerificationPath,
+  isEmailVerified,
+} from '@/app/lib/email-verification';
 import { apiFetch } from '@/app/lib/api';
 import { buildProfilePublicPath } from '@/app/lib/slug';
 import { parseProfilePublicRef } from '@/app/lib/slug';
@@ -58,6 +62,10 @@ function refreshUser(token, setUser, router) {
       return r.ok ? r.json() : null;
     })
     .then((user) => {
+      if (user && !isEmailVerified(user)) {
+        router?.replace?.(getEmailVerificationPath());
+        return;
+      }
       setUser(user);
       if (user) updateAuthUser(user);
     })
@@ -89,6 +97,10 @@ export default function AccountPageClient() {
         router.replace('/login');
         return;
       }
+      if (!isEmailVerified(auth.user)) {
+        router.replace(getEmailVerificationPath());
+        return;
+      }
       const rafId = requestAnimationFrame(() => {
         setUser(auth.user);
         setAuthChecked(true);
@@ -107,6 +119,10 @@ export default function AccountPageClient() {
     });
 
     if (isOwnPublicProfile && auth?.token) {
+      if (!isEmailVerified(auth.user)) {
+        router.replace(getEmailVerificationPath());
+        return () => cancelAnimationFrame(rafId);
+      }
       const ownProfileRafId = requestAnimationFrame(() => {
         setUser(auth.user);
       });
@@ -124,7 +140,7 @@ export default function AccountPageClient() {
       .then((r) => (r.ok ? r.json() : null))
       .then((publicUser) => {
         if (!publicUser) {
-          router.replace('/account');
+          router.replace(auth?.user?.id ? '/account' : '/check-plans');
           return;
         }
         const initialCreatedPlansCount = Number(publicUser.created_plans_count);

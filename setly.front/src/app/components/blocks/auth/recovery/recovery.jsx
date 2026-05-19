@@ -159,8 +159,10 @@ export default function Recovery() {
                 setOtpError(data.detail || "Неверный код");
                 return;
             }
-            // redirect to newpass with token
-            router.push(`/newpass?token=${encodeURIComponent(data.token)}`);
+            if (typeof window !== "undefined" && data.token) {
+                sessionStorage.setItem("setly_password_reset_token", data.token);
+            }
+            router.push("/newpass");
         } catch {
             setOtpError("Не удалось проверить код");
         } finally {

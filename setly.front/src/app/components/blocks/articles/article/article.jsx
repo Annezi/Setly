@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
@@ -12,10 +11,12 @@ import OurExperience from '@/app/components/blocks/main/our-experience/our-exper
 import ScrollReveal from '@/app/components/globals/scroll-reveal/scroll-reveal';
 import ErrorStateSection from '@/app/components/globals/error-state/error-state-section';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
+import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
 import PageBackLink from '@/app/components/globals/page-back-link/page-back-link';
 import { getAuth } from '@/app/lib/auth-storage';
 import { getArticleByIdOrSlug } from '@/data/articles-data';
 import { applyTypograf } from '@/app/lib/typograf';
+import checkplanPageStyles from '@/app/create-checkplan/create-checkplan.module.css';
 import styles from './article.module.css';
 
 /** Тостер «Ссылка на статью скопирована»: по центру экрана, 2 сек */
@@ -66,19 +67,19 @@ export default function Article({ articleId }) {
     return (
       <>
         <Header />
-        <main className={styles.main}>
-          <ScrollReveal delay={50}>
+        <div className="container createCheckplanPage">
+          <div className={`${checkplanPageStyles.wrapper} ${checkplanPageStyles.wrapperPreview}`}>
             <PageBackLink href="/articles" ariaLabel="Назад к списку статей" />
-          </ScrollReveal>
-          <ScrollReveal delay={90}>
-            <ErrorStateSection
-              title="Статья не найдена"
-              buttonText="Вернуться к списку статей"
-              onButtonClick={() => router.push('/articles')}
-              titleId="article-not-found-title"
-            />
-          </ScrollReveal>
-        </main>
+            <ScrollReveal delay={90}>
+              <ErrorStateSection
+                title="Статья не найдена"
+                buttonText="Вернуться к списку статей"
+                onButtonClick={() => router.push('/articles')}
+                titleId="article-not-found-title"
+              />
+            </ScrollReveal>
+          </div>
+        </div>
         <ScrollReveal delay={130}>
           <Footer />
         </ScrollReveal>
@@ -91,12 +92,11 @@ export default function Article({ articleId }) {
   return (
     <>
       <Header />
-      <main className={styles.main}>
-        <ScrollReveal delay={50}>
+      <div className="container createCheckplanPage">
+        <div className={`${checkplanPageStyles.wrapper} ${checkplanPageStyles.wrapperPreview}`}>
           <PageBackLink href="/articles" ariaLabel="Назад к списку статей" />
-        </ScrollReveal>
 
-        <ScrollReveal delay={90}>
+          <ScrollReveal delay={90}>
           <section className={styles.hero} aria-label="Заголовок статьи">
             <div className={styles.heroImageWrap}>
               <Image
@@ -252,7 +252,8 @@ export default function Article({ articleId }) {
         <ScrollReveal delay={180}>
           <OurExperience />
         </ScrollReveal>
-      </main>
+        </div>
+      </div>
       <ScrollReveal delay={220}>
         <Footer />
       </ScrollReveal>

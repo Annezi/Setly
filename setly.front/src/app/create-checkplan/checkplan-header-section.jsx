@@ -56,7 +56,12 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 
 	return (
 		<>
-			<PageBackLink href={backHref} ariaLabel={backAriaLabel} label={backLabel} />
+			<PageBackLink
+				href={backHref}
+				ariaLabel={backAriaLabel}
+				label={backLabel}
+				layout="checkplan"
+			/>
 
 			<div className={styles.topRow}>
 				<div className={`${styles.card} ${readOnly ? styles.cardReadOnly : ""}`} data-main-info-card>

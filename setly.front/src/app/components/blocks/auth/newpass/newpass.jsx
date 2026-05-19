@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
 import Input from "../../../atomic/molecules/input/input";
 import { apiFetch } from "@/app/lib/api";
+import {
+  clearPasswordResetToken,
+  readPasswordResetToken,
+} from "@/app/lib/password-reset-token";
 import styles from "./newpass.module.css";
 
 const API_PREFIX = "/api/user";
@@ -51,7 +55,15 @@ function getPasswordError(value) {
 export default function NewPassword() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = useMemo(() => (searchParams.get("token") || "").trim(), [searchParams]);
+  const [token, setToken] = useState("");
+
+  useEffect(() => {
+    const t = readPasswordResetToken(searchParams);
+    setToken(t);
+    if (typeof window !== "undefined" && searchParams.get("token")) {
+      window.history.replaceState({}, "", "/newpass");
+    }
+  }, [searchParams]);
 
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
@@ -99,6 +111,8 @@ export default function NewPassword() {
           return;
         }
 
+        clearPasswordResetToken();
+        setToken("");
         setSuccessMessage("Пароль успешно обновлен. Теперь вы можете войти.");
         setPassword("");
         setPasswordAgain("");

@@ -24,6 +24,7 @@ from api.schemas.user import (
     Token,
     TotpSetupResponse,
     TotpToggleRequest,
+    DeleteAccountRequest,
     UserCreate,
     UserLogin,
     UserOgPreview,
@@ -33,7 +34,13 @@ from api.schemas.user import (
     UserResponse,
     UserUpdate,
 )
-from auth import create_access_token, get_current_user, hash_password, verify_password
+from auth import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    require_email_verified,
+    verify_password,
+)
 from database.database import get_session
 from database.models import (
     CheckPlan,
@@ -82,6 +89,7 @@ RATE_LIMITS = {
     "recovery_otp_confirm": 10,
     "login_otp_request": 8,
     "login_otp_verify": 10,
+    "checkplan_data_create": 60,
 }
 PASSWORD_RESET_TOKEN_TTL_MINUTES = int(
     os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "1440")
@@ -372,7 +380,7 @@ async def password_recovery_request(
 @router.post("/me/2fa/setup", response_model=TotpSetupResponse)
 async def setup_totp(
     request: Request,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     await enforce_rate_limit(request, "totp_setup", RATE_LIMITS["totp_setup"])
@@ -401,7 +409,7 @@ async def setup_totp(
 async def enable_totp(
     request: Request,
     data: TotpToggleRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     await enforce_rate_limit(request, "totp_enable", RATE_LIMITS["totp_enable"])
@@ -432,7 +440,7 @@ async def enable_totp(
 async def disable_totp(
     request: Request,
     data: TotpToggleRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     await enforce_rate_limit(request, "totp_disable", RATE_LIMITS["totp_disable"])
@@ -533,7 +541,7 @@ async def public_profile_for_og(
     """
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if user is None:
+    if user is None or not user.email_is_verified:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
@@ -552,7 +560,7 @@ async def public_profile_full(
     """Публичные данные профиля для страницы профиля (без email и приватных полей)."""
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if user is None:
+    if user is None or not user.email_is_verified:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
@@ -581,8 +589,9 @@ async def public_profile_checkplans(
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Публичные чек-планы пользователя (приватные исключаются)."""
-    user_result = await session.execute(select(User.id).where(User.id == user_id))
-    if user_result.scalar_one_or_none() is None:
+    user_result = await session.execute(select(User).where(User.id == user_id))
+    profile_user = user_result.scalar_one_or_none()
+    if profile_user is None or not profile_user.email_is_verified:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
@@ -616,7 +625,7 @@ async def me(
 @router.patch("/me", response_model=UserResponse)
 async def me_update(
     data: UserUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Обновить профиль текущего пользователя (фото/фон/никнейм/почта/пароль)."""
@@ -705,6 +714,33 @@ async def me_update(
     return current_user
 
 
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def me_delete(
+    data: DeleteAccountRequest,
+    current_user: Annotated[User, Depends(require_email_verified)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Удалить текущий аккаунт (требуется пароль)."""
+    if not verify_password(data.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Спокойно. Пароли не совпадают",
+        )
+    user_id = current_user.id
+    plans_result = await session.execute(
+        select(CheckPlan).where(CheckPlan.author_id == user_id)
+    )
+    for plan in plans_result.scalars().all():
+        await session.delete(plan)
+    for model in (UserLikes, UserCheckPlan, UserPinnedCheckPlan, PasswordResetToken):
+        rows = await session.execute(select(model).where(model.user_id == user_id))
+        for row in rows.scalars().all():
+            await session.delete(row)
+    await session.delete(current_user)
+    await session.commit()
+    return None
+
+
 # ---------- /me/save-image/{category} ----------
 
 # Директория storage (та же, что в main.py)
@@ -712,12 +748,25 @@ _STORAGE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "storage"
 )
 _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+_MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+
+
+def _validate_image_magic(content: bytes, ext: str) -> bool:
+    if ext in (".jpg", ".jpeg") and content[:3] == b"\xff\xd8\xff":
+        return True
+    if ext == ".png" and content[:8] == b"\x89PNG\r\n\x1a\n":
+        return True
+    if ext == ".gif" and content[:6] in (b"GIF87a", b"GIF89a"):
+        return True
+    if ext == ".webp" and len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return True
+    return False
 
 
 @router.post("/me/save-image/{category}/")
 async def me_save_image(
     category: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     file: Annotated[
         UploadFile, File(..., description="Файл изображения (поле form: file)")
     ],
@@ -753,6 +802,16 @@ async def me_save_image(
     file_path = os.path.join(category_dir, unique_name)
 
     content = await file.read()
+    if len(content) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Файл слишком большой",
+        )
+    if not _validate_image_magic(content, ext):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Недопустимый формат изображения",
+        )
     with open(file_path, "wb") as f:
         f.write(content)
 
@@ -771,7 +830,7 @@ async def me_save_image(
 
 @router.get("/me/likes", response_model=MeLikesResponse)
 async def me_likes(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Список id чеклистов, которые пользователь лайкнул."""
@@ -785,7 +844,7 @@ async def me_likes(
 @router.post("/me/likes", status_code=status.HTTP_201_CREATED)
 async def me_likes_add(
     data: LikeCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Добавить лайк чеклисту."""
@@ -810,7 +869,7 @@ async def me_likes_add(
 @router.delete("/me/likes/{checklist_id}")
 async def me_likes_remove(
     checklist_id: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Убрать лайк с чеклиста."""
@@ -837,7 +896,7 @@ async def me_likes_remove(
 
 @router.get("/me/checkplans", response_model=MeCheckplansResponse)
 async def me_checkplans(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Список id_str чек-планов пользователя (без дубликатов)."""
@@ -859,7 +918,7 @@ async def me_checkplans(
 @router.post("/me/checkplans", status_code=status.HTTP_201_CREATED)
 async def me_checkplans_add(
     data: CheckplanCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Добавить чек-план пользователю."""
@@ -884,7 +943,7 @@ async def me_checkplans_add(
 @router.delete("/me/checkplans/{id_str}")
 async def me_checkplans_remove(
     id_str: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Удалить чек-план у пользователя."""
@@ -909,7 +968,7 @@ async def me_checkplans_remove(
 @router.post("/me/checkplans/{id_str}/pin", status_code=status.HTTP_201_CREATED)
 async def me_checkplans_pin(
     id_str: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Закрепить свой чек-план (максимум 6)."""
@@ -960,7 +1019,7 @@ async def me_checkplans_pin(
 @router.delete("/me/checkplans/{id_str}/pin")
 async def me_checkplans_unpin(
     id_str: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Открепить свой чек-план."""
@@ -985,7 +1044,7 @@ async def me_checkplans_unpin(
 @router.patch("/me/checkplans/pinned/order")
 async def me_checkplans_pinned_order(
     data: PinnedCheckplansOrderUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Переупорядочить закреплённые чек-планы пользователя."""

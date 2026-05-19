@@ -121,11 +121,6 @@ async def get_current_user(
     result = await session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        import sys
-
-        print(
-            f"JWT 401: User not found (user_id={user_id})", file=sys.stderr, flush=True
-        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
@@ -155,6 +150,18 @@ async def get_current_user_optional(
         return None
     result = await session.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
+
+
+async def require_email_verified(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> User:
+    """Действия профиля и создание контента — только после подтверждения почты."""
+    if not current_user.email_is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="email_not_verified",
+        )
+    return current_user
 
 
 async def require_admin(

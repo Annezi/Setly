@@ -14,8 +14,12 @@ export default function PageBackLink({
 	ariaLabel = "Назад",
 	label = "Назад",
 	className = "",
+	/** "checkplan" — в потоке наверху при ширине < 1260px; иначе брейкпоинт 768px */
+	layout = "default",
 }) {
-	const rootClassName = [styles.root, className].filter(Boolean).join(" ");
+	const layoutClass =
+		layout === "checkplan" ? styles.layoutCheckplan : styles.layoutDefault;
+	const rootClassName = [styles.root, layoutClass, className].filter(Boolean).join(" ");
 
 	const content = (
 		<>

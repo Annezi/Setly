@@ -5,9 +5,8 @@ from pydantic import BaseModel
 
 
 class CheckPlanCreate(BaseModel):
-    """Тело запроса создания чек-плана."""
+    """Тело запроса создания чек-плана (author_id и initial_likes задаёт сервер)."""
     id_str: str
-    author_id: int
     image_src: str = ""
     image_alt: str = ""
     days: str = ""
@@ -16,7 +15,6 @@ class CheckPlanCreate(BaseModel):
     title: str = ""
     description: str = ""
     visibility: str = "public"
-    initial_likes: int = 0
     check_plan_data_id: int = 0
     filter_tag: str = "По городам"
     region_tag: str | None = None
@@ -34,7 +32,6 @@ class CheckPlanUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     visibility: str | None = None
-    initial_likes: int | None = None
     check_plan_data_id: int | None = None
     filter_tag: str | None = None
     region_tag: str | None = None

@@ -7,6 +7,10 @@ import PageBackLink from "@/app/components/globals/page-back-link/page-back-link
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import Input from "@/app/components/atomic/molecules/input/input";
 import { getAuth, setAuth, clearAuth } from "@/app/lib/auth-storage";
+import {
+  getEmailVerificationPath,
+  isEmailVerified,
+} from "@/app/lib/email-verification";
 import { apiFetch } from "@/app/lib/api";
 import styles from "./settings.module.css";
 
@@ -77,6 +81,10 @@ export default function Settings() {
     const auth = getAuth();
     if (!auth?.user?.id) {
       router.replace("/login");
+      return;
+    }
+    if (!isEmailVerified(auth.user)) {
+      router.replace(getEmailVerificationPath());
       return;
     }
     setAuthChecked(true);
@@ -314,14 +322,13 @@ export default function Settings() {
     }
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
+      const res = await apiFetch("/api/user/me", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: deletePassword }),
+        body: { current_password: deletePassword },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setDeletePasswordError(data.message || "Ошибка удаления");
+        setDeletePasswordError(data.detail || data.message || "Ошибка удаления");
         setIsDeleting(false);
         return;
       }

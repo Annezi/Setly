@@ -27,10 +27,9 @@ export default function useAdminGuard() {
       .catch((err) => {
         if (err.status === 401 || err.status === 403) {
           router.replace("/login");
-        } else {
-          // Network error or unexpected — still allow access but stop loading
-          setLoading(false);
+          return;
         }
+        router.replace("/login");
       });
   }, [router]);
 

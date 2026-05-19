@@ -41,6 +41,12 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DeleteAccountRequest(BaseModel):
+    """Удаление аккаунта (требуется текущий пароль)."""
+
+    current_password: str = Field(..., min_length=1)
+
+
 class UserUpdate(BaseModel):
     """Обновление профиля (только перечисленные поля)."""
 

@@ -11,6 +11,7 @@ import Input from "@/app/components/atomic/molecules/input/input";
 import ImageCropModal from "@/app/components/globals/image-crop-modal/image-crop-modal";
 import styles from "./creating.module.css";
 import { getAuth } from "@/app/lib/auth-storage";
+import { getEmailVerificationPath } from "@/app/lib/email-verification";
 import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 
@@ -166,6 +167,10 @@ export default function Creating() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         const detail = data?.detail;
+        if (res.status === 403 && detail === "email_not_verified") {
+          router.push(getEmailVerificationPath());
+          throw new Error("Подтвердите почту, чтобы создавать чек-планы");
+        }
         const message = Array.isArray(detail) ? detail[0]?.msg : (typeof detail === "string" ? detail : data?.message) || "Не удалось создать чек-план";
         throw new Error(message);
       }

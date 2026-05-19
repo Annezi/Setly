@@ -27,8 +27,9 @@ services:
     database:
         image: postgres:17
         container_name: setly_database
-        ports:
-            - "5435:5432"
+        # БД только внутри docker-сети (не публиковать на хост)
+        expose:
+            - "5432"
         environment:
             POSTGRES_USER: ${POSTGRES_USER:-postgres}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -69,8 +70,6 @@ services:
             - ./.env
         # ports:
         #   - "8999:8000"
-        volumes:
-            - ./backend:/app
         environment:
             POSTGRES_USER: ${POSTGRES_USER:-postgres}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -79,9 +78,11 @@ services:
             CORS_ORIGINS: ${CORS_ORIGINS:-what}
             JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
             REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+            TRUST_PROXY: "true"
         networks:
             - setly_network
-        command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+        restart: unless-stopped
+        command: uvicorn main:app --host 0.0.0.0 --port 8000
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.setly-api-https.rule=Host(`api.setly.space`)"
@@ -94,6 +95,12 @@ services:
             - "traefik.http.routers.setly-api-http.middlewares=redirect-to-https"
             - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
             - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+            - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
+            - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
+            - "traefik.http.middlewares.secure-headers.headers.frameDeny=true"
+            - "traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true"
+            - "traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+            - "traefik.http.routers.setly-api-https.middlewares=secure-headers"
             - "traefik.http.services.setly-api-svc.loadbalancer.server.port=8000"
 
     setly-front:
@@ -120,6 +127,7 @@ services:
             - "traefik.http.routers.setly-front-https.entrypoints=websecure"
             - "traefik.http.routers.setly-front-https.tls=true"
             - "traefik.http.routers.setly-front-https.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.setly-front-https.middlewares=secure-headers"
             - "traefik.http.routers.setly-front-https.service=setly-front-svc"
             - "traefik.http.routers.setly-front-http.rule=Host(`setly.space`)"
             - "traefik.http.routers.setly-front-http.entrypoints=web"
@@ -148,6 +156,7 @@ services:
             - "traefik.http.routers.setly-admin-https.entrypoints=websecure"
             - "traefik.http.routers.setly-admin-https.tls=true"
             - "traefik.http.routers.setly-admin-https.tls.certresolver=letsencrypt"
+            - "traefik.http.routers.setly-admin-https.middlewares=secure-headers"
             - "traefik.http.routers.setly-admin-https.service=setly-admin-svc"
             - "traefik.http.routers.setly-admin-http.rule=Host(`admin.setly.space`)"
             - "traefik.http.routers.setly-admin-http.entrypoints=web"

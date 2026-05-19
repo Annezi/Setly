@@ -25,7 +25,7 @@ from api.schemas.check_plan import (
 
 import uuid
 
-from auth import get_current_user, get_current_user_optional
+from auth import get_current_user, get_current_user_optional, require_email_verified
 from api.check_plan_access import can_read_check_plan
 from api.telegram_moderation import moderation_telegram_enabled, notify_checkplan_moderation_submitted
 
@@ -309,7 +309,7 @@ async def get_check_plan(
 async def create_check_plan(
     data: CheckPlanCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     background_tasks: BackgroundTasks,
 ):
     """Создать чек-план."""
@@ -347,7 +347,7 @@ async def create_check_plan(
         title=data.title,
         description=data.description,
         visibility=data.visibility,
-        initial_likes=data.initial_likes,
+        initial_likes=0,
         check_plan_data_id=check_plan_data_id,
         filter_tag=data.filter_tag,
         region_tag=data.region_tag,
@@ -374,7 +374,7 @@ async def update_check_plan(
     id_str: str,
     data: CheckPlanUpdate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     background_tasks: BackgroundTasks,
 ):
     """Обновить чек-план (частично) по id_str. Только автор."""
@@ -407,8 +407,6 @@ async def update_check_plan(
         plan.description = data.description
     if data.visibility is not None:
         plan.visibility = data.visibility
-    if data.initial_likes is not None:
-        plan.initial_likes = data.initial_likes
     if data.check_plan_data_id is not None:
         plan.check_plan_data_id = data.check_plan_data_id
     if data.filter_tag is not None:
@@ -436,7 +434,7 @@ async def update_check_plan(
 @router.delete("/{id_str}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_check_plan(
     id_str: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Удалить чек-план по id_str. Только автор может удалить свой чек-план."""
@@ -464,7 +462,7 @@ async def delete_check_plan(
 @router.post("/{id_str}/copy", response_model=CheckPlanResponse, status_code=status.HTTP_201_CREATED)
 async def copy_check_plan(
     id_str: str,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     """Создать копию чек-плана с авторством текущего пользователя (приватный, 0 лайков)."""
@@ -534,7 +532,7 @@ async def copy_check_plan(
 @router.post("/custom/create", status_code=status.HTTP_201_CREATED)
 async def create_checkplan_custom(
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(require_email_verified)],
     data: CheckPlansCustomRequest
 ):
     unic_str = f"{uuid.uuid4().hex}"

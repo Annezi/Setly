@@ -2923,6 +2923,13 @@
 	}
 }
 
+/* Узкий экран чекплана: кнопка «Назад» в потоке (см. PageBackLink layout=checkplan) */
+@media (max-width: 1259px) {
+	.wrapper {
+		margin-top: 24px;
+	}
+}
+
 /* Мобильная адаптация (порядок блоков, обложка, тулбар, блоки «Куда сходить»/бюджет) */
 @media (max-width: 768px) {
 	.wrapper {

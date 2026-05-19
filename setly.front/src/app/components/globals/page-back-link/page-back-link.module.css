@@ -40,9 +40,9 @@
 	color: var(--grayscale-dark-gray);
 }
 
-/* Десктоп: фиксировано под логотипом, 60px ниже шапки */
+/* Десктоп (по умолчанию): фиксировано под логотипом, 60px ниже шапки */
 @media (min-width: 769px) {
-	.root {
+	.layoutDefault {
 		position: fixed;
 		top: calc(20px + 44px + 60px);
 		left: max(20px, calc((100vw - 1400px) / 2));
@@ -51,9 +51,28 @@
 	}
 }
 
-/* Мобильная: в потоке под шапкой, слева */
+/* Мобильная (по умолчанию): в потоке под шапкой */
 @media (max-width: 768px) {
-	.root {
+	.layoutDefault {
+		position: relative;
+		margin-top: 16px;
+		margin-bottom: 0;
+	}
+}
+
+/* Чекплан (preview / edit): фиксированная кнопка только от 1260px */
+@media (min-width: 1260px) {
+	.layoutCheckplan {
+		position: fixed;
+		top: calc(20px + 44px + 60px);
+		left: max(20px, calc((100vw - 1400px) / 2));
+		z-index: 45;
+		margin-bottom: 0;
+	}
+}
+
+@media (max-width: 1259px) {
+	.layoutCheckplan {
 		position: relative;
 		margin-top: 16px;
 		margin-bottom: 0;

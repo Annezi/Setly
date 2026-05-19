@@ -7,34 +7,76 @@ import struct
 import time
 from typing import List
 
+try:
+    from cryptography.fernet import Fernet, InvalidToken
+
+    _FERNET_AVAILABLE = True
+except ImportError:
+    Fernet = None  # type: ignore[misc, assignment]
+    InvalidToken = Exception  # type: ignore[misc, assignment]
+    _FERNET_AVAILABLE = False
+
 
 TOTP_TIME_STEP = 30
 TOTP_DIGITS = 6
 
 
-def _cipher_key() -> bytes:
+def _fernet_key_bytes() -> bytes:
+    raw = (os.getenv("TOTP_ENCRYPTION_KEY") or "").strip()
+    if raw:
+        try:
+            return raw.encode("utf-8")
+        except Exception:
+            pass
+    seed = (os.getenv("JWT_SECRET") or "totp-dev-key").encode("utf-8")
+    return base64.urlsafe_b64encode(hashlib.sha256(seed).digest())
+
+
+def _fernet() -> "Fernet":
+    if not _FERNET_AVAILABLE:
+        raise RuntimeError("cryptography package is not installed")
+    return Fernet(_fernet_key_bytes())
+
+
+def _xor_cipher_key() -> bytes:
     raw = (os.getenv("TOTP_ENCRYPTION_KEY") or os.getenv("JWT_SECRET") or "").encode("utf-8")
     if not raw:
         raise RuntimeError("TOTP_ENCRYPTION_KEY or JWT_SECRET is required")
     return hashlib.sha256(raw).digest()
 
 
-def encrypt_secret(raw_secret: str) -> str:
+def _xor_encrypt(raw_secret: str) -> str:
     data = raw_secret.encode("utf-8")
-    key = _cipher_key()
+    key = _xor_cipher_key()
     xored = bytes([b ^ key[i % len(key)] for i, b in enumerate(data)])
     return base64.urlsafe_b64encode(xored).decode("utf-8")
 
 
-def decrypt_secret(enc_secret: str) -> str:
+def _xor_decrypt(enc_secret: str) -> str:
     data = base64.urlsafe_b64decode(enc_secret.encode("utf-8"))
-    key = _cipher_key()
+    key = _xor_cipher_key()
     raw = bytes([b ^ key[i % len(key)] for i, b in enumerate(data)])
     return raw.decode("utf-8")
 
 
+def encrypt_secret(raw_secret: str) -> str:
+    if _FERNET_AVAILABLE:
+        return _fernet().encrypt(raw_secret.encode("utf-8")).decode("utf-8")
+    return _xor_encrypt(raw_secret)
+
+
+def decrypt_secret(enc_secret: str) -> str:
+    if not enc_secret:
+        return ""
+    if _FERNET_AVAILABLE:
+        try:
+            return _fernet().decrypt(enc_secret.encode("utf-8")).decode("utf-8")
+        except (InvalidToken, ValueError):
+            return _xor_decrypt(enc_secret)
+    return _xor_decrypt(enc_secret)
+
+
 def generate_totp_secret() -> str:
-    # Base32 string compatible with Google Authenticator
     return base64.b32encode(secrets.token_bytes(20)).decode("utf-8").replace("=", "")
 
 

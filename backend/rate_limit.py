@@ -12,13 +12,20 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 _redis_client: Optional[Redis] = None
 
 
+def _trust_proxy_headers() -> bool:
+    return os.getenv("TRUST_PROXY", "").strip().lower() in ("1", "true", "yes")
+
+
 def _resolve_client_ip(request: Request) -> str:
-    xff = request.headers.get("x-forwarded-for", "")
-    if xff:
-        first = xff.split(",")[0].strip()
-        if first:
-            return first
-    return request.client.host if request.client and request.client.host else "unknown"
+    if _trust_proxy_headers():
+        xff = request.headers.get("x-forwarded-for", "")
+        if xff:
+            first = xff.split(",")[0].strip()
+            if first:
+                return first
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
 
 
 def _rate_limit_key(scope: str, request: Request) -> str:
