@@ -3,9 +3,8 @@
 import { useCallback, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Button from "../../../atomic/atoms/buttons/buttons";
-import RoundButton from "../../../atomic/atoms/buttons-round/buttons-round";
 import Input from "../../../atomic/molecules/input/input";
-import PublicImage from "@/app/components/globals/public-image";
+import PageBackLink from "@/app/components/globals/page-back-link/page-back-link";
 import { apiFetch } from "@/app/lib/api";
 import { applyTypograf } from "@/app/lib/typograf";
 import styles from "./recovery.module.css";
@@ -186,38 +185,10 @@ export default function Recovery() {
         return (
             <div className={styles.wrapper}>
                 <div className={styles.orbBackground} aria-hidden />
+                <div className={styles.backLinkRow}>
+                    <PageBackLink onClick={handleBackToEmailStep} ariaLabel="Назад" />
+                </div>
                 <div className={styles.content}>
-                    <div
-                        className={styles.backRow}
-                        role="button"
-                        tabIndex={0}
-                        onClick={handleBackToEmailStep}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                handleBackToEmailStep();
-                            }
-                        }}
-                        aria-label="Назад"
-                    >
-                        <RoundButton
-                            variant="white"
-                            icon={
-                                <PublicImage
-                                    src="/icons/system/ArrowLeft.svg"
-                                    alt=""
-                                    width={12}
-                                    height={12}
-                                    style={{ color: "var(--grayscale-dark-gray)" }}
-                                />
-                            }
-                            aria-hidden
-                        />
-                        <span className={`subinfo ${styles.backRowText}`}>
-                            Назад
-                        </span>
-                    </div>
-
                     <h1 className={`${styles.title} title_1`}>
                         Восстановление пароля
                     </h1>

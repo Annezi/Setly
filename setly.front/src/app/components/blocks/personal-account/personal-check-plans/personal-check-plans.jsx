@@ -23,6 +23,9 @@ import styles from "./personal-check-plans.module.css";
 
 const API_PREFIX = "/api/user";
 
+/** FEATURE_DISABLED: закрепление и перетаскивание чек-планов на странице профиля — раскомментировать при включении фичи */
+const PIN_AND_REORDER_ENABLED = false;
+
 /** Преобразует ответ GET /api/check-plans/{id_str} в формат карточки для PersonalPlanCard */
 function planResponseToCard(apiPlan) {
   if (!apiPlan) return null;
@@ -94,12 +97,12 @@ function PersonalPlanCard({
         className={`${styles.cardSlot} ${isPinnedDragOver ? styles.cardSlotDragOver : ""}`}
         data-plan-slot-id={String(plan.id)}
         ref={slotRef}
-        onDragOver={(e) => onPinnedDragOver?.(e, plan)}
-        onDrop={(e) => onPinnedDrop?.(e, plan)}
+        onDragOver={PIN_AND_REORDER_ENABLED ? (e) => onPinnedDragOver?.(e, plan) : undefined}
+        onDrop={PIN_AND_REORDER_ENABLED ? (e) => onPinnedDrop?.(e, plan) : undefined}
       >
       <Link href={`/preview-checkplan/${encodeURIComponent(buildCheckplanPublicSegment({ title: plan.title, planDbId: plan.planDbId, id_str: plan.id }))}?from=account`} className={styles.cardLink} aria-label={`Открыть ${plan.title}`}>
     <article className={`${styles.card} ${plan.isPinned ? styles.cardPinned : ""} ${isPinnedDragSource ? styles.cardPinnedDragging : ""}`}>
-      {plan.isPinned && !isGuestView && (
+      {PIN_AND_REORDER_ENABLED && plan.isPinned && !isGuestView && (
         <button
           type="button"
           className={`${styles.pinMorphHandle} ${isPinHandleArmed ? styles.pinMorphHandleArmed : ""}`}
@@ -282,7 +285,11 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
       })
       .then((data) => {
         setApiIdStrs(Array.isArray(data?.id_strs) ? data.id_strs : []);
-        setPinnedIdStrs(Array.isArray(data?.pinned_id_strs) ? data.pinned_id_strs : []);
+        setPinnedIdStrs(
+          PIN_AND_REORDER_ENABLED && Array.isArray(data?.pinned_id_strs)
+            ? data.pinned_id_strs
+            : []
+        );
       })
       .catch((err) => {
         console.error("Error loading checkplans", err);
@@ -318,7 +325,10 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
           .map((p) => {
             const card = planResponseToCard(p);
             if (!card) return null;
-            return { ...card, isPinned: pinnedSet.has(String(card.id)) };
+            return {
+              ...card,
+              isPinned: PIN_AND_REORDER_ENABLED && pinnedSet.has(String(card.id)),
+            };
           })
           .filter(Boolean);
         setApiPlans(cards);
@@ -378,7 +388,7 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
   }, [token]);
 
   const handlePinnedDragStart = useCallback((e, plan) => {
-    if (!plan?.isPinned) return;
+    if (!PIN_AND_REORDER_ENABLED || !plan?.isPinned) return;
     e.stopPropagation();
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", String(plan.id));
@@ -599,6 +609,12 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
 
   const plans = useMemo(
     () => {
+      const visible = rawPlans.filter(
+        (plan) => !isGuestView || plan?.visibility === "public"
+      );
+      if (!PIN_AND_REORDER_ENABLED) {
+        return sortCheckPlansByIndex(visible, sortIndex, getLikeCount);
+      }
       const byId = new Map(rawPlans.map((plan) => [String(plan.id), plan]));
       const pinned = (pinnedIdStrs || [])
         .map((id) => byId.get(String(id)))
@@ -692,17 +708,23 @@ export default function PersonalCheckPlans({ userId, token, router, isGuestView 
               key={plan.id}
               plan={plan}
               isMobile={isMobileView}
-              isPinHandleArmed={plan.isPinned && String(plan.id) === activePinHandleId}
-              isPinnedDragSource={plan.isPinned && String(plan.id) === dragPinnedId}
-              isPinnedDragOver={plan.isPinned && String(plan.id) === dragOverPinnedId}
-              onPinHandleToggle={handlePinHandleToggle}
-              onPinnedDragStart={handlePinnedDragStart}
-              onPinnedDragEnd={handlePinnedDragEnd}
-              onPinnedDragOver={handlePinnedDragOver}
-              onPinnedDrop={handlePinnedDrop}
-              onPinnedPointerStart={handlePinnedPointerStart}
-              onPinnedPointerMove={handlePinnedPointerMove}
-              onPinnedPointerEnd={handlePinnedPointerEnd}
+              isPinHandleArmed={
+                PIN_AND_REORDER_ENABLED && plan.isPinned && String(plan.id) === activePinHandleId
+              }
+              isPinnedDragSource={
+                PIN_AND_REORDER_ENABLED && plan.isPinned && String(plan.id) === dragPinnedId
+              }
+              isPinnedDragOver={
+                PIN_AND_REORDER_ENABLED && plan.isPinned && String(plan.id) === dragOverPinnedId
+              }
+              onPinHandleToggle={PIN_AND_REORDER_ENABLED ? handlePinHandleToggle : undefined}
+              onPinnedDragStart={PIN_AND_REORDER_ENABLED ? handlePinnedDragStart : undefined}
+              onPinnedDragEnd={PIN_AND_REORDER_ENABLED ? handlePinnedDragEnd : undefined}
+              onPinnedDragOver={PIN_AND_REORDER_ENABLED ? handlePinnedDragOver : undefined}
+              onPinnedDrop={PIN_AND_REORDER_ENABLED ? handlePinnedDrop : undefined}
+              onPinnedPointerStart={PIN_AND_REORDER_ENABLED ? handlePinnedPointerStart : undefined}
+              onPinnedPointerMove={PIN_AND_REORDER_ENABLED ? handlePinnedPointerMove : undefined}
+              onPinnedPointerEnd={PIN_AND_REORDER_ENABLED ? handlePinnedPointerEnd : undefined}
               isGuestView={isGuestView}
               slotRef={(el) => {
                 const id = String(plan.id);

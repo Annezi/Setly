@@ -1,26 +1,27 @@
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import bcrypt
 import jwt
+from database.database import get_session
+from database.models import User
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-
-from database.database import get_session
-from database.models import User
 
 # Один и тот же секрет для выдачи и проверки токенов. Обязательно JWT_SECRET в .env (одинаковый на всех инстансах).
 SECRET_KEY = (os.getenv("JWT_SECRET") or "").strip()
 if not SECRET_KEY:
     raise RuntimeError("JWT_SECRET is required")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "43200"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login", auto_error=True)
-optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/login", auto_error=False)
+optional_oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/user/login", auto_error=False
+)
 
 # bcrypt принимает не более 72 байт; длинные пароли обрезаем
 BCRYPT_MAX_PASSWORD_BYTES = 72
@@ -70,6 +71,7 @@ def decode_access_token(token: str) -> dict:
         return payload
     except jwt.ExpiredSignatureError as e:
         import sys
+
         print(f"JWT 401: Token expired — {e}", file=sys.stderr, flush=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,13 +79,19 @@ def decode_access_token(token: str) -> dict:
         )
     except jwt.InvalidSignatureError as e:
         import sys
-        print(f"JWT 401: Invalid signature (token issued with different JWT_SECRET?) — {e}", file=sys.stderr, flush=True)
+
+        print(
+            f"JWT 401: Invalid signature (token issued with different JWT_SECRET?) — {e}",
+            file=sys.stderr,
+            flush=True,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token signature (check JWT_SECRET is the same as when token was issued)",
         )
     except jwt.InvalidTokenError as e:
         import sys
+
         print(f"JWT 401: Invalid token — {e}", file=sys.stderr, flush=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -114,7 +122,10 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if user is None:
         import sys
-        print(f"JWT 401: User not found (user_id={user_id})", file=sys.stderr, flush=True)
+
+        print(
+            f"JWT 401: User not found (user_id={user_id})", file=sys.stderr, flush=True
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",

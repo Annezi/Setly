@@ -1,0 +1,61 @@
+.root {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: none;
+	text-decoration: none;
+	cursor: pointer;
+	color: var(--grayscale-dark-gray);
+}
+
+.root:hover {
+	color: var(--grayscale-dark-gray);
+	opacity: 0.9;
+}
+
+.icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 100px;
+	background: var(--grayscale-white);
+	box-shadow: 0 0 10px 0 rgba(209, 209, 209, 0.25), 0 0 1px 0 rgba(83, 83, 83, 0.25);
+	flex-shrink: 0;
+}
+
+.iconImg {
+	width: 20px;
+	height: 20px;
+}
+
+.label {
+	font-size: 14px;
+	font-weight: 400;
+	letter-spacing: -0.42px;
+	color: var(--grayscale-dark-gray);
+}
+
+/* Десктоп: фиксировано под логотипом, 60px ниже шапки */
+@media (min-width: 769px) {
+	.root {
+		position: fixed;
+		top: calc(20px + 44px + 60px);
+		left: max(20px, calc((100vw - 1400px) / 2));
+		z-index: 45;
+		margin-bottom: 0;
+	}
+}
+
+/* Мобильная: в потоке под шапкой, слева */
+@media (max-width: 768px) {
+	.root {
+		position: relative;
+		margin-top: 16px;
+		margin-bottom: 0;
+	}
+}

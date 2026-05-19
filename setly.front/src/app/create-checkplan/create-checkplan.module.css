@@ -12,36 +12,8 @@
 	margin-right: auto;
 }
 
-/* Back link — ширина только по содержимому, чтобы кликабельная область не на всю ширину */
-.backRow {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	margin-bottom: 40px;
-}
-
-.backButton {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 36px;
-	border-radius: 100px;
-	background: var(--grayscale-white);
-	box-shadow: 0 0 10px 0 rgba(209, 209, 209, 0.25), 0 0 1px 0 rgba(83, 83, 83, 0.25);
-	border: none;
-	cursor: pointer;
-}
-
-.backButton:hover {
-	opacity: 0.9;
-}
-
-.backLabel {
-	font-size: 14px;
-	font-weight: 400;
-	letter-spacing: -0.42px;
-	color: var(--grayscale-dark-gray);
+.wrapperPreview {
+	padding: 0 0 40px;
 }
 
 /* Content section */
@@ -2960,8 +2932,8 @@
 		min-width: 0;
 	}
 
-	.backRow {
-		margin-bottom: 24px;
+	.wrapperPreview {
+		padding: 0 0 120px;
 	}
 
 	.contentSection {

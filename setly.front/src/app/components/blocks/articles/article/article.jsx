@@ -12,7 +12,7 @@ import OurExperience from '@/app/components/blocks/main/our-experience/our-exper
 import ScrollReveal from '@/app/components/globals/scroll-reveal/scroll-reveal';
 import ErrorStateSection from '@/app/components/globals/error-state/error-state-section';
 import Button from '@/app/components/atomic/atoms/buttons/buttons';
-import RoundButton from '@/app/components/atomic/atoms/buttons-round/buttons-round';
+import PageBackLink from '@/app/components/globals/page-back-link/page-back-link';
 import { getAuth } from '@/app/lib/auth-storage';
 import { getArticleByIdOrSlug } from '@/data/articles-data';
 import { applyTypograf } from '@/app/lib/typograf';
@@ -68,12 +68,7 @@ export default function Article({ articleId }) {
         <Header />
         <main className={styles.main}>
           <ScrollReveal delay={50}>
-            <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
-              <span className={styles.breadcrumbIcon} aria-hidden>
-                <Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />
-              </span>
-              <span className={`${styles.breadcrumbText} subinfo`}>Назад</span>
-            </Link>
+            <PageBackLink href="/articles" ariaLabel="Назад к списку статей" />
           </ScrollReveal>
           <ScrollReveal delay={90}>
             <ErrorStateSection
@@ -98,12 +93,7 @@ export default function Article({ articleId }) {
       <Header />
       <main className={styles.main}>
         <ScrollReveal delay={50}>
-          <Link href="/articles" className={styles.breadcrumb} aria-label="Назад к списку статей">
-            <span className={styles.breadcrumbIcon} aria-hidden>
-              <Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} />
-            </span>
-            <span className={`${styles.breadcrumbText} subinfo`}>Назад</span>
-          </Link>
+          <PageBackLink href="/articles" ariaLabel="Назад к списку статей" />
         </ScrollReveal>
 
         <ScrollReveal delay={90}>

@@ -2,10 +2,9 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
-import PublicImage from "@/app/components/globals/public-image";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import PageBackLink from "@/app/components/globals/page-back-link/page-back-link";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
 import { getAuth } from "@/app/lib/auth-storage";
 import { applyTypograf } from "@/app/lib/typograf";
@@ -140,26 +139,7 @@ export default function TestRunner({ test }) {
   return (
     <main className={styles.main}>
       <div className={styles.wrapper}>
-        <div
-          className={styles.backRow}
-          role="button"
-          tabIndex={0}
-          onClick={handleBackRoute}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleBackRoute();
-            }
-          }}
-          aria-label="Назад к тестам"
-        >
-          <RoundButton
-            variant="white"
-            icon={<PublicImage src="/icons/system/ArrowLeft.svg" alt="" width={12} height={12} />}
-            aria-hidden
-          />
-          <span className="subinfo">Назад</span>
-        </div>
+        <PageBackLink onClick={handleBackRoute} ariaLabel="Назад к тестам" />
 
         {phase === "intro" && (
           <section className={styles.intro} aria-label="Начало теста">

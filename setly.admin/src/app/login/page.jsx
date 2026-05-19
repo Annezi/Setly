@@ -36,7 +36,7 @@ function inputStyle(overrides = {}) {
 export default function LoginPage() {
     const router = useRouter();
 
-    // step: "credentials" | "otp"
+    // step: "credentials" | "method" | "otp" | "totp"
     const [step, setStep] = useState("credentials");
 
     // credentials step state
@@ -47,6 +47,10 @@ export default function LoginPage() {
     const [userId, setUserId] = useState(null);
     const [otp, setOtp] = useState("");
     const [cooldown, setCooldown] = useState(0);
+
+    // totp / method state
+    const [totpEnabled, setTotpEnabled] = useState(false);
+    const [totpCode, setTotpCode] = useState("");
 
     // shared
     const [loading, setLoading] = useState(false);
@@ -85,9 +89,17 @@ export default function LoginPage() {
         try {
             const data = await requestAdminOtp(email, password);
             setUserId(data.user_id);
+            setTotpEnabled(!!data.totp_enabled);
             setOtp("");
-            setStep("otp");
-            startCooldown();
+            setTotpCode("");
+            if (data.totp_enabled) {
+                // Email OTP was sent; show method picker so user can also choose TOTP app
+                setStep("method");
+                startCooldown();
+            } else {
+                setStep("otp");
+                startCooldown();
+            }
         } catch (err) {
             setError(err.message || "Неверный email или пароль");
         } finally {
@@ -95,7 +107,11 @@ export default function LoginPage() {
         }
     }
 
-    // ── Step 2 — OTP ────────────────────────────────────────────────────────────
+    // ── Step 2a — method picker (only when totpEnabled) ────────────────────────
+    // Selecting "Email" just advances to "otp" — the code is already in their inbox.
+    // Selecting "Приложение" advances to "totp".
+
+    // ── Step 2b — email OTP ────────────────────────────────────────────────────
 
     async function handleOtpSubmit(e) {
         e.preventDefault();
@@ -128,12 +144,50 @@ export default function LoginPage() {
         }
     }
 
+    // ── Step 2c — TOTP authenticator app ───────────────────────────────────────
+
+    async function handleTotpSubmit(e) {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+        try {
+            const res = await fetch("/api/admin/totp/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, totp_code: totpCode }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok)
+                throw Object.assign(new Error(data.detail || "Неверный код"), {
+                    status: res.status,
+                });
+            setToken(data.access_token);
+            router.replace("/");
+        } catch (err) {
+            setError(err.message || "Неверный код");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // ── Back navigation ─────────────────────────────────────────────────────────
+
     function handleBack() {
         if (cooldownRef.current) clearInterval(cooldownRef.current);
         setCooldown(0);
-        setStep("credentials");
         setOtp("");
+        setTotpCode("");
         setError("");
+        if (step === "method") {
+            setStep("credentials");
+        } else if (step === "otp") {
+            // If totp was enabled, the user came from "method"; otherwise from "credentials"
+            setStep(totpEnabled ? "method" : "credentials");
+        } else if (step === "totp") {
+            setStep("method");
+        } else {
+            setStep("credentials");
+        }
     }
 
     // ── Layout shell ────────────────────────────────────────────────────────────
@@ -202,7 +256,7 @@ export default function LoginPage() {
                         boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
                     }}
                 >
-                    {step === "credentials" ? (
+                    {step === "credentials" && (
                         <CredentialsStep
                             email={email}
                             setEmail={setEmail}
@@ -212,7 +266,24 @@ export default function LoginPage() {
                             error={error}
                             onSubmit={handleCredentialsSubmit}
                         />
-                    ) : (
+                    )}
+
+                    {step === "method" && (
+                        <MethodStep
+                            email={email}
+                            onPickEmail={() => {
+                                setError("");
+                                setStep("otp");
+                            }}
+                            onPickTotp={() => {
+                                setError("");
+                                setStep("totp");
+                            }}
+                            onBack={handleBack}
+                        />
+                    )}
+
+                    {step === "otp" && (
                         <OtpStep
                             email={email}
                             otp={otp}
@@ -222,6 +293,17 @@ export default function LoginPage() {
                             cooldown={cooldown}
                             onSubmit={handleOtpSubmit}
                             onResend={handleResend}
+                            onBack={handleBack}
+                        />
+                    )}
+
+                    {step === "totp" && (
+                        <TotpStep
+                            totpCode={totpCode}
+                            setTotpCode={setTotpCode}
+                            loading={loading}
+                            error={error}
+                            onSubmit={handleTotpSubmit}
                             onBack={handleBack}
                         />
                     )}
@@ -329,7 +411,184 @@ function CredentialsStep({
     );
 }
 
-// ── Step 2 component ──────────────────────────────────────────────────────────
+// ── Step 2 (method picker) component ─────────────────────────────────────────
+
+function MethodStep({ email, onPickEmail, onPickTotp, onBack }) {
+    return (
+        <>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 20,
+                }}
+            >
+                <button type="button" onClick={onBack} style={backBtnStyle}>
+                    ← Назад
+                </button>
+                <h2
+                    style={{
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: "var(--color-text)",
+                        margin: 0,
+                    }}
+                >
+                    Способ входа
+                </h2>
+            </div>
+
+            <p
+                style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                    marginBottom: 20,
+                    marginTop: 0,
+                }}
+            >
+                Выберите, как подтвердить вход
+            </p>
+
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                    marginBottom: 8,
+                }}
+            >
+                {/* Email card */}
+                <button
+                    type="button"
+                    onClick={onPickEmail}
+                    style={{
+                        padding: "20px 16px",
+                        borderRadius: "var(--radius-md)",
+                        border: "2px solid var(--color-primary)",
+                        background: "rgba(26,115,232,0.05)",
+                        cursor: "pointer",
+                        textAlign: "center",
+                        transition: "all 0.15s",
+                    }}
+                >
+                    <div
+                        style={{
+                            color: "var(--color-primary)",
+                            marginBottom: 10,
+                        }}
+                    >
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <path d="M22 7l-10 7L2 7" />
+                        </svg>
+                    </div>
+                    <div
+                        style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                            color: "var(--color-text)",
+                            marginBottom: 4,
+                        }}
+                    >
+                        Код на почту
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: "var(--color-text-secondary)",
+                        }}
+                    >
+                        {maskEmail(email)}
+                    </div>
+                </button>
+
+                {/* TOTP / Authenticator card */}
+                <button
+                    type="button"
+                    onClick={onPickTotp}
+                    style={{
+                        padding: "20px 16px",
+                        borderRadius: "var(--radius-md)",
+                        border: "2px solid var(--color-border)",
+                        background: "transparent",
+                        cursor: "pointer",
+                        textAlign: "center",
+                        transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor =
+                            "var(--color-primary)";
+                        e.currentTarget.style.background =
+                            "rgba(26,115,232,0.05)";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor =
+                            "var(--color-border)";
+                        e.currentTarget.style.background = "transparent";
+                    }}
+                >
+                    <div
+                        style={{
+                            color: "var(--color-text-secondary)",
+                            marginBottom: 10,
+                        }}
+                    >
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <rect
+                                x="5"
+                                y="2"
+                                width="14"
+                                height="20"
+                                rx="2"
+                                ry="2"
+                            />
+                            <line x1="12" y1="18" x2="12.01" y2="18" />
+                        </svg>
+                    </div>
+                    <div
+                        style={{
+                            fontWeight: 600,
+                            fontSize: 14,
+                            color: "var(--color-text)",
+                            marginBottom: 4,
+                        }}
+                    >
+                        Приложение
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 12,
+                            color: "var(--color-text-secondary)",
+                        }}
+                    >
+                        Google Authenticator
+                    </div>
+                </button>
+            </div>
+        </>
+    );
+}
+
+// ── Step 3a (email OTP) component ─────────────────────────────────────────────
 
 function OtpStep({
     email,
@@ -353,23 +612,7 @@ function OtpStep({
                     marginBottom: 20,
                 }}
             >
-                <button
-                    type="button"
-                    onClick={onBack}
-                    style={{
-                        background: "none",
-                        border: "none",
-                        padding: "4px 0",
-                        cursor: "pointer",
-                        color: "var(--color-primary)",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        flexShrink: 0,
-                    }}
-                >
+                <button type="button" onClick={onBack} style={backBtnStyle}>
                     ← Назад
                 </button>
                 <h2
@@ -490,6 +733,98 @@ function OtpStep({
     );
 }
 
+// ── Step 3b (TOTP authenticator app) component ───────────────────────────────
+
+function TotpStep({ totpCode, setTotpCode, loading, error, onSubmit, onBack }) {
+    return (
+        <>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 20,
+                }}
+            >
+                <button type="button" onClick={onBack} style={backBtnStyle}>
+                    ← Назад
+                </button>
+                <h2
+                    style={{
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: "var(--color-text)",
+                        margin: 0,
+                    }}
+                >
+                    Код из приложения
+                </h2>
+            </div>
+
+            <div
+                style={{
+                    padding: "10px 14px",
+                    background: "rgba(26,115,232,0.08)",
+                    border: "1px solid rgba(26,115,232,0.25)",
+                    borderRadius: "var(--radius-md)",
+                    marginBottom: 20,
+                    fontSize: 13,
+                    color: "var(--color-text-secondary)",
+                    lineHeight: 1.5,
+                }}
+            >
+                Откройте Google Authenticator или Authy и введите 6-значный код
+            </div>
+
+            <form
+                onSubmit={onSubmit}
+                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+            >
+                <div>
+                    <label style={labelStyle}>Код 2FA</label>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        value={totpCode}
+                        onChange={(e) =>
+                            setTotpCode(
+                                e.target.value.replace(/\D/g, "").slice(0, 6),
+                            )
+                        }
+                        required
+                        maxLength={6}
+                        placeholder="123456"
+                        autoComplete="one-time-code"
+                        autoFocus
+                        style={inputStyle({
+                            fontSize: 28,
+                            fontWeight: 700,
+                            letterSpacing: 8,
+                            textAlign: "center",
+                            padding: "14px",
+                        })}
+                        onFocus={(e) =>
+                            (e.target.style.borderColor =
+                                "var(--color-primary)")
+                        }
+                        onBlur={(e) =>
+                            (e.target.style.borderColor = "var(--color-border)")
+                        }
+                    />
+                </div>
+
+                <ErrorBox message={error} />
+
+                <SubmitButton
+                    loading={loading}
+                    label="Войти"
+                    loadingLabel="Проверка..."
+                />
+            </form>
+        </>
+    );
+}
+
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 function ErrorBox({ message }) {
@@ -550,4 +885,18 @@ const labelStyle = {
     fontWeight: 500,
     color: "var(--color-text-secondary)",
     marginBottom: 6,
+};
+
+const backBtnStyle = {
+    background: "none",
+    border: "none",
+    padding: "4px 0",
+    cursor: "pointer",
+    color: "var(--color-primary)",
+    fontSize: 13,
+    fontWeight: 500,
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    flexShrink: 0,
 };

@@ -1,177 +1,364 @@
 .wrapper {
-  height: calc(100vh - 64px);
-  width: calc(100% + 40px);
-  margin-left: -20px;
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background-image: image-set(
-    url("/img/main/login-bg.webp") type("image/webp"),
-    url("/img/main/login-bg.png") type("image/png")
-  );
-  background-position: center calc(100% + 60px);
-  background-size: auto 108%;
-  background-repeat: no-repeat;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+    height: calc(100vh - 64px);
+    width: calc(100% + 40px);
+    margin-left: -20px;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background-image: image-set(
+        url("/img/main/login-bg.webp") type("image/webp"),
+        url("/img/main/login-bg.png") type("image/png")
+    );
+    background-position: center calc(100% + 60px);
+    background-size: auto 108%;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .orbBackground {
-  position: absolute;
-  left: 50%;
-  top: 70%;
-  transform: translate(-50%, -50%);
-  width: clamp(560px, 78vw, 1180px);
-  aspect-ratio: 1 / 1;
-  background: url("/img/main/animation/animLogin.svg") center / contain no-repeat;
-  opacity: 0.95;
-  pointer-events: none;
-  z-index: 0;
-  animation: authOrbPulse 5.2s ease-in-out infinite;
+    position: absolute;
+    left: 50%;
+    top: 70%;
+    transform: translate(-50%, -50%);
+    width: clamp(560px, 78vw, 1180px);
+    aspect-ratio: 1 / 1;
+    background: url("/img/main/animation/animLogin.svg") center / contain
+        no-repeat;
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 0;
+    animation: authOrbPulse 5.2s ease-in-out infinite;
 }
 
 .content {
-  position: relative;
-  z-index: 1;
-  width: 338px;
-  max-width: 100%;
-  min-width: 280px;
-  margin-top: -100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+    position: relative;
+    z-index: 1;
+    width: 338px;
+    max-width: 100%;
+    min-width: 280px;
+    margin-top: -100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .title {
-  color: var(--grayscale-white);
+    color: var(--grayscale-white);
 }
 
 .description {
-  margin-top: 20px;
-  margin-bottom: 29px;
-  color: var(--grayscale-white);
+    margin-top: 20px;
+    margin-bottom: 29px;
+    color: var(--grayscale-white);
 }
 
 .fieldGroup {
-  width: 100%;
-  max-width: 338px;
-  text-align: left;
-  margin-top: 11px;
+    width: 100%;
+    max-width: 338px;
+    text-align: left;
+    margin-top: 11px;
 }
 
 .fieldGroup + .fieldGroup {
-  margin-top: 24px;
+    margin-top: 24px;
 }
 
 .fieldLabel {
-  color: var(--grayscale-white);
+    color: var(--grayscale-white);
 }
 
 .fieldInput {
-  margin-top: 11px;
-  width: 100%;
-  max-width: 338px;
+    margin-top: 11px;
+    width: 100%;
+    max-width: 338px;
 }
 
 .resetRow {
-  width: 100%;
-  margin-top: 11px;
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 5px;
-  flex-wrap: wrap;
-  color: var(--grayscale-white);
-  cursor: default;
+    width: 100%;
+    margin-top: 11px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    color: var(--grayscale-white);
+    cursor: default;
 }
 
 .resetRow .subinfo {
-  color: var(--grayscale-white);
+    color: var(--grayscale-white);
 }
 
 .resetRow .subtitle_2 {
-  color: var(--grayscale-white);
+    color: var(--grayscale-white);
 }
 
 .submitButton {
-  width: 100%;
-  margin-top: 40px;
+    width: 100%;
+    margin-top: 40px;
 }
 
 .submitButton button {
-  width: 100%;
+    width: 100%;
 }
 
 .registerRow {
-  margin-top: 12px;
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 5px;
-  flex-wrap: wrap;
-  color: var(--grayscale-white);
-  cursor: default;
+    margin-top: 12px;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    color: var(--grayscale-white);
+    cursor: default;
 }
 
 .registerRow .subinfo {
-  color: var(--grayscale-white);
+    color: var(--grayscale-white);
 }
 
 .registerRow .subtitle_2 {
-  color: var(--grayscale-white);
+    color: var(--grayscale-white);
 }
 
 .linkStub {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .formError {
-  display: block;
-  width: 100%;
-  margin-top: 12px;
-  padding-left: 0;
-  color: var(--system-red);
-  text-align: center;
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding-left: 0;
+    color: var(--system-red);
+    text-align: center;
 }
 
 @keyframes authOrbPulse {
-  0% {
-    transform: translate(-50%, -50%) scale(0.92);
-    opacity: 0.84;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.08);
-    opacity: 0.98;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(0.94);
-    opacity: 0.86;
-  }
+    0% {
+        transform: translate(-50%, -50%) scale(0.92);
+        opacity: 0.84;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.08);
+        opacity: 0.98;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0.94);
+        opacity: 0.86;
+    }
 }
 
 @media (max-width: 800px) {
-  .wrapper {
-    height: calc(100vh - 76px);
-    background-size: 300% 96%;
-  }
+    .wrapper {
+        height: calc(100vh - 76px);
+        background-size: 300% 96%;
+    }
 
-  .orbBackground {
-    width: clamp(420px, 125vw, 760px);
-    top: 68%;
-  }
+    .orbBackground {
+        width: clamp(420px, 125vw, 760px);
+        top: 68%;
+    }
 
-  .title {
+    .title {
+        color: var(--grayscale-dark-gray);
+    }
+
+    .description {
+        color: var(--grayscale-dark-gray);
+    }
+
+    .content {
+        margin-top: -100px;
+    }
+
+    .modalContent {
+        width: 92vw;
+        max-width: 360px;
+        padding: 28px 20px;
+    }
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   2FA Modal overlay
+   ═════════════════════════════════════════════════════════════════════ */
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.modalContent {
+    position: relative;
+    width: 380px;
+    max-width: 94vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 36px 28px 32px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    animation: modalSlideUp 0.25s ease-out;
+    color: var(--grayscale-white);
+}
+
+.modalClose {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--grayscale-white);
+    font-size: 16px;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        transform 0.15s;
+    line-height: 1;
+    padding: 0;
+}
+
+.modalClose:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: scale(1.08);
+}
+
+.modalTitle {
+    text-align: center;
     color: var(--grayscale-dark-gray);
-  }
+    margin-bottom: 8px;
+    width: 100%;
+}
 
-  .description {
+.modalDesc {
+    text-align: center;
+    color: var(--grayscale-gray);
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+.modalBackRow {
+    margin-bottom: 12px;
+    min-height: 20px;
     color: var(--grayscale-dark-gray);
-  }
+    width: 100%;
+    text-align: left;
+}
 
-  .content {
-    margin-top: -100px;
-  }
+.modalFieldGroup {
+    width: 100%;
+    text-align: left;
+}
+
+.modalFieldLabel {
+    color: var(--grayscale-dark-gray);
+}
+
+.modalFieldInput {
+    margin-top: 11px;
+    width: 100%;
+}
+
+.modalSubmitButton {
+    width: 100%;
+    margin-top: 24px;
+}
+
+.modalSubmitButton button {
+    width: 100%;
+}
+
+/* ── Method selection grid ────────────────────────────────────── */
+
+.methodGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.methodCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 18px 16px;
+    background: var(--grayscale-primary-gray);
+    border: 1px solid var(--grayscale-light-gray);
+    border-radius: 16px;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        transform 0.15s;
+    color: var(--grayscale-dark-gray);
+    text-align: center;
+    font-family: inherit;
+    width: 100%;
+}
+
+.methodCard:hover,
+.methodCard:focus-visible {
+    background: var(--grayscale-white);
+    border-color: var(--grayscale-gray);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.methodIcon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.methodLabel {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--grayscale-dark-gray);
+}
+
+.methodHint {
+    font-size: 12px;
+    color: var(--grayscale-gray);
+}
+
+/* ── Animations ───────────────────────────────────────────────── */
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }

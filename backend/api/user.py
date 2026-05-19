@@ -11,6 +11,8 @@ from api.schemas.user import (
     CheckplanCreate,
     EmailVerifyConfirm,
     LikeCreate,
+    LoginOtpRequest,
+    LoginOtpVerify,
     LoginResponse,
     MeCheckplansResponse,
     MeLikesResponse,
@@ -43,6 +45,7 @@ from database.models import (
 )
 from emailing import (
     send_email_verification_otp,
+    send_login_otp_email,
     send_password_recovery_email,
     send_recovery_otp_email,
 )
@@ -77,6 +80,8 @@ RATE_LIMITS = {
     "verify_email_confirm": 10,
     "recovery_otp_request": 8,
     "recovery_otp_confirm": 10,
+    "login_otp_request": 8,
+    "login_otp_verify": 10,
 }
 PASSWORD_RESET_TOKEN_TTL_MINUTES = int(
     os.getenv("PASSWORD_RESET_TOKEN_TTL_MINUTES", "1440")
@@ -255,7 +260,7 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is blocked",
         )
-    if user.is_admin and user.totp_enabled:
+    if user.totp_enabled:
         if not user.totp_secret_encrypted:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -267,6 +272,8 @@ async def login(
                 access_token=None,
                 expires_in=None,
                 requires_2fa=True,
+                requires_2fa_methods=["totp"],
+                login_otp_user_id=user.id,
             )
         secret = decrypt_secret(user.totp_secret_encrypted)
         backup_codes_hash = list(user.totp_backup_codes_hash or [])
@@ -1180,3 +1187,79 @@ async def recovery_otp_confirm(
     await session.commit()
 
     return {"ok": True, "token": raw_token, "expires_at": expires_at.isoformat()}
+
+
+# ---------- Login via email OTP ----------
+
+
+@router.post("/login/otp/request")
+async def login_otp_request(
+    request: Request,
+    data: LoginOtpRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Request an email OTP for login (alternative to TOTP)."""
+    await enforce_rate_limit(
+        request, "login_otp_request", RATE_LIMITS.get("login_otp_request", 8)
+    )
+    email = str(data.email).strip().lower()
+    if not email or not EMAIL_PATTERN.fullmatch(email):
+        # Don't reveal if email exists
+        return {"ok": True}
+    user = (
+        await session.execute(select(User).where(User.email == email))
+    ).scalar_one_or_none()
+    if user is None:
+        return {"ok": True}
+    if user.is_blocked:
+        return {"ok": True}
+    # Don't send OTP if TOTP is not enabled (no 2FA needed)
+    if not user.totp_enabled:
+        return {"ok": True}
+    otp = secrets.token_hex(3).upper()
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+    redis = get_redis_client()
+    key = f"setly:login:otp:{user.id}"
+    await redis.set(key, otp_hash, ex=600)
+    await asyncio.get_event_loop().run_in_executor(
+        None, send_login_otp_email, user.email, otp
+    )
+    return {"ok": True}
+
+
+@router.post("/login/otp/verify")
+async def login_otp_verify(
+    request: Request,
+    data: LoginOtpVerify,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Verify email OTP and issue access token."""
+    await enforce_rate_limit(
+        request, "login_otp_verify", RATE_LIMITS.get("login_otp_verify", 10)
+    )
+    email = str(data.email).strip().lower()
+    if not email or not EMAIL_PATTERN.fullmatch(email):
+        raise HTTPException(status_code=400, detail="Invalid email")
+    user = (
+        await session.execute(select(User).where(User.email == email))
+    ).scalar_one_or_none()
+    if user is None or not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if user.is_blocked:
+        raise HTTPException(status_code=403, detail="User is blocked")
+    redis = get_redis_client()
+    key = f"setly:login:otp:{user.id}"
+    stored_hash = await redis.get(key)
+    if stored_hash is None:
+        raise HTTPException(status_code=400, detail="Code not found or expired")
+    submitted_hash = hashlib.sha256(data.otp.strip().upper().encode()).hexdigest()
+    if submitted_hash != stored_hash:
+        raise HTTPException(status_code=400, detail="Invalid code")
+    await redis.delete(key)
+    access_token, expires_in = create_access_token(user.id)
+    return {
+        "access_token": access_token,
+        "expires_in": expires_in,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user),
+    }

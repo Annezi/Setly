@@ -167,3 +167,34 @@ export function upsertSetting(key, value) {
         body: JSON.stringify({ value }),
     });
 }
+
+// ── Current user ─────────────────────────────────────────────────────────────
+
+export function fetchMe() {
+    return apiRequest("/api/user/me");
+}
+
+export function setup2FA() {
+    return apiRequest("/api/user/me/2fa/setup", { method: "POST" });
+}
+
+export function enable2FA(password, totpCode) {
+    return apiRequest("/api/user/me/2fa/enable", {
+        method: "POST",
+        body: JSON.stringify({ password, totp_code: totpCode }),
+    });
+}
+
+export function disable2FA(password, totpCode) {
+    return apiRequest("/api/user/me/2fa/disable", {
+        method: "POST",
+        body: JSON.stringify({ password, totp_code: totpCode || null }),
+    });
+}
+
+export function updateMe(data) {
+    return apiRequest("/api/user/me", {
+        method: "PATCH",
+        body: JSON.stringify(data),
+    });
+}

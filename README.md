@@ -9,7 +9,7 @@
 | Часть       | Технологии |
 |------------|-------------|
 | **Backend** | Python 3.12, FastAPI, SQLModel, PostgreSQL, JWT |
-| **Frontend** | Next.js 16, React 19, VK UI |
+| **Frontend** | Next.js 16, React 19 |
 | **Инфраструктура** | Docker, Docker Compose, Traefik (reverse proxy, HTTPS) |
 
 ## Структура репозитория

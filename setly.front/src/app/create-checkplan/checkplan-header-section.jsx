@@ -4,6 +4,7 @@ import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Dropdown from "@/app/components/atomic/atoms/dropdown/dropdown";
+import PageBackLink from "@/app/components/globals/page-back-link/page-back-link";
 import checkPlansStyles from "@/app/components/blocks/check-plans/plans/check-plans/check-plans.module.css";
 import { TYPE_OPTIONS, TRAVELER_OPTIONS } from "./create-checkplan-data";
 import { TripImageSection } from "./checkplan-trip-image-section";
@@ -55,14 +56,7 @@ export const CheckplanHeaderSection = memo(function CheckplanHeaderSection({
 
 	return (
 		<>
-			<Link href={backHref} className={styles.backRow} aria-label={backAriaLabel}>
-				<span className={styles.backButton}>
-					<Image src="/icons/system/ArrowLeft.svg" alt="" width={20} height={20} className={styles.icon20} />
-				</span>
-				<span className={`${styles.backLabel} subinfo`} style={{ color: "var(--grayscale-dark-gray)" }}>
-					{backLabel}
-				</span>
-			</Link>
+			<PageBackLink href={backHref} ariaLabel={backAriaLabel} label={backLabel} />
 
 			<div className={styles.topRow}>
 				<div className={`${styles.card} ${readOnly ? styles.cardReadOnly : ""}`} data-main-info-card>

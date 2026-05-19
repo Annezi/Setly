@@ -40,6 +40,7 @@ const ProfileInfo = dynamic(
   () => import('@/app/components/blocks/personal-account/profile-info/profile-info').then((m) => m.default),
   { ssr: false, loading: () => <div style={{ minHeight: 120 }} aria-busy="true" aria-label="Загрузка профиля" /> }
 );
+// Закрепление и перетаскивание чек-планов временно отключены в personal-check-plans.jsx (PIN_AND_REORDER_ENABLED).
 const PersonalCheckPlans = dynamic(
   () => import('@/app/components/blocks/personal-account/personal-check-plans/personal-check-plans').then((m) => m.default),
   { ssr: false, loading: () => <div style={{ minHeight: 420 }} aria-busy="true" aria-label="Загрузка чек-планов" /> }

@@ -11,26 +11,6 @@
   padding: 0 20px;
 }
 
-.backRow {
-  margin-top: 24px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: var(--grayscale-dark-gray);
-}
-
-.backRow > span {
-  color: var(--grayscale-dark-gray);
-}
-
-.backRow > button {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-}
-
 .intro,
 .quiz,
 .result {

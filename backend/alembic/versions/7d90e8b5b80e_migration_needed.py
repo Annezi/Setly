@@ -1,4 +1,4 @@
-"""same shit
+"""migration needed
 
 Revision ID: 7d90e8b5b80e
 Revises: 001

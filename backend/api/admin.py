@@ -34,12 +34,14 @@ from rate_limit import enforce_rate_limit, get_redis_client
 from sqlalchemy import func, or_
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from totp_utils import decrypt_secret, hash_backup_code, verify_totp_code
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 RATE_LIMITS = {
     "admin_auth_sensitive": 30,
     "admin_otp_request": 10,
     "admin_otp_verify": 10,
+    "admin_totp_verify": 10,
 }
 
 
@@ -51,6 +53,12 @@ class AdminOtpRequestBody(BaseModel):
 class AdminOtpVerifyBody(BaseModel):
     user_id: int
     otp: str
+
+
+class AdminTotpVerifyBody(BaseModel):
+    email: str
+    password: str
+    totp_code: str
 
 
 async def _write_audit(
@@ -80,26 +88,40 @@ async def _delete_checkplan_with_related(
     data_id = int(plan.check_plan_data_id or 0)
 
     like_rows = (
-        await session.execute(
-            select(UserLikes).where(UserLikes.checklist_id == plan_id_str)
+        (
+            await session.execute(
+                select(UserLikes).where(UserLikes.checklist_id == plan_id_str)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in like_rows:
         await session.delete(row)
 
     pinned_rows = (
-        await session.execute(
-            select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.id_str == plan_id_str)
+        (
+            await session.execute(
+                select(UserPinnedCheckPlan).where(
+                    UserPinnedCheckPlan.id_str == plan_id_str
+                )
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in pinned_rows:
         await session.delete(row)
 
     user_plan_rows = (
-        await session.execute(
-            select(UserCheckPlan).where(UserCheckPlan.id_str == plan_id_str)
+        (
+            await session.execute(
+                select(UserCheckPlan).where(UserCheckPlan.id_str == plan_id_str)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in user_plan_rows:
         await session.delete(row)
 
@@ -152,7 +174,7 @@ async def admin_otp_request(
     await asyncio.get_event_loop().run_in_executor(
         None, send_admin_otp_email, user.email, otp
     )
-    return {"ok": True, "user_id": user.id}
+    return {"ok": True, "user_id": user.id, "totp_enabled": user.totp_enabled}
 
 
 @router.post("/otp/verify")
@@ -182,6 +204,48 @@ async def admin_otp_verify(
     if submitted_hash != stored_hash:
         raise HTTPException(status_code=400, detail="Неверный код")
     await redis.delete(key)
+    access_token, expires_in = create_access_token(user.id)
+    return {
+        "access_token": access_token,
+        "expires_in": expires_in,
+        "token_type": "bearer",
+    }
+
+
+@router.post("/totp/verify")
+async def admin_totp_verify(
+    data: AdminTotpVerifyBody,
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Direct TOTP login — skips email OTP, uses authenticator app code instead."""
+    await enforce_rate_limit(
+        request, "admin_totp_verify", RATE_LIMITS["admin_totp_verify"]
+    )
+    user = (
+        await session.execute(select(User).where(User.email == data.email))
+    ).scalar_one_or_none()
+    if user is None or not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Неверный email или пароль")
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Нет прав администратора")
+    if user.is_blocked:
+        raise HTTPException(status_code=403, detail="Пользователь заблокирован")
+    if not user.totp_enabled or not user.totp_secret_encrypted:
+        raise HTTPException(
+            status_code=400, detail="2FA не настроена для этого аккаунта"
+        )
+    secret = decrypt_secret(user.totp_secret_encrypted)
+    provided = data.totp_code.strip().upper()
+    backup_codes_hash = list(user.totp_backup_codes_hash or [])
+    backup_hash = hash_backup_code(provided)
+    if backup_hash in backup_codes_hash:
+        # consume backup code
+        user.totp_backup_codes_hash = [c for c in backup_codes_hash if c != backup_hash]
+        session.add(user)
+        await session.commit()
+    elif not verify_totp_code(secret, data.totp_code.strip()):
+        raise HTTPException(status_code=401, detail="Неверный код 2FA")
     access_token, expires_in = create_access_token(user.id)
     return {
         "access_token": access_token,
@@ -302,47 +366,69 @@ async def admin_delete_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     plans = (
-        await session.execute(select(CheckPlan).where(CheckPlan.author_id == user_id))
-    ).scalars().all()
+        (await session.execute(select(CheckPlan).where(CheckPlan.author_id == user_id)))
+        .scalars()
+        .all()
+    )
     deleted_plans = len(plans)
     for plan in plans:
         await _delete_checkplan_with_related(session, plan)
 
     own_likes = (
-        await session.execute(select(UserLikes).where(UserLikes.user_id == user_id))
-    ).scalars().all()
+        (await session.execute(select(UserLikes).where(UserLikes.user_id == user_id)))
+        .scalars()
+        .all()
+    )
     for row in own_likes:
         await session.delete(row)
 
     own_pins = (
-        await session.execute(
-            select(UserPinnedCheckPlan).where(UserPinnedCheckPlan.user_id == user_id)
+        (
+            await session.execute(
+                select(UserPinnedCheckPlan).where(
+                    UserPinnedCheckPlan.user_id == user_id
+                )
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in own_pins:
         await session.delete(row)
 
     own_user_plans = (
-        await session.execute(
-            select(UserCheckPlan).where(UserCheckPlan.user_id == user_id)
+        (
+            await session.execute(
+                select(UserCheckPlan).where(UserCheckPlan.user_id == user_id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in own_user_plans:
         await session.delete(row)
 
     reset_tokens = (
-        await session.execute(
-            select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+        (
+            await session.execute(
+                select(PasswordResetToken).where(PasswordResetToken.user_id == user_id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in reset_tokens:
         await session.delete(row)
 
     authored_audit_rows = (
-        await session.execute(
-            select(AdminAuditLog).where(AdminAuditLog.admin_user_id == user_id)
+        (
+            await session.execute(
+                select(AdminAuditLog).where(AdminAuditLog.admin_user_id == user_id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for row in authored_audit_rows:
         await session.delete(row)
 
@@ -393,8 +479,10 @@ async def admin_checkplans(
     nick_by_uid: dict[int, str | None] = {}
     if author_ids:
         user_rows = (
-            await session.execute(select(User).where(User.id.in_(author_ids)))
-        ).scalars().all()
+            (await session.execute(select(User).where(User.id.in_(author_ids))))
+            .scalars()
+            .all()
+        )
         nick_by_uid = {u.id: u.nickname for u in user_rows}
 
     items = [

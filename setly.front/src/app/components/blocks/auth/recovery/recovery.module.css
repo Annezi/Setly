@@ -32,6 +32,31 @@
   animation: authOrbPulse 5.2s ease-in-out infinite;
 }
 
+/* Кнопка «Назад» — слева под шапкой (как на /creating), не в центре формы */
+.backLinkRow {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  z-index: 2;
+}
+
+.backLinkRow > a,
+.backLinkRow > button {
+  margin-top: 0;
+}
+
+@media (min-width: 769px) {
+  .backLinkRow {
+    position: static;
+    top: auto;
+    left: auto;
+    align-self: flex-start;
+    width: 100%;
+    padding-left: max(20px, calc((100vw - 1400px) / 2));
+    box-sizing: border-box;
+  }
+}
+
 .content {
   position: relative;
   z-index: 1;
@@ -79,33 +104,6 @@
 
 .submitButton button {
   width: 100%;
-}
-
-.backRow {
-    position: absolute;
-  top: 20px;
-  left: max(20px, calc((100vw - 1400px) / 2));
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: var(--grayscale-dark-gray);
-  z-index: 2;
-}
-
-.backRowText {
-  color: var(--grayscale-dark-gray);
-}
-
-.backRow > button {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-}
-
-.backRow .subinfo {
-  color: var(--grayscale-dark-gray);
 }
 
 .success {

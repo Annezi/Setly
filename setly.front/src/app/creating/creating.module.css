@@ -3,37 +3,6 @@
   margin: 0 auto;
 }
 
-.backRow {
-  margin-top: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: var(--grayscale-dark-gray);
-  text-decoration: none;
-}
-
-.backRow:hover {
-  color: var(--grayscale-dark-gray);
-}
-
-.backRow .subinfo {
-  color: var(--grayscale-dark-gray);
-}
-
-/* Кнопка «Назад» на этой странице: 36×36px, иконка 12×12px */
-.backRow>button {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-}
-
-.backRow>button img {
-  width: 12px;
-  height: 12px;
-}
-
 .titleBlock {
   margin-top: 60px;
   text-align: left;

@@ -85,6 +85,8 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int | None = None
     requires_2fa: bool = False
+    requires_2fa_methods: list[str] = []
+    login_otp_user_id: int | None = None
 
 
 class TotpSetupResponse(BaseModel):
@@ -150,4 +152,14 @@ class RecoveryOtpRequest(BaseModel):
 
 class RecoveryOtpConfirm(BaseModel):
     email: str
+    otp: str
+
+
+class LoginOtpRequest(BaseModel):
+    email: str
+
+
+class LoginOtpVerify(BaseModel):
+    email: str
+    password: str
     otp: str

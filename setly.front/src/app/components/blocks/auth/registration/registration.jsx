@@ -4,10 +4,9 @@ import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Button from "../../../atomic/atoms/buttons/buttons";
-import RoundButton from "../../../atomic/atoms/buttons-round/buttons-round";
 import Input from "../../../atomic/molecules/input/input";
 import Checkbox from "../../../atomic/atoms/checkbox/checkbox";
-import PublicImage from "@/app/components/globals/public-image";
+import PageBackLink from "@/app/components/globals/page-back-link/page-back-link";
 import { setAuth } from "@/app/lib/auth-storage";
 import { apiFetch } from "@/app/lib/api";
 import { applyTypograf } from "@/app/lib/typograf";
@@ -263,38 +262,10 @@ export default function Registration() {
                 style={{ "--reveal-delay": "60ms" }}
             >
                 <div className={styles.orbBackground} aria-hidden />
+                <div className={styles.backLinkRow}>
+                    <PageBackLink onClick={handleBackToRegistrationForm} ariaLabel="Назад" />
+                </div>
                 <div className={styles.content}>
-                    <div
-                        className={styles.backRow}
-                        role="button"
-                        tabIndex={0}
-                        onClick={handleBackToRegistrationForm}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                                e.preventDefault();
-                                handleBackToRegistrationForm();
-                            }
-                        }}
-                        aria-label="Назад"
-                    >
-                        <RoundButton
-                            variant="white"
-                            icon={
-                                <PublicImage
-                                    src="/icons/system/ArrowLeft.svg"
-                                    alt=""
-                                    width={12}
-                                    height={12}
-                                    style={{ color: "var(--grayscale-dark-gray)" }}
-                                />
-                            }
-                            aria-hidden
-                        />
-                        <span className={`subinfo ${styles.backRowText}`}>
-                            Назад
-                        </span>
-                    </div>
-
                     <h1 className={`${styles.title} title_1`}>
                         Подтверждение почты
                     </h1>

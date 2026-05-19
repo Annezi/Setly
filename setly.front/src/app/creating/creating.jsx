@@ -3,8 +3,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import PublicImage from "@/app/components/globals/public-image";
-import RoundButton from "@/app/components/atomic/atoms/buttons-round/buttons-round";
+import PageBackLink from "@/app/components/globals/page-back-link/page-back-link";
 import ButtonsMini from "@/app/components/atomic/atoms/buttons-mini/buttons-mini";
 import Questions from "@/app/components/atomic/atoms/questions/questions";
 import Button from "@/app/components/atomic/atoms/buttons/buttons";
@@ -316,36 +315,7 @@ export default function Creating() {
 
   return (
     <div className={styles.wrapper}>
-      <div
-        className={styles.backRow}
-        role="button"
-        tabIndex={0}
-        onClick={goBack}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            goBack();
-          }
-        }}
-        aria-label="Назад"
-      >
-        <RoundButton
-          variant="white"
-          icon={
-            <PublicImage
-              src="/icons/system/ArrowLeft.svg"
-              alt=""
-              width={12}
-              height={12}
-              style={{ color: "var(--grayscale-dark-gray)" }}
-            />
-          }
-          aria-hidden
-        />
-        <span className="subinfo" style={{ color: "var(--grayscale-dark-gray)" }}>
-          Назад
-        </span>
-      </div>
+      <PageBackLink onClick={goBack} ariaLabel="Назад" />
 
       <div className={styles.titleBlock}>
         <h1 className="title_1" style={{ color: "var(--grayscale-dark-gray)" }}>
