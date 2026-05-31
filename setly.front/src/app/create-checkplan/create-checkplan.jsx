@@ -47,6 +47,11 @@ import {
 	canAddItem,
 } from "./create-checkplan-utils";
 import { buildCheckplanPublicSegment, buildProfilePublicPath } from "@/app/lib/slug";
+import {
+	CHECKPLAN_COVER_ASPECT_RATIO,
+	CHECKPLAN_COVER_CROP_OUTPUT_HEIGHT,
+	CHECKPLAN_COVER_CROP_OUTPUT_WIDTH,
+} from "@/app/lib/plan-card-image";
 import { LocationDropdownContent } from "./location-dropdown-content";
 import { ChecklistSection } from "./checkplan-checklist-section";
 import { TripImageSection } from "./checkplan-trip-image-section";
@@ -1187,9 +1192,9 @@ export default function CreateCheckplan({
 			{coverFileToCrop && (
 				<ImageCropModal
 					file={coverFileToCrop}
-					aspectRatio={464 / 270}
-					outputWidth={928}
-					outputHeight={540}
+					aspectRatio={CHECKPLAN_COVER_ASPECT_RATIO}
+					outputWidth={CHECKPLAN_COVER_CROP_OUTPUT_WIDTH}
+					outputHeight={CHECKPLAN_COVER_CROP_OUTPUT_HEIGHT}
 					previewShape="binocular"
 					title="Кадрировать обложку"
 					confirmText="Применить"

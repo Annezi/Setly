@@ -1,5 +1,5 @@
 .main {
-  margin-top: 20px;
+  margin-top: 40px;
 }
 
 .welcomeSection {
@@ -140,7 +140,7 @@
 
 @media (max-width: 800px) {
   .main {
-    margin-top: 20px;
+    margin-top: 40px;
   }
 
   .welcomeDescription {

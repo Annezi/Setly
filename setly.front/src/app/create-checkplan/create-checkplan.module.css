@@ -3079,10 +3079,10 @@
 		opacity: 1;
 	}
 
-	/* Тулбар: 280×100px, внутренний отступ 4px, элементы управления упираются в края по ширине */
+	/* Тулбар: до 425px, по 20px от краёв экрана; внутренний отступ 4px */
 	.bottomBar {
 		bottom: 20px;
-		padding: 0 16px;
+		padding: 0 20px;
 	}
 
 	.bottomBarMobileFloating {
@@ -3100,7 +3100,7 @@
 	}
 
 	.toolbar {
-		width: 280px;
+		width: min(425px, calc(100vw - 40px));
 		height: 100px;
 		flex-direction: column;
 		align-items: stretch;
@@ -3203,9 +3203,9 @@
 		transform: translate(-50%, 0);
 	}
 
-	/* Тулбар режима просмотра: мобильная версия — 280px, две кнопки сверху (space-between), кнопка редактирования снизу с отступом 12px */
+	/* Тулбар режима просмотра: мобильная версия — до 425px, две кнопки сверху (space-between), кнопка редактирования снизу с отступом 12px */
 	.bottomBarViewMode .viewModeToolbar {
-		width: 280px;
+		width: min(425px, calc(100vw - 40px));
 		flex-direction: column;
 		align-items: stretch;
 		justify-content: flex-start;
@@ -3241,9 +3241,9 @@
 		transform: translate(-50%, 0);
 	}
 
-	/* Тулбар гостя: мобильная версия — 280px, три кнопки сверху (space-between), кнопка «Использовать» снизу с отступом 12px */
+	/* Тулбар гостя: мобильная версия — до 425px, три кнопки сверху (space-between), кнопка «Использовать» снизу с отступом 12px */
 	.bottomBarGuest .guestToolbar {
-		width: 280px;
+		width: min(425px, calc(100vw - 40px));
 		flex-direction: column;
 		align-items: stretch;
 		justify-content: flex-start;
@@ -3254,7 +3254,7 @@
 	}
 
 	.bottomBarGuest .guestToolbarWide {
-		width: 280px;
+		width: min(425px, calc(100vw - 40px));
 	}
 
 	.bottomBarGuest .guestToolbarUseButton {

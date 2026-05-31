@@ -21,21 +21,14 @@ export default function ArticlesPageClient() {
     <>
       <Header />
       <main>
-        <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", minHeight: 48 }} aria-hidden />
-        <div className="main-page-reveal__item" style={{ "--reveal-delay": "80ms" }}>
-          <Search
-            value={searchQuery}
-            onChange={handleSearchChange}
-            onSearchSubmit={handleSearchSubmit}
-          />
-        </div>
-        <div className="main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
-          <Articles searchQuery={searchQuery} />
-        </div>
+        <Search
+          value={searchQuery}
+          onChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+        />
+        <Articles searchQuery={searchQuery} />
       </main>
-      <div className="main-page-reveal__item" style={{ "--reveal-delay": "170ms" }}>
-        <Footer />
-      </div>
+      <Footer />
     </>
   );
 }

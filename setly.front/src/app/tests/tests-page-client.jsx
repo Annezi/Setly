@@ -21,21 +21,14 @@ export default function TestsPageClient() {
     <>
       <Header />
       <main>
-        <div className="main-page-reveal__item" style={{ "--reveal-delay": "50ms", minHeight: 48 }} aria-hidden />
-        <div className="main-page-reveal__item" style={{ "--reveal-delay": "80ms" }}>
-          <Search
-            value={searchQuery}
-            onChange={handleSearchChange}
-            onSearchSubmit={handleSearchSubmit}
-          />
-        </div>
-        <div className="main-page-reveal__item" style={{ "--reveal-delay": "120ms" }}>
-          <Tests searchQuery={searchQuery} />
-        </div>
+        <Search
+          value={searchQuery}
+          onChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+        />
+        <Tests searchQuery={searchQuery} />
       </main>
-      <div className="main-page-reveal__item" style={{ "--reveal-delay": "170ms" }}>
-        <Footer />
-      </div>
+      <Footer />
     </>
   );
 }

@@ -14,6 +14,11 @@ import { getAuth } from "@/app/lib/auth-storage";
 import { getEmailVerificationPath } from "@/app/lib/email-verification";
 import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
+import {
+  CHECKPLAN_COVER_ASPECT_RATIO,
+  CHECKPLAN_COVER_CROP_OUTPUT_HEIGHT,
+  CHECKPLAN_COVER_CROP_OUTPUT_WIDTH,
+} from "@/app/lib/plan-card-image";
 
 const STEPS = [1, 2, 3, 4];
 
@@ -527,9 +532,9 @@ export default function Creating() {
       {coverFileToCrop && (
         <ImageCropModal
           file={coverFileToCrop}
-          aspectRatio={464 / 270}
-          outputWidth={928}
-          outputHeight={540}
+          aspectRatio={CHECKPLAN_COVER_ASPECT_RATIO}
+          outputWidth={CHECKPLAN_COVER_CROP_OUTPUT_WIDTH}
+          outputHeight={CHECKPLAN_COVER_CROP_OUTPUT_HEIGHT}
           previewShape="binocular"
           title="Кадрировать обложку"
           confirmText="Применить"
