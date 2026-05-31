@@ -14,6 +14,11 @@ import { apiFetch, getApiUrl } from "@/app/lib/api";
 import { normalizeMediaUrl, resolveStorageMediaUrl } from "@/app/lib/checkplan-media";
 import { CHECK_PLANS_SORT_ITEMS, sortCheckPlansByIndex } from "@/app/lib/checkplan-list-utils";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
+import {
+  PLAN_CARD_COVER_QUALITY,
+  PLAN_CARD_COVER_SIZE,
+  PLAN_CARD_COVER_SIZES,
+} from "@/app/lib/plan-card-image";
 import { autoScrollViewportByPointer, createViewportAutoScrollController } from "@/app/lib/drag-auto-scroll";
 import { PlanCardSkeleton } from "@/app/components/atomic/molecules/plan-card-skeleton/plan-card-skeleton";
 import ImageWithSkeleton, {
@@ -165,9 +170,10 @@ function PersonalPlanCard({
         className={styles.cardImage}
         src={plan.imageSrc}
         alt={plan.imageAlt || plan.title || ""}
-        width={264}
-        height={264}
-        sizes="(max-width: 620px) 280px, (max-width: 900px) 335px, 264px"
+        width={PLAN_CARD_COVER_SIZE}
+        height={PLAN_CARD_COVER_SIZE}
+        sizes={PLAN_CARD_COVER_SIZES}
+        quality={PLAN_CARD_COVER_QUALITY}
         unoptimized={!useOptimizedImage}
       />
       <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(plan.title)}</h3>

@@ -219,6 +219,7 @@ export default function Article({ articleId }) {
             </div>
           </article>
         </ScrollReveal>
+        </div>
 
         <ScrollReveal delay={150}>
           <section className={styles.templatesBlock} aria-labelledby="templates-heading">
@@ -252,7 +253,6 @@ export default function Article({ articleId }) {
         <ScrollReveal delay={180}>
           <OurExperience />
         </ScrollReveal>
-        </div>
       </div>
       <ScrollReveal delay={220}>
         <Footer />

@@ -25,6 +25,7 @@ export default function ImageWithSkeleton({
   width,
   height,
   sizes,
+  quality,
   priority,
   fetchPriority,
   draggable,
@@ -44,6 +45,7 @@ export default function ImageWithSkeleton({
         height={height}
         className={imageClasses}
         sizes={sizes}
+        quality={quality}
         priority={priority}
         fetchPriority={fetchPriority}
         draggable={draggable}

@@ -13,6 +13,11 @@ import { useLikedChecklists } from "@/app/lib/liked-checklists-context";
 import styles from "./check-plans.module.css";
 import { buildCheckplanPublicSegment } from "@/app/lib/slug";
 import { buildProfilePublicPath } from "@/app/lib/slug";
+import {
+  PLAN_CARD_COVER_QUALITY,
+  PLAN_CARD_COVER_SIZE,
+  PLAN_CARD_COVER_SIZES,
+} from "@/app/lib/plan-card-image";
 
 const SLIDER_BREAKPOINT = 1024;
 const SLIDER_MAX_WIDTH = 950; /* совпадает с CSS: слайдер виден при max-width: 950px */
@@ -88,9 +93,10 @@ export function PlanCard({
         className={styles.cardImage}
         src={imageSrc}
         alt={imageAlt || title || ""}
-        width={264}
-        height={264}
-        sizes="(max-width: 620px) 280px, (max-width: 950px) 335px, 264px"
+        width={PLAN_CARD_COVER_SIZE}
+        height={PLAN_CARD_COVER_SIZE}
+        sizes={PLAN_CARD_COVER_SIZES}
+        quality={PLAN_CARD_COVER_QUALITY}
         unoptimized={!useOptimizedImage}
       />
       <h3 className={`${styles.cardTitle} subtitle_1`}>{applyTypograf(title)}</h3>
